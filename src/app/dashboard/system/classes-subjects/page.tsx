@@ -38,6 +38,8 @@ export default function ClassesSubjectsPage() {
     const [classDetails, setClassDetails] = useState<ClassDetail[]>([]);
     const [editingClass, setEditingClass] = useState<ClassDetail | null>(null);
     const [subjectsByDept, setSubjectsByDept] = useState<Record<string, SubjectWithDepartment[]>>({});
+    const [subjectToAssign, setSubjectToAssign] = useState<SubjectWithDepartment | null>(null);
+    const [selectedDeptForAssignment, setSelectedDeptForAssignment] = useState('');
 
 
     const { toast } = useToast();
@@ -220,6 +222,26 @@ export default function ClassesSubjectsPage() {
          setEditingClass({ ...editingClass, subjects: newSubjects });
     }
 
+    const handleAssignDepartment = async () => {
+        if (!subjectToAssign || !selectedDeptForAssignment) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Please select a department' });
+            return;
+        }
+        
+        try {
+            const subjectRef = doc(db, 'subjects', subjectToAssign.id);
+            await updateDoc(subjectRef, { departmentId: selectedDeptForAssignment });
+            toast({ title: 'Success', description: `${subjectToAssign.name} assigned to department` });
+            setSubjectToAssign(null);
+            setSelectedDeptForAssignment('');
+            refetchAcademicData();
+            fetchAllData();
+        } catch (error) {
+            console.error('Error assigning department:', error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not assign department' });
+        }
+    }
+
     if (editingClass) {
         const availableSubjects = subjects.filter(sub => !editingClass.subjects?.some(s => s.id === sub.id));
         return (
@@ -301,6 +323,47 @@ export default function ClassesSubjectsPage() {
                         <CardDescription>Add or remove subjects within each academic department.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
+                        {/* Unassigned Subjects Section */}
+                        <div className="mb-6 p-4 border border-orange-200 bg-orange-50 rounded-md">
+                            <h3 className="font-semibold mb-2 text-orange-800">Unassigned Subjects</h3>
+                            <p className="text-sm text-orange-600 mb-3">These subjects were migrated but not linked to a department. Please assign them.</p>
+                            <div className="flex flex-wrap gap-2 items-center">
+                                {(subjects as SubjectWithDepartment[]).filter(s => !s.departmentId).map(s => (
+                                    <Badge key={s.id} variant="outline" className="flex gap-2 items-center bg-white border-orange-300">
+                                        <span>{s.name}</span>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="h-4 w-4 ml-1"
+                                            onClick={() => setSubjectToAssign(s)}
+                                        >
+                                            <Edit className="h-3 w-3" />
+                                        </Button>
+                                         <button onClick={() => handleRemoveItem('subject', s)}><X className="h-3 w-3" /></button>
+                                    </Badge>
+                                ))}
+                                {(subjects as SubjectWithDepartment[]).filter(s => !s.departmentId).length === 0 && <p className="text-xs text-muted-foreground">No unassigned subjects.</p>}
+                            </div>
+                        </div>
+                        
+                        {/* Assignment Dialog */}
+                        <Dialog open={!!subjectToAssign} onOpenChange={(open) => !open && setSubjectToAssign(null)}>
+                            <DialogContent>
+                                <DialogHeader><DialogTitle>Assign Department to {subjectToAssign?.name}</DialogTitle></DialogHeader>
+                                <div className="space-y-4 py-4">
+                                    <Select onValueChange={setSelectedDeptForAssignment} value={selectedDeptForAssignment}>
+                                        <SelectTrigger><SelectValue placeholder="Select a department" /></SelectTrigger>
+                                        <SelectContent>
+                                            {departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                    <Button onClick={handleAssignDepartment} className="w-full">Save Assignment</Button>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+
+                        <Separator className="my-4"/>
+
                         {departments.map(dept => (
                             <div key={dept.id}>
                                 <h3 className="font-semibold mb-2">{dept.name}</h3>
@@ -382,6 +445,7 @@ export default function ClassesSubjectsPage() {
                                         <TableCell className="text-center">{c.subjects?.length || 0}</TableCell>
                                         <TableCell className="text-right space-x-2">
                                             <Button variant="outline" size="sm" onClick={() => setEditingClass(c)}><Edit className="mr-2 h-4 w-4" />Configure</Button>
+                                            <Button variant="destructive" size="sm" onClick={() => handleRemoveItem('class', c)}><Trash2 className="h-4 w-4" /></Button>
                                         </TableCell>
                                     </TableRow>
                                 ))}

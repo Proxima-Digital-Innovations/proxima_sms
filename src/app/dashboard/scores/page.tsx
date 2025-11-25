@@ -163,6 +163,10 @@ export default function ScoresPage() {
             class: selectedClass,
             teacherId: user.uid,
             term: "First Term", // Placeholder term
+            caScore: scoreData.caScore || 0,
+            examScore: scoreData.examScore || 0,
+            totalScore: scoreData.totalScore || 0,
+            status: scoreData.status || 'Draft',
           };
           batch.set(scoreRef, newScoreData);
         }

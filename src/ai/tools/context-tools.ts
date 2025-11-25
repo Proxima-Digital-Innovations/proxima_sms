@@ -27,7 +27,8 @@ export const getContextTool = ai.defineTool(
   },
   async ({ contextId }) => {
     try {
-      const context = await dbService.getDoc('aiContexts', contextId);
+      type AiContext = { history: any[] };
+      const context = await dbService.getDoc<AiContext>('aiContexts', contextId);
       if (!context || !context.history) {
         return "No previous context found.";
       }
@@ -53,7 +54,8 @@ export const updateContextTool = ai.defineTool(
     },
     async ({ contextId, question, answer }) => {
         try {
-            const contextRef = await dbService.getDoc<{history: any[]}>('aiContexts', contextId);
+            type AiContext = { history: any[] };
+            const contextRef = await dbService.getDoc<AiContext>('aiContexts', contextId);
             const newHistoryEntry = { question, answer, timestamp: new Date() };
             
             if (contextRef) {

@@ -28,7 +28,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DocumentSubmissionForm } from '@/components/dashboard/lesson-notes/add-lesson-note-form';
 import { format } from 'date-fns';
-import { dbService } from '@/lib/dbService';
+import { dbService, QueryConstraint } from '@/lib/dbService';
 import usePersistentState from '@/hooks/use-persistent-state';
 import type { MockLessonNote } from '@/lib/schema';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -50,7 +50,7 @@ export default function ExamQuestionsPage() {
     if (!user) return;
     setIsLoading(true);
     try {
-        const constraints = role === 'Teacher'
+        const constraints: QueryConstraint[] = role === 'Teacher'
             ? [{ type: 'where', fieldPath: 'teacherId', opStr: '==', value: user.uid }]
             : [];
         

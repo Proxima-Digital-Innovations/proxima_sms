@@ -14,6 +14,7 @@ export type User = {
 };
 
 export type Department = {
+  id: string;
   _id: string;
   name: string;
   hodId: string; // ObjectId -> users._id
@@ -330,3 +331,84 @@ export type SchoolInfo = {
     email: string;
     logoUrl?: string;
 }
+
+// --- New Types for Migration ---
+
+export type InventoryItem = {
+    id: string;
+    name: string;
+    category: string;
+    description?: string;
+    departmentId?: string;
+    quantityInStock: number;
+    reorderLevel: number;
+    expiryDate?: any; // Firestore Timestamp
+    createdAt: any;
+};
+
+export type Supplier = {
+    id: string;
+    name: string;
+    contactEmail?: string;
+    contactPhone?: string;
+    address?: string;
+};
+
+export type PurchaseOrder = {
+    id: string;
+    itemId: string;
+    itemName: string;
+    quantityOrdered: number;
+    receivedQuantity: number;
+    pricePerUnit: number;
+    orderDate: any;
+    supplierId?: string;
+    receivedDate?: any;
+    totalCost: number;
+    status: 'Pending' | 'Received' | 'Partial';
+};
+
+export type TahfeezScore = {
+    id: string;
+    studentId: string;
+    studentName: string;
+    surah?: string; // or subject 'Quran'
+    juz?: number;
+    page?: number;
+    marks: number;
+    session: string;
+    term: string;
+    class: string;
+    createdAt: any;
+};
+
+export type MidTermResult = {
+    id: string;
+    studentId: string;
+    studentName: string;
+    subjectId: string;
+    subjectName: string;
+    class: string;
+    session: string;
+    term: string;
+    score: number;
+    achievement: string; // e.g., "Excellent", "Good", "Fair", "Poor"
+    createdAt: any;
+};
+
+export type BehaviouralAssessment = {
+    id: string;
+    studentId: string;
+    session: string;
+    term: string;
+    class: string;
+    conduct: number;
+    punctuality: number;
+    dedication: number;
+    participation: number;
+    hospitality: number;
+    neatness: number;
+    creativity: number;
+    physical: number;
+    createdAt: any;
+};

@@ -8,6 +8,9 @@ import { useToast } from './use-toast';
 export type ClassData = {
     id: string;
     name: string;
+    teacherId?: string;
+    subjectIds?: string[];
+    subjectTeachers?: Record<string, string>;
 };
 
 export type SubjectData = {

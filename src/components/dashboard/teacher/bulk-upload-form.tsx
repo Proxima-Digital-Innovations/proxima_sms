@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, File, X, UploadCloud } from 'lucide-react';
+import { Loader2, File as FileIcon, X, UploadCloud } from 'lucide-react';
 import { useAcademicData } from '@/hooks/use-academic-data';
 import { bulkUploadDocuments } from '@/actions/submission-actions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -132,8 +132,8 @@ export function BulkUploadForm() {
                 <CardHeader className="flex flex-row items-start justify-between">
                     <div>
                         <CardTitle className="flex items-center gap-2 text-base">
-                            <File className="h-4 w-4" />
-                            {form.watch(`files.${index}.file.name`)}
+                            <FileIcon className="h-4 w-4" />
+                            {field.file.name}
                         </CardTitle>
                     </div>
                      <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>

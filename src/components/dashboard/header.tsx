@@ -78,8 +78,8 @@ export function DashboardHeader() {
     return title.charAt(0).toUpperCase() + title.slice(1);
   };
 
-  const userInitials = user?.displayName
-    ? user.displayName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+  const userInitials = user?.name
+    ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
     : role?.substring(0, 2).toUpperCase() || '..';
 
   return (
@@ -105,10 +105,10 @@ export function DashboardHeader() {
               className="flex items-center gap-2 rounded-full px-2 py-1"
             >
               <Avatar className="h-8 w-8">
-                <AvatarImage src={user?.photoURL || undefined} alt={user?.displayName || role || ''} data-ai-hint="person portrait" />
+                <AvatarImage src={user?.personalInfo?.profilePicture || undefined} alt={user?.name || role || ''} data-ai-hint="person portrait" />
                 <AvatarFallback>{userInitials}</AvatarFallback>
               </Avatar>
-              <span className="hidden md:inline">{user?.displayName || role}</span>
+              <span className="hidden md:inline">{user?.name || role}</span>
               <ChevronDown className="hidden h-4 w-4 md:inline" />
             </Button>
           </DropdownMenuTrigger>

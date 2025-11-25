@@ -123,9 +123,9 @@ export function BulkExpenseUploadDialog({ children, open, onOpenChange, onUpload
         }
 
         setImportResult({
-            importedCount: result.importedCount,
-            errorCount: result.errorCount,
-            invalidRecords: result.invalidRecords
+            importedCount: result.importedCount || 0,
+            errorCount: result.errorCount || 0,
+            invalidRecords: result.invalidRecords || []
         });
 
         toast({

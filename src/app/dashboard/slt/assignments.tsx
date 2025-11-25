@@ -12,7 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { assignHod, assignTeacherDepartment } from '@/actions/assignment-actions';
 import { Loader2 } from 'lucide-react';
 
-type DepartmentWithHod = Department & { hodName?: string };
+type DepartmentWithHod = Department & { id: string; hodName?: string };
 type TeacherWithDepartment = MockUser;
 
 export function SLTAssignments() {

@@ -33,7 +33,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { DocumentSubmissionForm } from '../lesson-notes/add-lesson-note-form';
+import { DocumentSubmissionForm } from '@/components/dashboard/lesson-notes/add-lesson-note-form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, AreaChart, Area, ResponsiveContainer } from 'recharts';
@@ -72,7 +72,7 @@ export function TeacherDashboard() {
       // Fetch all notes for stats and charts
       const allNotesQuery = query(collection(db, 'lessonNotes'), where('teacherId', '==', user.uid));
       const allNotesSnapshot = await getDocs(allNotesQuery);
-      const allNotesList = allNotesSnapshot.docs.map(doc => ({id: doc.id, ...doc.data() as MockLessonNote}));
+      const allNotesList = allNotesSnapshot.docs.map(doc => ({...doc.data() as MockLessonNote, id: doc.id}));
       
       // Sort client-side to avoid needing a composite index
       allNotesList.sort((a, b) => (b.submittedOn?.seconds || 0) - (a.submittedOn?.seconds || 0));
@@ -144,7 +144,7 @@ export function TeacherDashboard() {
       <div className="space-y-1">
         <h1 className="font-headline text-2xl md:text-3xl font-bold">Teacher Dashboard</h1>
         <p className="text-muted-foreground">
-          Welcome, {user?.displayName || 'Teacher'}. Manage your submissions and data.
+          Welcome, {user?.name || 'Teacher'}. Manage your submissions and data.
         </p>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

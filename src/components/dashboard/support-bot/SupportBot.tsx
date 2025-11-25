@@ -151,7 +151,7 @@ export function SupportBot() {
                             </div>
                             {message.role === 'user' && (
                                 <Avatar className="h-8 w-8">
-                                    <AvatarImage src={user?.photoURL || ''} />
+                                    <AvatarImage src={user?.personalInfo?.profilePicture || ''} />
                                     <AvatarFallback><User /></AvatarFallback>
                                 </Avatar>
                             )}

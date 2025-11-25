@@ -19,7 +19,8 @@ if (!admin.apps.length) {
 }
 
 async function getAuthenticatedUser() {
-    const sessionCookie = headers().get('x-session-cookie');
+    const headersList = await headers();
+    const sessionCookie = headersList.get('x-session-cookie');
     if (!sessionCookie) return null;
 
     try {

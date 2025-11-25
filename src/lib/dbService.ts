@@ -23,14 +23,10 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase'; // Import the initialized db instance
 
-export type QueryConstraint = {
-  type: 'where' | 'orderBy' | 'limit';
-  fieldPath: string;
-  opStr?: WhereFilterOp;
-  value?: any;
-  direction?: OrderByDirection;
-  limitCount?: number;
-};
+export type QueryConstraint =
+  | { type: 'where'; fieldPath: string; opStr: WhereFilterOp; value: any }
+  | { type: 'orderBy'; fieldPath: string; direction: OrderByDirection }
+  | { type: 'limit'; limitCount: number };
 
 const applyQueryConstraints = (collectionRef: CollectionReference, constraints?: QueryConstraint[]) => {
     let q = query(collectionRef);

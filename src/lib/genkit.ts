@@ -1,5 +1,5 @@
 
-import { genkit, GenerationCommonConfig } from 'genkit';
+import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
 import { dbService } from './dbService';
 
@@ -15,7 +15,7 @@ type AiConfig = {
 };
 
 // Function to fetch AI configuration from Firestore
-async function getAiConfig(): Promise<GenerationCommonConfig> {
+async function getAiConfig(): Promise<AiConfig> {
   try {
     const configDoc = await dbService.getDoc<AiConfig>('system', 'aiConfig');
     if (!configDoc) {
@@ -23,7 +23,7 @@ async function getAiConfig(): Promise<GenerationCommonConfig> {
       return {};
     }
 
-    const config: GenerationCommonConfig = {};
+    const config: AiConfig = {};
 
     if (configDoc.safetySettings) {
       config.safetySettings = configDoc.safetySettings;
@@ -48,10 +48,6 @@ export const ai = genkit({
   plugins: [
     googleAI({
       apiKey: process.env.GEMINI_API_KEY,
-      // Apply the configuration dynamically
-      defaultGenerationConfig: async () => await getAiConfig(),
     }),
   ],
-  logLevel: 'debug',
-  enableTracingAndMetrics: true,
 });

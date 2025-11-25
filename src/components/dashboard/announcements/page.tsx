@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Rss, MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import { useRole } from '@/context/role-context';
-import { dbService } from '@/lib/firebase';
+import { dbService } from '@/lib/dbService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';

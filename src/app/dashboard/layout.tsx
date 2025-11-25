@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { DashboardHeader } from '@/components/dashboard/header';
-import { DashboardSidebar } from '@/components/dashboard/sidebar';
+import DashboardSidebar from '@/components/dashboard/sidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { useRole } from '@/context/role-context';
 import { Loader2, ShieldAlert } from 'lucide-react';
@@ -124,7 +124,7 @@ export default function DashboardLayout({
           <div className="print-hidden">
             <DashboardSidebar />
           </div>
-          <div className="flex flex-1 flex-col overflow-y-auto">
+          <div className="flex flex-1 flex-col overflow-y-auto lg:ml-72">
              <div className="print-hidden sticky top-0 z-20 bg-background">
                 <MaintenanceBanner />
                 <DashboardHeader />

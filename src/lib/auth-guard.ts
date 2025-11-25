@@ -5,14 +5,14 @@
 import {
   Activity, BarChart2, Bell, Book, Building, Calendar, DollarSign, LayoutDashboard, LogOut, MessageSquare, Server, Settings, Shield, User, Users,
   UsersRound, FileQuestion, BookCopy, Edit3, CheckSquare, Award, BookOpen, TrendingUp, Landmark, Wallet, Briefcase, FileText, CreditCard,
-  Receipt, Ticket, Grid, BookMarked, Wrench, GraduationCap, Sparkles, UploadCloud, CalendarCheck,
+  Receipt, Ticket, Grid, BookMarked, Wrench, GraduationCap, Sparkles, UploadCloud, CalendarCheck, Heart, ClipboardCheck, BookText,
 } from 'lucide-react';
 import type { ElementType } from 'react';
 
 const iconMap: { [key: string]: ElementType } = {
   LayoutDashboard, User, Users, UsersRound, Building, Server, Activity, Book, FileText, BarChart2, BookOpen, Edit3, DollarSign, Calendar, Bell, MessageSquare,
   FileQuestion, BookCopy, CheckSquare, Award, Shield, Settings, LogOut, TrendingUp, Landmark, Wallet, Briefcase, Receipt, CreditCard, Ticket, Grid,
-  BookMarked, Wrench, GraduationCap, Sparkles, UploadCloud, CalendarCheck
+  BookMarked, Wrench, GraduationCap, Sparkles, UploadCloud, CalendarCheck, Heart, ClipboardCheck, BookText
 };
 
 export const allNavLinks: Record<string, { icon: string; label: string; path: string; subLinks?: { label: string; path: string }[] }> = {
@@ -44,6 +44,9 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
   examQuestions: { icon: 'FileQuestion', label: 'Question Bank', path: '/dashboard/exam-questions' },
   bulkUpload: { icon: 'UploadCloud', label: 'Bulk Upload', path: '/dashboard/teacher/bulk-upload' },
   enterScores: { icon: 'Edit3', label: 'Enter Scores', path: '/dashboard/scores' },
+  tahfeezScores: { icon: 'BookText', label: 'Tahfeez Scores', path: '/dashboard/tahfeez' },
+  midtermScores: { icon: 'ClipboardCheck', label: 'Mid-Term Results', path: '/dashboard/midterm' },
+  behaviouralAssessment: { icon: 'Heart', label: 'Behavioural Assessment', path: '/dashboard/behavioural' },
   myStudents: { icon: 'UsersRound', label: 'My Students', path: '/dashboard/performance' },
   attendance: { icon: 'CalendarCheck', label: 'Take Attendance', path: '/dashboard/teacher/attendance' },
   reviewQuestions: { icon: 'FileQuestion', label: 'Review Questions', path: '/dashboard/exam-questions' },
@@ -73,20 +76,20 @@ export const navConfig: Record<string, { group: string; links: (keyof typeof all
     { group: 'Communication', links: ['announcements', 'messaging'] },
     { group: 'Management', links: ['reports', 'system', 'manageStaff', 'manageStudents', 'departments'] },
     { group: 'Finance', links: ['feeSystem', 'invoices', 'payments', 'expenses', 'payroll', 'reconciliation', 'financialReports'] },
-    { group: 'Academics', links: ['lessonApprovals', 'reviewQuestions', 'enterScores', 'generateResults', 'viewResults'] },
+    { group: 'Academics', links: ['lessonApprovals', 'reviewQuestions', 'enterScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'generateResults', 'viewResults'] },
     { group: 'Infrastructure', links: ['database', 'logs'] }
   ],
   SLT: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
     { group: 'Communication', links: ['announcements', 'messaging'] },
     { group: 'Oversight', links: ['reports', 'manageStaff', 'manageStudents'] },
-    { group: 'Academics', links: ['lessonApprovals', 'gradingSystem', 'classesAndSubjects', 'aiSettings'] },
+    { group: 'Academics', links: ['lessonApprovals', 'enterScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'generateResults', 'viewResults', 'gradingSystem', 'classesAndSubjects', 'aiSettings'] },
     { group: 'Finance', links: ['financialReports'] },
   ],
   HeadOfDepartment: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
     { group: 'Communication', links: ['announcements', 'messaging'] },
-    { group: 'Department', links: ['lessonApprovals', 'hodAnalytics', 'manageStaff'] },
+    { group: 'Department', links: ['lessonApprovals', 'enterScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'hodAnalytics', 'manageStaff'] },
     { group: 'Academics', links: ['classesAndSubjects'] },
   ],
   Accountant: [
@@ -97,12 +100,12 @@ export const navConfig: Record<string, { group: string; links: (keyof typeof all
   ExamOfficer: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
     { group: 'Communication', links: ['announcements', 'messaging'] },
-    { group: 'Examinations', links: ['reviewQuestions', 'enterScores', 'generateResults', 'viewResults', 'timetable', 'examRegistration', 'seatingPlans'] },
+    { group: 'Examinations', links: ['reviewQuestions', 'enterScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'generateResults', 'viewResults', 'timetable', 'examRegistration', 'seatingPlans'] },
   ],
   Teacher: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
     { group: 'Communication', links: ['announcements', 'messaging'] },
-    { group: 'My Work', links: ['lessonPlans', 'examQuestions', 'bulkUpload', 'enterScores', 'attendance', 'myStudents'] },
+    { group: 'My Work', links: ['lessonPlans', 'examQuestions', 'bulkUpload', 'enterScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'attendance', 'myStudents'] },
   ],
   Parent: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },

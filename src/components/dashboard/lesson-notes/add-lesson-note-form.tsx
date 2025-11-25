@@ -148,7 +148,7 @@ export function DocumentSubmissionForm({
       const downloadURL = await getDownloadURL(uploadResult.ref);
       
       const userDoc = await dbService.getDoc<{ name: string }>('users', user.uid);
-      const teacherName = userDoc?.name || user.displayName || 'Unknown Teacher';
+      const teacherName = userDoc?.name || user.name || 'Unknown Teacher';
 
       const submissionData: any = {
         title: documentTitle,

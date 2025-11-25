@@ -101,8 +101,8 @@ export function HodDashboard() {
         }
 
         return { 
-            id: doc.id, 
             ...data,
+            id: doc.id,
             formattedDate: formattedDate
         } as LessonNoteWithDate;
       });

@@ -1,5 +1,5 @@
 
-import { getStorage, ref, uploadBytes, getDownloadURL, Storage } from 'firebase/storage';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from './firebase'; // Import the initialized storage instance
 
 const uploadFile = async (filePath: string, file: File): Promise<{ downloadURL:string, storagePath: string }> => {

@@ -71,7 +71,7 @@ export default function LessonNoteDetailPage() {
 
     let newStatus: 'Needs Revision' = 'Needs Revision';
 
-    const reviewerName = user.displayName || 'Reviewer';
+    const reviewerName = user.name || 'Reviewer';
     const reviewComment = `${newStatus} by ${reviewerName}: ${comment}`;
     
     let reviewData = {};
@@ -118,7 +118,7 @@ export default function LessonNoteDetailPage() {
   const handleApprove = async () => {
     if (typeof id !== 'string' || !note || !user) return;
     
-    const reviewerName = user.displayName || 'Reviewer';
+    const reviewerName = user.name || 'Reviewer';
     const reviewComment = `Approved by ${reviewerName}`;
     let reviewData = {};
 

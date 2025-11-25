@@ -1,264 +1,270 @@
-
-
 'use client';
 
-import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  Activity,
-  BarChart2,
-  Bell,
-  Book,
-  Building,
-  Calendar,
-  DollarSign,
-  LayoutDashboard,
-  LogOut,
-  MessageSquare,
-  Server,
-  Settings,
-  Shield,
-  User,
-  Users,
-  UsersRound,
-  FileQuestion,
-  BookCopy,
-  Edit3,
-  CheckSquare,
-  Award,
-  BookOpen,
-  TrendingUp,
-  Landmark,
-  Wallet,
-  Briefcase,
-  FileText,
-  CreditCard,
-  Receipt,
-  Ticket,
-  Grid,
-  BookMarked,
-  Wrench,
-  GraduationCap,
-  Sparkles,
-  UploadCloud,
-  CalendarCheck,
+import { useState } from 'react';
+import { 
+    Home, Users, GraduationCap, FileText, DollarSign, Package, Settings, 
+    ChevronDown, ChevronRight, Menu, X, LogOut, User, BookOpen, 
+    ClipboardList, Calendar, MessageSquare, LayoutGrid, UserPlus,
+    ArrowUpCircle, FileSpreadsheet, TrendingUp, TrendingDown, Receipt, CreditCard,
+    Upload, Key,
+    Box, Truck, ArrowRightLeft, ShoppingCart, Building2
 } from 'lucide-react';
-import Image from 'next/image';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  useSidebar,
-} from '@/components/ui/sidebar';
-import { useRole } from '@/context/role-context';
+const navigation = [
+    {
+        title: 'Dashboard',
+        icon: Home,
+        href: '/dashboard',
+    },
+    {
+        title: 'Academic',
+        icon: GraduationCap,
+        children: [
+            { title: 'Students', href: '/dashboard/students', icon: Users },
+            { title: 'Admissions', href: '/dashboard/students/admissions', icon: UserPlus },
+            { title: 'Promote Students', href: '/dashboard/students/promote', icon: ArrowUpCircle },
+            { title: 'Classes & Subjects', href: '/dashboard/system/classes-subjects', icon: BookOpen },
+            { title: 'Lesson Notes', href: '/dashboard/lesson-notes', icon: FileText },
+            { title: 'Exam Questions', href: '/dashboard/exam-questions', icon: FileText },
+        ]
+    },
+    {
+        title: 'Results',
+        icon: ClipboardList,
+        children: [
+            { title: 'Enter Scores', href: '/dashboard/scores/enter', icon: FileText },
+            { title: 'Midterm Entry', href: '/dashboard/midterm/enter', icon: FileText },
+            { title: 'View Midterm', href: '/dashboard/midterm/view', icon: FileSpreadsheet },
+            { title: 'Generate Results', href: '/dashboard/results/generate', icon: FileSpreadsheet },
+            { title: 'Class Results', href: '/dashboard/results/class', icon: FileSpreadsheet },
+            { title: 'Tahfeez Results', href: '/dashboard/results/tahfeez', icon: BookOpen },
+            { title: 'Broadsheet', href: '/dashboard/results/broadsheet', icon: FileSpreadsheet },
+            { title: 'Behavioural', href: '/dashboard/behavioural/enter', icon: ClipboardList },
+            { title: 'Tahfeez Entry', href: '/dashboard/tahfeez/enter', icon: BookOpen },
+            { title: 'Upload Scores', href: '/dashboard/upload/scores', icon: Upload },
+            { title: 'Upload Midterm', href: '/dashboard/upload/midterm', icon: Upload },
+            { title: 'Generate Tokens', href: '/dashboard/results/tokens', icon: Key },
+        ]
+    },
+    {
+        title: 'Finance',
+        icon: DollarSign,
+        children: [
+            { title: 'Fee Structures', href: '/dashboard/finance/fee-structures', icon: FileText },
+            { title: 'Invoices', href: '/dashboard/finance/invoices', icon: Receipt },
+            { title: 'Payments', href: '/dashboard/finance/payments', icon: CreditCard },
+            { title: 'Expenses', href: '/dashboard/finance/expenses', icon: TrendingDown },
+        ]
+    },
+    {
+        title: 'Inventory',
+        icon: Package,
+        children: [
+            { title: 'Items', href: '/dashboard/inventory/items', icon: Box },
+            { title: 'Suppliers', href: '/dashboard/inventory/suppliers', icon: Building2 },
+            { title: 'Transactions', href: '/dashboard/inventory/transactions', icon: ArrowRightLeft },
+            { title: 'Purchase Orders', href: '/dashboard/inventory/orders', icon: ShoppingCart },
+        ]
+    },
+    {
+        title: 'Communication',
+        icon: MessageSquare,
+        children: [
+            { title: 'Messaging', href: '/dashboard/messaging', icon: MessageSquare },
+            { title: 'Announcements', href: '/dashboard/announcements', icon: FileText },
+            { title: 'Notifications', href: '/dashboard/notifications', icon: FileText },
+        ]
+    },
+    {
+        title: 'Reports & Analytics',
+        icon: TrendingUp,
+        children: [
+            { title: 'Reports', href: '/dashboard/reports', icon: FileSpreadsheet },
+            { title: 'Performance', href: '/dashboard/performance', icon: TrendingUp },
+            { title: 'Staff Directory', href: '/dashboard/reports/staff-directory', icon: Users },
+            { title: 'Student Demographics', href: '/dashboard/reports/student-demographics', icon: Users },
+        ]
+    },
+    {
+        title: 'System',
+        icon: Settings,
+        children: [
+            { title: 'Staff', href: '/dashboard/staff', icon: Users },
+            { title: 'Departments', href: '/dashboard/system/departments', icon: Building2 },
+            { title: 'Academic Calendar', href: '/dashboard/system/academic-year', icon: Calendar },
+            { title: 'School Info', href: '/dashboard/system/school-info', icon: Settings },
+            { title: 'Grading System', href: '/dashboard/system/grading', icon: TrendingUp },
+            { title: 'Fee Settings', href: '/dashboard/system/fees', icon: DollarSign },
+            { title: 'User Roles', href: '/dashboard/system/roles', icon: Users },
+            { title: 'Maintenance', href: '/dashboard/system/maintenance', icon: Settings },
+            { title: 'AI Settings', href: '/dashboard/system/ai-settings', icon: Settings },
+            { title: 'Seating Plan', href: '/dashboard/seating-plan', icon: LayoutGrid },
+            { title: 'System Logs', href: '/dashboard/logs', icon: FileText },
+        ]
+    },
+];
 
-const iconMap: { [key: string]: React.ElementType } = {
-  LayoutDashboard, User, Users, UsersRound, Building, Server, Activity, Book,
-  FileText, BarChart2, BookOpen, Edit3, DollarSign, Calendar, Bell, MessageSquare,
-  FileQuestion, BookCopy, CheckSquare, Award, Shield, Settings, LogOut,
-  TrendingUp, Landmark, Wallet, Briefcase, Receipt, CreditCard, Ticket, Grid,
-  BookMarked, Wrench, GraduationCap, Sparkles, UploadCloud, CalendarCheck
-};
+export default function Sidebar() {
+    const pathname = usePathname();
+    const [collapsed, setCollapsed] = useState(false);
+    const [expandedSections, setExpandedSections] = useState<string[]>(['Academic', 'Results']);
 
-const allNavLinks = {
-  // Main
-  dashboard: { icon: 'LayoutDashboard', label: 'Dashboard', path: '/dashboard' },
-  profile: { icon: 'User', label: 'Profile', path: '/profile' },
-  notifications: { icon: 'Bell', label: 'Notifications', path: '/dashboard/notifications' },
-  messaging: { icon: 'MessageSquare', label: 'Messaging', path: '/dashboard/messaging' },
-  announcements: { icon: 'Bell', label: 'Announcements', path: '/dashboard/announcements' },
-  
-  // Admin & SLT
-  reports: { icon: 'TrendingUp', label: 'Reports & Analytics', path: '/dashboard/reports' },
-  system: { icon: 'Shield', label: 'System Config', path: '/dashboard/system',
-    subLinks: [
-      { label: 'School Info', path: '/dashboard/system/school-info' },
-      { label: 'Grading', path: '/dashboard/system/grading' },
-      { label: 'Academic Year', path: '/dashboard/system/academic-year' },
-      { label: 'AI Settings', path: '/dashboard/system/ai-settings' },
-      { label: 'Roles', path: '/dashboard/system/roles' },
-      { label: 'Classes & Subjects', path: '/dashboard/system/classes-subjects' },
-      { label: 'Maintenance', path: '/dashboard/system/maintenance' },
-    ]
-  },
-  manageStaff: { icon: 'Users', label: 'Manage Staff', path: '/dashboard/users' },
-  manageStudents: { icon: 'UsersRound', label: 'Manage Students', path: '/dashboard/students' },
-  departments: { icon: 'Building', label: 'Departments', path: '/dashboard/departments' },
-  database: { icon: 'Server', label: 'Database', path: '/dashboard/db' },
-  logs: { icon: 'Activity', label: 'Logs & Security', path: '/dashboard/logs' },
+    const toggleSection = (title: string) => {
+        setExpandedSections(prev =>
+            prev.includes(title) ? prev.filter(t => t !== title) : [...prev, title]
+        );
+    };
 
-  // HOD
-  lessonApprovals: { icon: 'Book', label: 'Lesson Approvals', path: '/dashboard/lesson-notes' },
-  hodAnalytics: { icon: 'BarChart2', label: 'Dept. Analytics', path: '/dashboard/hod/analytics' },
+    return (
+        <>
+            {/* Mobile Toggle */}
+            <Button
+                variant="ghost"
+                size="icon"
+                className="fixed top-4 left-4 z-50 lg:hidden"
+                onClick={() => setCollapsed(!collapsed)}
+            >
+                {collapsed ? <X /> : <Menu />}
+            </Button>
 
-  // Teacher
-  lessonPlans: { icon: 'BookCopy', label: 'Lesson Plans', path: '/dashboard/lesson-notes' },
-  questionBank: { icon: 'FileQuestion', label: 'Question Bank', path: '/dashboard/exam-questions' },
-  bulkUpload: { icon: 'UploadCloud', label: 'Bulk Upload', path: '/dashboard/teacher/bulk-upload' },
-  enterScores: { icon: 'Edit3', label: 'Enter Scores', path: '/dashboard/scores' },
-  myStudents: { icon: 'UsersRound', label: 'My Students', path: '/dashboard/performance' },
-  attendance: { icon: 'CalendarCheck', label: 'Take Attendance', path: '/dashboard/teacher/attendance' },
+            {/* Sidebar */}
+            <aside
+                className={cn(
+                    'fixed left-0 top-0 z-40 h-screen transition-all duration-300 ease-in-out',
+                    'bg-[#003366]',
+                    'border-r border-white/10',
+                    collapsed ? 'w-20' : 'w-72',
+                    'lg:translate-x-0',
+                    collapsed ? '-translate-x-full lg:translate-x-0' : 'translate-x-0'
+                )}
+            >
+                <div className="flex h-full flex-col">
+                    {/* Logo */}
+                    <div className="flex h-20 items-center justify-between px-4 border-b border-white/10">
+                        {!collapsed && (
+                            <img 
+                                src="/school-logo.png" 
+                                alt="School Logo" 
+                                className="h-16 w-auto object-contain"
+                            />
+                        )}
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setCollapsed(!collapsed)}
+                            className="hidden lg:flex text-slate-400 hover:text-white"
+                        >
+                            {collapsed ? <ChevronRight /> : <Menu />}
+                        </Button>
+                    </div>
 
+                    {/* Navigation */}
+                    <nav className="flex-1 overflow-y-auto p-4 space-y-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+                        {navigation.map((item) => (
+                            <div key={item.title}>
+                                {item.children ? (
+                                    <div>
+                                        <button
+                                            onClick={() => toggleSection(item.title)}
+                                            className={cn(
+                                                'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all',
+                                                'text-white/90 hover:text-white hover:bg-white/10',
+                                                'group relative overflow-hidden'
+                                            )}
+                                        >
+                                            <div className="absolute inset-0 bg-[#D4AF37]/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            <item.icon className="h-5 w-5 shrink-0 relative z-10" />
+                                            {!collapsed && (
+                                                <>
+                                                    <span className="flex-1 text-left text-sm font-medium relative z-10">
+                                                        {item.title}
+                                                    </span>
+                                                    {expandedSections.includes(item.title) ? (
+                                                        <ChevronDown className="h-4 w-4 relative z-10" />
+                                                    ) : (
+                                                        <ChevronRight className="h-4 w-4 relative z-10" />
+                                                    )}
+                                                </>
+                                            )}
+                                        </button>
+                                        {!collapsed && expandedSections.includes(item.title) && (
+                                            <div className="ml-4 mt-1 space-y-1 border-l-2 border-white/20 pl-4">
+                                                {item.children.map((child) => (
+                                                    <Link
+                                                        key={child.href}
+                                                        href={child.href}
+                                                        className={cn(
+                                                            'flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all',
+                                                            'relative overflow-hidden group',
+                                                            pathname === child.href
+                                                                ? 'bg-[#D4AF37]/20 text-white font-medium'
+                                                                : 'text-white/80 hover:text-white hover:bg-white/10'
+                                                        )}
+                                                    >
+                                                        {pathname === child.href && (
+                                                            <div className="absolute left-0 top-0 h-full w-1 bg-[#D4AF37]" />
+                                                        )}
+                                                        {child.icon && <child.icon className="h-4 w-4 shrink-0" />}
+                                                        <span>{child.title}</span>
+                                                    </Link>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <Link
+                                        href={item.href}
+                                        className={cn(
+                                            'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all',
+                                            'relative overflow-hidden group',
+                                            pathname === item.href
+                                                ? 'bg-[#D4AF37]/20 text-white font-medium'
+                                                : 'text-white/90 hover:text-white hover:bg-white/10'
+                                        )}
+                                    >
+                                        <div className="absolute inset-0 bg-[#D4AF37]/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        {pathname === item.href && (
+                                            <div className="absolute left-0 top-0 h-full w-1 bg-[#D4AF37]" />
+                                        )}
+                                        <item.icon className="h-5 w-5 shrink-0 relative z-10" />
+                                        {!collapsed && <span className="text-sm font-medium relative z-10">{item.title}</span>}
+                                    </Link>
+                                )}
+                            </div>
+                        ))}
+                    </nav>
 
-  // Exam Officer
-  reviewQuestions: { icon: 'FileQuestion', label: 'Review Questions', path: '/dashboard/exam-questions' },
-  generateResults: { icon: 'CheckSquare', label: 'Generate Results', path: '/dashboard/results/generate' },
-  viewResults: { icon: 'Award', label: 'View Results', path: '/dashboard/results/view' },
-  timetable: { icon: 'Calendar', label: 'Timetable', path: '/dashboard/timetable' },
-  examRegistration: { icon: 'Ticket', label: 'Exam Registration', path: '/dashboard/exam-registration' },
-  seatingPlans: { icon: 'Grid', label: 'Seating Plans', path: '/dashboard/seating-plan' },
+                    {/* User Profile */}
+                    {!collapsed && (
+                        <div className="border-t border-white/10 p-4">
+                            <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/5">
+                                <div className="h-10 w-10 rounded-full bg-[#D4AF37] flex items-center justify-center">
+                                    <User className="h-5 w-5 text-[#003366]" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-white truncate">Admin User</p>
+                                    <p className="text-xs text-white/60 truncate">admin@giia.com</p>
+                                </div>
+                                <Button variant="ghost" size="icon" className="text-white/80 hover:text-white">
+                                    <LogOut className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </aside>
 
-  // Accountant
-  feeSystem: { icon: 'DollarSign', label: 'Fee Structures', path: '/dashboard/accountant/fees' },
-  invoices: { icon: 'FileText', label: 'Invoices', path: '/dashboard/accountant/invoices' },
-  payments: { icon: 'CreditCard', label: 'Payments', path: '/dashboard/accountant/payments' },
-  expenses: { icon: 'Wallet', label: 'Expenses', path: '/dashboard/accountant/expenses' },
-  payroll: { icon: 'Briefcase', label: 'Payroll', path: '/dashboard/accountant/payroll' },
-  financialReports: { icon: 'BarChart2', label: 'Financial Reports', path: '/dashboard/accountant/reports' },
-
-  // Parent
-  parentResults: { icon: 'BookOpen', label: 'Results', path: '/dashboard/performance' },
-  parentPayments: { icon: 'DollarSign', label: 'Payments', path: '/dashboard/pay' },
-  parentAnnouncements: { icon: 'Bell', label: 'Announcements', path: '/dashboard/announcements' },
-
-  // Common Academic
-  classesAndSubjects: { icon: 'BookMarked', label: 'Classes & Subjects', path: '/dashboard/system/classes-subjects' },
-  gradingSystem: { icon: 'GraduationCap', label: 'Grading System', path: '/dashboard/system/grading' },
-  aiSettings: { icon: 'Sparkles', label: 'AI Settings', path: '/dashboard/system/ai-settings' },
-};
-
-const navConfig: Record<string, { group: string; links: (keyof typeof allNavLinks)[] }[]> = {
-  Admin: [
-    { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
-    { group: 'Communication', links: ['announcements', 'messaging'] },
-    { group: 'Management', links: ['reports', 'system', 'manageStaff', 'manageStudents', 'departments'] },
-    { group: 'Finance', links: ['feeSystem', 'invoices', 'payments', 'expenses', 'payroll', 'financialReports'] },
-    { group: 'Academics', links: ['lessonApprovals', 'reviewQuestions', 'enterScores', 'generateResults', 'viewResults'] },
-    { group: 'Infrastructure', links: ['database', 'logs'] }
-  ],
-  SLT: [
-    { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
-    { group: 'Communication', links: ['announcements', 'messaging'] },
-    { group: 'Oversight', links: ['reports', 'manageStaff', 'manageStudents'] },
-    { group: 'Academics', links: ['lessonApprovals', 'gradingSystem', 'classesAndSubjects', 'aiSettings'] },
-    { group: 'Finance', links: ['financialReports'] },
-  ],
-  HeadOfDepartment: [
-    { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
-    { group: 'Communication', links: ['announcements', 'messaging'] },
-    { group: 'Department', links: ['lessonApprovals', 'hodAnalytics', 'manageStaff'] },
-    { group: 'Academics', links: ['classesAndSubjects'] },
-  ],
-  Accountant: [
-    { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
-    { group: 'Communication', links: ['announcements', 'messaging'] },
-    { group: 'Finance', links: ['feeSystem', 'invoices', 'payments', 'expenses', 'payroll', 'financialReports'] },
-  ],
-  ExamOfficer: [
-    { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
-    { group: 'Communication', links: ['announcements', 'messaging'] },
-    { group: 'Examinations', links: ['reviewQuestions', 'enterScores', 'generateResults', 'viewResults', 'timetable', 'examRegistration', 'seatingPlans'] },
-  ],
-  Teacher: [
-    { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
-    { group: 'Communication', links: ['announcements', 'messaging'] },
-    { group: 'My Work', links: ['lessonPlans', 'questionBank', 'bulkUpload', 'enterScores', 'attendance', 'myStudents'] },
-  ],
-  Parent: [
-    { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
-    { group: 'My Child', links: ['parentResults', 'parentPayments', 'parentAnnouncements', 'timetable', 'messaging'] },
-  ],
-};
-
-
-export function DashboardSidebar() {
-  const pathname = usePathname();
-  const { role, logout } = useRole();
-  const { setOpenMobile } = useSidebar();
-
-  React.useEffect(() => {
-    setOpenMobile(false);
-  }, [pathname, setOpenMobile]);
-  
-  const renderNav = () => {
-    const roleNav = role ? (navConfig[role] || []) : [];
-    
-    return roleNav.map((section, index) => (
-       <React.Fragment key={`${section.group}-${index}`}>
-          <p className="px-4 pt-4 text-xs font-semibold text-sidebar-foreground/50 group-data-[state=collapsed]:hidden">{section.group}</p>
-          <SidebarMenu>
-            {section.links.map((key) => {
-              const item = allNavLinks[key];
-              if (!item) return null;
-
-              const Icon = iconMap[item.icon] || LayoutDashboard;
-              return (
-                 <SidebarMenuItem key={item.path}>
-                    <Link href={item.path}>
-                      <SidebarMenuButton isActive={pathname.startsWith(item.path) && (item.path !== '/dashboard' || pathname === '/dashboard')} tooltip={item.label}>
-                        <Icon />
-                        <span className="group-data-[state=collapsed]:hidden">{item.label}</span>
-                      </SidebarMenuButton>
-                    </Link>
-                  </SidebarMenuItem>
-              )
-            })}
-          </SidebarMenu>
-       </React.Fragment>
-    ))
-  }
-
-  return (
-    <Sidebar>
-       <SidebarHeader className="border-b border-sidebar-border">
-          <div className="bg-background/10 p-2 rounded-md group-data-[state=collapsed]:p-1">
-            <Link href="/dashboard" className="flex items-center justify-center">
-              <Image
-                src="/school-logo.png"
-                alt="GIIA Logo"
-                width={200}
-                height={48}
-                className="w-auto h-10 group-data-[state=collapsed]:hidden"
-              />
-               <Image
-                src="/favicon.ico"
-                alt="GIIA Logo"
-                width={32}
-                height={32}
-                className="w-auto h-8 hidden group-data-[state=collapsed]:block"
-              />
-            </Link>
-          </div>
-        </SidebarHeader>
-      <SidebarContent className="flex-1 p-2">
-        {renderNav()}
-      </SidebarContent>
-      <SidebarFooter className="p-2">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <Link href="/dashboard/settings">
-              <SidebarMenuButton isActive={pathname === '/dashboard/settings'} tooltip="Settings">
-                <Settings />
-                <span className="group-data-[state=collapsed]:hidden">Settings</span>
-              </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton onClick={logout} tooltip="Log Out">
-              <LogOut />
-              <span className="group-data-[state=collapsed]:hidden">Log Out</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
-    </Sidebar>
-  );
+            {/* Overlay for mobile */}
+            {!collapsed && (
+                <div
+                    className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+                    onClick={() => setCollapsed(true)}
+                />
+            )}
+        </>
+    );
 }
-
-    
