@@ -26,8 +26,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useEffect, useState, useCallback } from 'react';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs, orderBy, limit } from '@/lib/firebase-stubs';
+import { db, auth, storage } from "@/lib/firebase";
 import { useToast } from '@/hooks/use-toast';
 import { useRole } from '@/context/role-context';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -69,11 +69,11 @@ export function ExamOfficerDashboard() {
       // Fetch exam questions for stats
       const allQuestionsQuery = query(collection(db, 'examQuestions'), orderBy('submittedOn', 'desc'));
       const allQuestionsSnapshot = await getDocs(allQuestionsQuery);
-      const allQuestionsList = allQuestionsSnapshot.docs.map(doc => doc.data() as ExamQuestion);
+      const allQuestionsList = allQuestionsSnapshot.docs.map((doc: any) => doc.data() as ExamQuestion);
       
-      const pendingQuestions = allQuestionsList.filter(q => q.status.includes('Pending'));
-      const approvedQuestions = allQuestionsList.filter(q => q.status.includes('Approved'));
-      const rejectedQuestions = allQuestionsList.filter(q => q.status.includes('Rejected'));
+      const pendingQuestions = allQuestionsList.filter((q: any) => q.status.includes('Pending'));
+      const approvedQuestions = allQuestionsList.filter((q: any) => q.status.includes('Approved'));
+      const rejectedQuestions = allQuestionsList.filter((q: any) => q.status.includes('Rejected'));
       
       setQuestions(pendingQuestions.slice(0, 5)); // Show recent 5 pending
 

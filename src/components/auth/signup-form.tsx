@@ -4,8 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { useRouter } from 'next/navigation';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword } from '@/lib/firebase-stubs';
+import { doc, setDoc } from '@/lib/firebase-stubs';
 
 
 import { Button } from '@/components/ui/button';
@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { auth, db } from '@/lib/firebase';
+import { db, auth, storage } from "@/lib/firebase";
 
 const formSchema = z.object({
   name: z.string().min(1, { message: 'Name is required.' }),
@@ -99,7 +99,7 @@ export function SignUpForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="name@giia.com.ng" {...field} />
+                <Input placeholder="name@school.edu" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

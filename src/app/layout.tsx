@@ -7,8 +7,8 @@ import { Analytics } from "@vercel/analytics/react"
 
 
 export const metadata: Metadata = {
-  title: 'Great Insight Intn\'l Academy Portal',
-  description: 'A role-based portal for staff and parents of Great Insight International Academy (GIIA).',
+  title: 'Proxima Hub Portal',
+  description: 'Proxima Hub is an advanced role-based portal for hybrid school management and learning.',
   icons: {
     icon: '/favicon.ico',
   },

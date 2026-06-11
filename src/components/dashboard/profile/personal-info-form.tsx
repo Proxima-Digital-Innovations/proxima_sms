@@ -4,8 +4,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { doc, updateDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { doc, updateDoc } from '@/lib/firebase-stubs';
+// Import storage operations from local firebase-stubs to support offline local storage
+import { ref, uploadBytes, getDownloadURL } from '@/lib/firebase-stubs';
+
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -18,7 +20,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { db, storage } from '@/lib/firebase';
+import { db, auth, storage } from "@/lib/firebase";
 import type { MockUser } from '@/lib/schema';
 import { Save, Upload } from 'lucide-react';
 import { useState, useRef } from 'react';

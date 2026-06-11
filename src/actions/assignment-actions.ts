@@ -1,32 +1,45 @@
-
 'use server';
 
-import { dbService } from "@/lib/dbService";
-import { createActionNotification } from "@/lib/notifications";
+import { prisma } from "@/lib/prisma";
+import { requireSchoolId } from "@/lib/server-context";
+import { Role } from "@prisma/client";
 
 export async function assignHod(departmentId: string, newHodId: string | null) {
     try {
-        const batch = dbService.createBatch();
-        const dept = await dbService.getDoc<{ name: string }>('departments', departmentId);
+        const schoolId = await requireSchoolId();
+        
+        const dept = await prisma.department.findUnique({
+            where: { id: departmentId, schoolId }
+        });
         if (!dept) throw new Error('Department not found.');
 
-        // If 'remove' is passed, it means we are un-assigning the HOD
         if (newHodId === 'remove' || newHodId === null) {
-            batch.update('departments', departmentId, { hodId: null });
-        } else {
-            batch.update('departments', departmentId, { hodId: newHodId });
-            batch.update('users', newHodId, { role: 'HeadOfDepartment', department: dept.name });
-            
-            await createActionNotification({
-                userId: newHodId,
-                title: 'New Responsibility Assigned',
-                body: `You have been assigned as the Head of Department for the ${dept.name} department.`,
-                type: 'INFO',
-                ref: { collection: 'departments', id: departmentId }
+            await prisma.department.update({
+                where: { id: departmentId, schoolId },
+                data: { hodId: null }
             });
+        } else {
+            await prisma.$transaction([
+                prisma.department.update({
+                    where: { id: departmentId, schoolId },
+                    data: { hodId: newHodId }
+                }),
+                prisma.user.update({
+                    where: { id: newHodId, schoolId },
+                    data: { role: Role.HOD, departmentId }
+                }),
+                prisma.notification.create({
+                    data: {
+                        userId: newHodId,
+                        schoolId,
+                        title: 'New Responsibility Assigned',
+                        body: `You have been assigned as the Head of Department for the ${dept.name} department.`,
+                        type: 'INFO'
+                    }
+                })
+            ]);
         }
         
-        await batch.commit();
         return { success: true };
 
     } catch (error: any) {
@@ -35,17 +48,28 @@ export async function assignHod(departmentId: string, newHodId: string | null) {
     }
 }
 
-export async function assignTeacherDepartment(teacherId: string, departmentName: string) {
+export async function assignTeacherDepartment(teacherId: string, departmentId: string) {
     try {
-        await dbService.updateDoc('users', teacherId, { department: departmentName });
+        const schoolId = await requireSchoolId();
+        
+        const dept = await prisma.department.findUnique({ where: { id: departmentId, schoolId } });
+        if (!dept) throw new Error("Department not found.");
 
-        await createActionNotification({
-            userId: teacherId,
-            title: 'Department Assigned',
-            body: `You have been assigned to the ${departmentName} department.`,
-            type: 'INFO',
-            ref: { collection: 'users', id: teacherId }
-        });
+        await prisma.$transaction([
+            prisma.user.update({
+                where: { id: teacherId, schoolId },
+                data: { departmentId }
+            }),
+            prisma.notification.create({
+                data: {
+                    userId: teacherId,
+                    schoolId,
+                    title: 'Department Assigned',
+                    body: `You have been assigned to the ${dept.name} department.`,
+                    type: 'INFO'
+                }
+            })
+        ]);
 
         return { success: true };
     } catch (error: any) {

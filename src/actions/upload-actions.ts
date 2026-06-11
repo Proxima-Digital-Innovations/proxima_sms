@@ -1,20 +1,66 @@
 'use server';
 
 import * as XLSX from 'xlsx';
-import { collection, writeBatch, doc, getDocs, query, where, Timestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+// Import Prisma client
+import { prisma } from '@/lib/prisma';
 
-export async function uploadScoresFromExcel(file: File, subject: string, classLevel: string, term: string, session: string) {
+/**
+ * Uploads student ca/exam scores from an uploaded Excel file and upserts them into TermGrade.
+ */
+export async function uploadScoresFromExcel(
+    file: File, 
+    subject: string, 
+    classLevel: string, 
+    term: string, 
+    session: string
+) {
     try {
         const arrayBuffer = await file.arrayBuffer();
         const workbook = XLSX.read(arrayBuffer);
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
         const data = XLSX.utils.sheet_to_json(worksheet);
 
-        const batch = writeBatch(db);
         let successCount = 0;
         let errorCount = 0;
         const errors: string[] = [];
+
+        // Resolve subject
+        let subjectRecord = await prisma.subject.findFirst({
+            where: {
+                OR: [
+                    { id: subject },
+                    { name: subject }
+                ]
+            }
+        });
+
+        if (!subjectRecord) {
+            const firstSchool = await prisma.school.findFirst();
+            if (!firstSchool) throw new Error("No school found in the system");
+            
+            subjectRecord = await prisma.subject.create({
+                data: {
+                    schoolId: firstSchool.id,
+                    name: subject
+                }
+            });
+        }
+
+        // Resolve term record
+        const termRecord = await prisma.term.findFirst({
+            where: {
+                OR: [
+                    { id: term },
+                    { name: term },
+                    { name: term.replace("First Term", "Term 1").replace("Second Term", "Term 2").replace("Third Term", "Term 3") },
+                    { name: term.replace("Term 1", "First Term").replace("Term 2", "Second Term").replace("Term 3", "Third Term") }
+                ]
+            }
+        });
+
+        if (!termRecord) {
+            throw new Error(`Term ${term} not found`);
+        }
 
         for (const rowData of data) {
             try {
@@ -36,6 +82,22 @@ export async function uploadScoresFromExcel(file: File, subject: string, classLe
                     continue;
                 }
 
+                // Resolve student record
+                const student = await prisma.student.findFirst({
+                    where: {
+                        OR: [
+                            { id: studentId },
+                            { studentId: studentId }
+                        ]
+                    }
+                });
+
+                if (!student) {
+                    errors.push(`Student ${studentId} not found`);
+                    errorCount++;
+                    continue;
+                }
+
                 const totalScore = caScore + examScore;
                 let grade = 'F';
                 if (totalScore >= 80) grade = 'A';
@@ -44,39 +106,32 @@ export async function uploadScoresFromExcel(file: File, subject: string, classLe
                 else if (totalScore >= 50) grade = 'D';
                 else if (totalScore >= 40) grade = 'E';
 
-                // Check if score exists
-                const existingQuery = query(
-                    collection(db, 'scores'),
-                    where('studentId', '==', studentId),
-                    where('subject', '==', subject),
-                    where('term', '==', term)
-                );
-                const existing = await getDocs(existingQuery);
-
-                if (existing.empty) {
-                    const docRef = doc(collection(db, 'scores'));
-                    batch.set(docRef, {
-                        studentId,
-                        subject,
-                        class: classLevel,
-                        term,
-                        session,
-                        caScore,
-                        examScore,
-                        totalScore,
-                        grade,
-                        status: 'Approved',
-                        createdAt: Timestamp.now()
-                    });
-                } else {
-                    const docRef = doc(db, 'scores', existing.docs[0].id);
-                    batch.update(docRef, {
-                        caScore,
-                        examScore,
-                        totalScore,
-                        grade
-                    });
-                }
+                // Upsert term grade
+                await prisma.termGrade.upsert({
+                    where: {
+                        studentId_subjectId_termId: {
+                            studentId: student.id,
+                            subjectId: subjectRecord.id,
+                            termId: termRecord.id
+                        }
+                    },
+                    update: {
+                        ca1: caScore,
+                        exam: examScore,
+                        total: totalScore,
+                        grade: grade
+                    },
+                    create: {
+                        schoolId: student.schoolId,
+                        studentId: student.id,
+                        subjectId: subjectRecord.id,
+                        termId: termRecord.id,
+                        ca1: caScore,
+                        exam: examScore,
+                        total: totalScore,
+                        grade: grade
+                    }
+                });
 
                 successCount++;
             } catch (error) {
@@ -84,8 +139,6 @@ export async function uploadScoresFromExcel(file: File, subject: string, classLe
                 errorCount++;
             }
         }
-
-        await batch.commit();
 
         return {
             success: true,
@@ -99,17 +152,63 @@ export async function uploadScoresFromExcel(file: File, subject: string, classLe
     }
 }
 
-export async function uploadMidtermFromExcel(file: File, subject: string, classLevel: string, term: string, session: string) {
+/**
+ * Uploads midterm scores from an uploaded Excel file and upserts them into MidtermResult.
+ */
+export async function uploadMidtermFromExcel(
+    file: File, 
+    subject: string, 
+    classLevel: string, 
+    term: string, 
+    session: string
+) {
     try {
         const arrayBuffer = await file.arrayBuffer();
         const workbook = XLSX.read(arrayBuffer);
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
         const data = XLSX.utils.sheet_to_json(worksheet);
 
-        const batch = writeBatch(db);
         let successCount = 0;
         let errorCount = 0;
         const errors: string[] = [];
+
+        // Resolve subject
+        let subjectRecord = await prisma.subject.findFirst({
+            where: {
+                OR: [
+                    { id: subject },
+                    { name: subject }
+                ]
+            }
+        });
+
+        if (!subjectRecord) {
+            const firstSchool = await prisma.school.findFirst();
+            if (!firstSchool) throw new Error("No school found in the system");
+            
+            subjectRecord = await prisma.subject.create({
+                data: {
+                    schoolId: firstSchool.id,
+                    name: subject
+                }
+            });
+        }
+
+        // Resolve term record
+        const termRecord = await prisma.term.findFirst({
+            where: {
+                OR: [
+                    { id: term },
+                    { name: term },
+                    { name: term.replace("First Term", "Term 1").replace("Second Term", "Term 2").replace("Third Term", "Term 3") },
+                    { name: term.replace("Term 1", "First Term").replace("Term 2", "Second Term").replace("Term 3", "Third Term") }
+                ]
+            }
+        });
+
+        if (!termRecord) {
+            throw new Error(`Term ${term} not found`);
+        }
 
         for (const rowData of data) {
             try {
@@ -130,31 +229,46 @@ export async function uploadMidtermFromExcel(file: File, subject: string, classL
                     continue;
                 }
 
-                const existingQuery = query(
-                    collection(db, 'midterm_results'),
-                    where('studentId', '==', studentId),
-                    where('subjectId', '==', subject),
-                    where('term', '==', term),
-                    where('session', '==', session)
-                );
-                const existing = await getDocs(existingQuery);
+                // Resolve student record
+                const student = await prisma.student.findFirst({
+                    where: {
+                        OR: [
+                            { id: studentId },
+                            { studentId: studentId }
+                        ]
+                    }
+                });
 
-                if (existing.empty) {
-                    const docRef = doc(collection(db, 'midterm_results'));
-                    batch.set(docRef, {
-                        studentId,
-                        subjectId: subject,
-                        class: classLevel,
-                        term,
-                        session,
-                        score,
-                        achievement,
-                        createdAt: Timestamp.now()
-                    });
-                } else {
-                    const docRef = doc(db, 'midterm_results', existing.docs[0].id);
-                    batch.update(docRef, { score, achievement });
+                if (!student) {
+                    errors.push(`Student ${studentId} not found`);
+                    errorCount++;
+                    continue;
                 }
+
+                // Upsert MidtermResult
+                await prisma.midtermResult.upsert({
+                    where: {
+                        studentId_subjectId_termId: {
+                            studentId: student.id,
+                            subjectId: subjectRecord.id,
+                            termId: termRecord.id
+                        }
+                    },
+                    update: {
+                        score: score,
+                        achievement: achievement,
+                        session: session
+                    },
+                    create: {
+                        schoolId: student.schoolId,
+                        studentId: student.id,
+                        subjectId: subjectRecord.id,
+                        termId: termRecord.id,
+                        session: session,
+                        score: score,
+                        achievement: achievement
+                    }
+                });
 
                 successCount++;
             } catch (error) {
@@ -162,8 +276,6 @@ export async function uploadMidtermFromExcel(file: File, subject: string, classL
                 errorCount++;
             }
         }
-
-        await batch.commit();
 
         return {
             success: true,
@@ -177,22 +289,30 @@ export async function uploadMidtermFromExcel(file: File, subject: string, classL
     }
 }
 
+/**
+ * Generates an Excel template with student details for recording term grades.
+ */
 export async function generateScoreTemplate(classLevel: string) {
     try {
-        // Get students
-        const studentsSnap = await getDocs(
-            query(collection(db, 'students'), where('classLevel', '==', classLevel), where('status', '==', 'Active'))
-        );
+        // Query active students in the selected class level
+        const students = await prisma.student.findMany({
+            where: {
+                class: {
+                    name: classLevel
+                },
+                status: 'Active'
+            }
+        });
         
-        const students = studentsSnap.docs.map(doc => ({
-            'Student ID': doc.id,
-            'Student Name': `${doc.data().firstName} ${doc.data().lastName}`,
-            'Admission Number': doc.data().studentId,
+        const studentsData = students.map(s => ({
+            'Student ID': s.id,
+            'Student Name': `${s.firstName} ${s.lastName}`,
+            'Admission Number': s.studentId,
             'CA Score': 0,
             'Exam Score': 0
         }));
 
-        const worksheet = XLSX.utils.json_to_sheet(students);
+        const worksheet = XLSX.utils.json_to_sheet(studentsData);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Students');
 
@@ -204,21 +324,30 @@ export async function generateScoreTemplate(classLevel: string) {
     }
 }
 
+/**
+ * Generates an Excel template with student details for recording midterm scores.
+ */
 export async function generateMidtermTemplate(classLevel: string) {
     try {
-        const studentsSnap = await getDocs(
-            query(collection(db, 'students'), where('classLevel', '==', classLevel), where('status', '==', 'Active'))
-        );
+        // Query active students in the selected class level
+        const students = await prisma.student.findMany({
+            where: {
+                class: {
+                    name: classLevel
+                },
+                status: 'Active'
+            }
+        });
         
-        const students = studentsSnap.docs.map(doc => ({
-            'Student ID': doc.id,
-            'Student Name': `${doc.data().firstName} ${doc.data().lastName}`,
-            'Admission Number': doc.data().studentId,
+        const studentsData = students.map(s => ({
+            'Student ID': s.id,
+            'Student Name': `${s.firstName} ${s.lastName}`,
+            'Admission Number': s.studentId,
             'Score': 0,
             'Achievement': ''
         }));
 
-        const worksheet = XLSX.utils.json_to_sheet(students);
+        const worksheet = XLSX.utils.json_to_sheet(studentsData);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Students');
 

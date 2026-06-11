@@ -64,7 +64,7 @@ export function AnnouncementTemplate({ announcement, schoolInfo }: AnnouncementT
           </div>
 
           <div className="flex justify-between items-baseline mb-8 text-sm">
-            <span><strong>Ref:</strong> GIIA/ANNC/{announcement.id.substring(0, 5).toUpperCase()}</span>
+            <span><strong>Ref:</strong> SCHOOL/ANNC/{announcement.id.substring(0, 5).toUpperCase()}</span>
             <span><strong>Date:</strong> {announcementDate}</span>
           </div>
           

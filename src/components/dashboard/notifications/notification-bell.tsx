@@ -2,8 +2,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { collection, query, where, onSnapshot } from '@/lib/firebase-stubs';
+import { db, auth, storage } from "@/lib/firebase";
 import { useRole } from '@/context/role-context';
 import { Button } from '@/components/ui/button';
 import { Bell } from 'lucide-react';
@@ -25,9 +25,11 @@ export function NotificationBell() {
             where('read', '==', false)
         );
 
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        // Real-time listener for notifications. We type the callback parameters as any
+        // to comply with TypeScript strict mode while using firebase-stubs.
+        const unsubscribe = onSnapshot(q, (querySnapshot: any) => {
             setUnreadCount(querySnapshot.size);
-        }, (error) => {
+        }, (error: any) => {
             console.error("Error fetching unread notifications:", error);
         });
 

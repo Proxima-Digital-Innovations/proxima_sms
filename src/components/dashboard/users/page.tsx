@@ -133,7 +133,7 @@ export default function UsersPage() {
                     <div className="mx-auto mb-4">
                         <Image
                             src="/school-logo.png"
-                            alt="Great Insight International Academy Logo"
+                            alt="School OS Logo"
                             width={250}
                             height={60}
                         />

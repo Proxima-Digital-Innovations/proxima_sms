@@ -1,72 +1,82 @@
-
 'use server';
 
 import { z } from 'zod';
-import { dbService } from '@/lib/dbService';
-import { serverTimestamp } from 'firebase/firestore';
-import type { MockUser } from '@/lib/schema';
+import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { createSecureAction } from '@/lib/secure-action';
+import { Role } from '@prisma/client';
 
 const announcementSchema = z.object({
   id: z.string().optional(),
   title: z.string().min(3, 'Title must be at least 3 characters long.'),
   content: z.string().min(10, 'Content must be at least 10 characters long.'),
-  authorId: z.string(),
 });
 
-export async function saveAnnouncement(values: z.infer<typeof announcementSchema>) {
-  try {
-    const parsed = announcementSchema.safeParse(values);
-    if (!parsed.success) {
-      return { error: parsed.error.flatten().fieldErrors };
+/**
+ * Saves or updates an announcement.
+ * This action is fully secured:
+ * 1. Auth checked automatically.
+ * 2. SchoolId injected into database queries automatically.
+ * 3. Input validated against Zod schema.
+ */
+export const saveAnnouncement = createSecureAction(
+  announcementSchema,
+  async (data, session) => {
+    // 4. Role Authorization (Custom check)
+    if (![Role.ADMIN, Role.SLT].includes(session.user.role)) {
+      throw new Error("Access Denied: You do not have permission to manage announcements.");
     }
 
-    const { id, authorId, ...data } = parsed.data;
+    const { id, title, content } = data;
 
-    if (!authorId) {
-        throw new Error("Authentication failed. You must be logged in to manage announcements.");
-    }
-
-    const author = await dbService.getDoc<MockUser>('users', authorId);
-    if (!author || !['Admin', 'SLT'].includes(author.role)) {
-        throw new Error("You do not have permission to manage announcements.");
-    }
-    
     if (id) {
-        // Update existing announcement
-        const announcementData = {
-            ...data,
-            updatedAt: serverTimestamp(),
-        };
-        await dbService.updateDoc('announcements', id, announcementData);
-    } else {
-        // Create new announcement
-        const announcementData = {
-          ...data,
-          authorId,
-          authorName: author.name,
-          createdAt: serverTimestamp(),
-        };
-        await dbService.addDoc('announcements', announcementData);
-    }
+      // Fetch announcement to verify it belongs to the user's school
+      const announcement = await prisma.announcement.findUnique({ where: { id } });
+      if (!announcement || announcement.schoolId !== session.user.schoolId) {
+        throw new Error("Access Denied: Announcement not found or belongs to another school.");
+      }
 
+      await prisma.announcement.update({
+        where: { id },
+        data: { title, content }
+      });
+    } else {
+      // Create new announcement under the session's schoolId
+      await prisma.announcement.create({
+        data: {
+          title,
+          content,
+          schoolId: session.user.schoolId,
+          authorId: session.user.id
+        }
+      });
+    }
 
     revalidatePath('/dashboard/announcements');
     return { success: true };
-
-  } catch (error: any) {
-    console.error('Error saving announcement:', error);
-    return { error: { _errors: [error.message || 'An unexpected error occurred.'] } };
   }
-}
+);
 
-export async function deleteAnnouncement(id: string) {
-    try {
-        await dbService.deleteDoc('announcements', id);
-        revalidatePath('/dashboard/announcements');
-        return { success: true };
-    } catch (error: any) {
-        console.error('Error deleting announcement:', error);
-        return { error: 'An unexpected error occurred while deleting the announcement.' };
+/**
+ * Deletes an announcement.
+ * Secured via automatic tenant isolation.
+ */
+export const deleteAnnouncement = createSecureAction(
+  z.string(),
+  async (id, session) => {
+    if (session.user.role !== Role.ADMIN) {
+      throw new Error("Access Denied: Only admins can delete announcements.");
     }
-}
+
+    // Verify tenant boundary before deletion
+    const announcement = await prisma.announcement.findUnique({ where: { id } });
+    if (!announcement || announcement.schoolId !== session.user.schoolId) {
+      throw new Error("Access Denied: Announcement not found or belongs to another school.");
+    }
+
+    await prisma.announcement.delete({ where: { id } });
+    
+    revalidatePath('/dashboard/announcements');
+    return { success: true };
+  }
+);

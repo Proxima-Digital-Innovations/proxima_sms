@@ -192,7 +192,7 @@ export function AddUserForm({ onUserAdded }: { onUserAdded: () => void }) {
                 <Card>
                     <CardHeader><CardTitle>Contact & Account Details</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
-                         <FormField control={form.control} name="email" render={({ field }) => ( <FormItem><FormLabel>Email Address</FormLabel><FormControl><Input type="email" placeholder="amina.sadiq@giia.com.ng" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                         <FormField control={form.control} name="email" render={({ field }) => ( <FormItem><FormLabel>Email Address</FormLabel><FormControl><Input type="email" placeholder="amina.sadiq@school.edu" {...field} /></FormControl><FormMessage /></FormItem> )}/>
                          <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="08012345678" {...field} /></FormControl><FormMessage /></FormItem> )}/>
                          <FormField control={form.control} name="address" render={({ field }) => ( <FormItem><FormLabel>Home Address</FormLabel><FormControl><Input placeholder="123, Main Street, Lagos" {...field} /></FormControl><FormMessage /></FormItem> )}/>
                     </CardContent>

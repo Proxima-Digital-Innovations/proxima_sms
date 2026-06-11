@@ -5,8 +5,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { signInWithEmailAndPassword } from '@/lib/firebase-stubs';
+import { collection, query, where, getDocs } from '@/lib/firebase-stubs';
 
 
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useRole } from '@/context/role-context';
 import { useToast } from '@/hooks/use-toast';
-import { auth, db } from '@/lib/firebase';
+import { db, auth, storage } from "@/lib/firebase";
 import { MockUser } from '@/lib/schema';
 
 const formSchema = z.object({
@@ -135,7 +135,7 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>Staff/Student ID or Email</FormLabel>
               <FormControl>
-                <Input placeholder="e.g. GIIA24TEA0001 or name@giia.com.ng" {...field} />
+                <Input placeholder="e.g. SCHOOL24TEA0001 or name@school.edu" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

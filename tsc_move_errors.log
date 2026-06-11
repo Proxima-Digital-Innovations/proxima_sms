@@ -1,0 +1,381 @@
+.next/types/validator.ts(1030,31): error TS2344: Type 'typeof import("/home/hxncodes/project/schoolOS/src/app/[school/]/layout")' does not satisfy the constraint 'LayoutConfig<"/[school/]">'.
+  Types of property 'default' are incompatible.
+    Type '({ children, params, }: { children: ReactNode; params: Promise<{ school: string; }>; }) => Promise<Element>' is not assignable to type 'ComponentType<LayoutProps<"/[school/]">> | ((props: LayoutProps<"/[school/]">) => void | Promise<void> | ReactNode | Promise<...>)'.
+      Type '({ children, params, }: { children: ReactNode; params: Promise<{ school: string; }>; }) => Promise<Element>' is not assignable to type 'FunctionComponent<LayoutProps<"/[school/]">>'.
+        Types of parameters '__0' and 'props' are incompatible.
+          Type 'LayoutProps<"/[school/]">' is not assignable to type '{ children: ReactNode; params: Promise<{ school: string; }>; }'.
+            Types of property 'params' are incompatible.
+              Type 'Promise<{}>' is not assignable to type 'Promise<{ school: string; }>'.
+                Property 'school' is missing in type '{}' but required in type '{ school: string; }'.
+src/actions/academic-actions.ts(13,13): error TS2322: Type '{ code: string; description: string; subjectId: string; }' is not assignable to type '(Without<StandardCreateInput, StandardUncheckedCreateInput> & StandardUncheckedCreateInput) | (Without<...> & StandardCreateInput)'.
+  Type '{ code: string; description: string; subjectId: string; }' is not assignable to type 'Without<StandardCreateInput, StandardUncheckedCreateInput> & StandardUncheckedCreateInput'.
+    Property 'schoolId' is missing in type '{ code: string; description: string; subjectId: string; }' but required in type 'StandardUncheckedCreateInput'.
+src/actions/academic-actions.ts(57,13): error TS2322: Type '{ classId: string; subjectId: string; title: string; dueDate: Date; maxPoints: number; description?: string | undefined; standardId?: string | undefined; }' is not assignable to type '(Without<AssignmentCreateInput, AssignmentUncheckedCreateInput> & AssignmentUncheckedCreateInput) | (Without<...> & AssignmentCreateInput)'.
+  Type '{ classId: string; subjectId: string; title: string; dueDate: Date; maxPoints: number; description?: string | undefined; standardId?: string | undefined; }' is not assignable to type 'Without<AssignmentCreateInput, AssignmentUncheckedCreateInput> & AssignmentUncheckedCreateInput'.
+    Type '{ classId: string; subjectId: string; title: string; dueDate: Date; maxPoints: number; description?: string | undefined; standardId?: string | undefined; }' is missing the following properties from type 'AssignmentUncheckedCreateInput': schoolId, moduleId
+src/actions/academic-actions.ts(75,24): error TS2339: Property 'grade' does not exist on type 'Omit<PrismaClient<PrismaClientOptions, never, DefaultArgs>, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">'.
+src/actions/academic-actions.ts(107,33): error TS2339: Property 'grade' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/actions/academic-actions.ts(123,32): error TS7006: Parameter 'acc' implicitly has an 'any' type.
+src/actions/academic-actions.ts(123,37): error TS7006: Parameter 'g' implicitly has an 'any' type.
+src/actions/academic-term-actions.ts(3,10): error TS2459: Module '"@/lib/dbService"' declares 'prisma' locally, but it is not exported.
+src/actions/attendance-actions.ts(6,27): error TS2305: Module '"@/lib/firebase-stubs"' has no exported member 'Timestamp'.
+src/actions/behavioural-actions.ts(3,45): error TS2305: Module '"@/lib/firebase-stubs"' has no exported member 'writeBatch'.
+src/actions/behavioural-actions.ts(3,62): error TS2305: Module '"@/lib/firebase-stubs"' has no exported member 'Timestamp'.
+src/actions/behavioural-actions.ts(32,22): error TS2339: Property 'empty' does not exist on type '{ docs: never[]; }'.
+src/actions/behavioural-actions.ts(38,81): error TS2339: Property 'id' does not exist on type 'never'.
+src/actions/behavioural-actions.ts(70,22): error TS2339: Property 'empty' does not exist on type '{ docs: never[]; }'.
+src/actions/behavioural-actions.ts(76,72): error TS2339: Property 'id' does not exist on type 'never'.
+src/actions/communication-actions.ts(51,7): error TS2322: Type '{ senderId: string; subject: string; body: string; audienceType: string; targetId: string | undefined; channel: string; sentCount: number; }' is not assignable to type '(Without<MessageBlastCreateInput, MessageBlastUncheckedCreateInput> & MessageBlastUncheckedCreateInput) | (Without<...> & MessageBlastCreateInput)'.
+  Type '{ senderId: string; subject: string; body: string; audienceType: string; targetId: string | undefined; channel: string; sentCount: number; }' is not assignable to type 'Without<MessageBlastCreateInput, MessageBlastUncheckedCreateInput> & MessageBlastUncheckedCreateInput'.
+    Property 'schoolId' is missing in type '{ senderId: string; subject: string; body: string; audienceType: string; targetId: string | undefined; channel: string; sentCount: number; }' but required in type 'MessageBlastUncheckedCreateInput'.
+src/actions/discipline-actions.ts(56,7): error TS2322: Type '{ studentId: string; title: string; description: string; severity: string; date?: Date; reporterId: string; }' is not assignable to type '(Without<BehavioralIncidentCreateInput, BehavioralIncidentUncheckedCreateInput> & BehavioralIncidentUncheckedCreateInput) | (Without<...> & BehavioralIncidentCreateInput)'.
+  Type '{ studentId: string; title: string; description: string; severity: string; date?: Date; reporterId: string; }' is not assignable to type 'Without<BehavioralIncidentCreateInput, BehavioralIncidentUncheckedCreateInput> & BehavioralIncidentUncheckedCreateInput'.
+    Property 'schoolId' is missing in type '{ studentId: string; title: string; description: string; severity: string; date?: Date; reporterId: string; }' but required in type 'BehavioralIncidentUncheckedCreateInput'.
+src/actions/discipline-actions.ts(75,7): error TS2322: Type '{ incidentId: string; actionTaken: string; details: string | undefined; }' is not assignable to type '(Without<IncidentActionCreateInput, IncidentActionUncheckedCreateInput> & IncidentActionUncheckedCreateInput) | (Without<...> & IncidentActionCreateInput)'.
+  Type '{ incidentId: string; actionTaken: string; details: string | undefined; }' is not assignable to type 'Without<IncidentActionCreateInput, IncidentActionUncheckedCreateInput> & IncidentActionUncheckedCreateInput'.
+    Property 'schoolId' is missing in type '{ incidentId: string; actionTaken: string; details: string | undefined; }' but required in type 'IncidentActionUncheckedCreateInput'.
+src/actions/expense-actions.ts(6,27): error TS2305: Module '"@/lib/firebase-stubs"' has no exported member 'Timestamp'.
+src/actions/expense-actions.ts(122,35): error TS2345: Argument of type 'null' is not assignable to parameter of type 'string'.
+src/actions/finance-actions.ts(58,7): error TS2322: Type '{ studentId: string; termId: string; amount: number; balance: number; description: string; dueDate: Date; }[]' is not assignable to type 'InvoiceCreateManyInput | InvoiceCreateManyInput[]'.
+  Type '{ studentId: string; termId: string; amount: number; balance: number; description: string; dueDate: Date; }[]' is not assignable to type 'InvoiceCreateManyInput[]'.
+    Property 'schoolId' is missing in type '{ studentId: string; termId: string; amount: number; balance: number; description: string; dueDate: Date; }' but required in type 'InvoiceCreateManyInput'.
+src/actions/finance-actions.ts(115,9): error TS2322: Type '{ invoiceId: string; amount: number; method: string; reference: string | undefined; loggedById: string; }' is not assignable to type '(Without<PaymentReceiptCreateInput, PaymentReceiptUncheckedCreateInput> & PaymentReceiptUncheckedCreateInput) | (Without<...> & PaymentReceiptCreateInput)'.
+  Type '{ invoiceId: string; amount: number; method: string; reference: string | undefined; loggedById: string; }' is not assignable to type 'Without<PaymentReceiptCreateInput, PaymentReceiptUncheckedCreateInput> & PaymentReceiptUncheckedCreateInput'.
+    Property 'schoolId' is missing in type '{ invoiceId: string; amount: number; method: string; reference: string | undefined; loggedById: string; }' but required in type 'PaymentReceiptUncheckedCreateInput'.
+src/actions/grading-actions.ts(56,9): error TS2322: Type '{ studentId: string; subjectId: string; termId: string; }[]' is not assignable to type 'TermGradeCreateManyInput | TermGradeCreateManyInput[]'.
+  Type '{ studentId: string; subjectId: string; termId: string; }[]' is not assignable to type 'TermGradeCreateManyInput[]'.
+    Property 'schoolId' is missing in type '{ studentId: string; subjectId: string; termId: string; }' but required in type 'TermGradeCreateManyInput'.
+src/actions/health-actions.ts(24,7): error TS2322: Type '{ id: string; createdAt: Date; updatedAt: Date; schoolId: string; studentId: string; bloodGroup: string | null; genotype: string | null; allergies: string | null; chronicIllness: string | null; emergencyContactName: string | null; emergencyContactPhone: string | null; }' is not assignable to type '{ immunizations: { id: string; createdAt: Date; schoolId: string; status: string; dateGiven: Date | null; healthRecordId: string; vaccineName: string; notes: string | null; }[]; clinicVisits: ({ ...; } & { ...; })[]; student: { ...; }; } & { ...; }'.
+  Type '{ id: string; createdAt: Date; updatedAt: Date; schoolId: string; studentId: string; bloodGroup: string | null; genotype: string | null; allergies: string | null; chronicIllness: string | null; emergencyContactName: string | null; emergencyContactPhone: string | null; }' is missing the following properties from type '{ immunizations: { id: string; createdAt: Date; schoolId: string; status: string; dateGiven: Date | null; healthRecordId: string; vaccineName: string; notes: string | null; }[]; clinicVisits: ({ ...; } & { ...; })[]; student: { ...; }; }': immunizations, clinicVisits, student
+src/actions/health-actions.ts(25,9): error TS2322: Type '{ studentId: string; }' is not assignable to type '(Without<HealthRecordCreateInput, HealthRecordUncheckedCreateInput> & HealthRecordUncheckedCreateInput) | (Without<...> & HealthRecordCreateInput)'.
+  Type '{ studentId: string; }' is not assignable to type 'Without<HealthRecordCreateInput, HealthRecordUncheckedCreateInput> & HealthRecordUncheckedCreateInput'.
+    Property 'schoolId' is missing in type '{ studentId: string; }' but required in type 'HealthRecordUncheckedCreateInput'.
+src/actions/health-actions.ts(63,7): error TS2322: Type '{ symptoms: string; diagnosis?: string; treatment?: string; sentHome: boolean; notes?: string; healthRecordId: string; }' is not assignable to type '(Without<ClinicVisitCreateInput, ClinicVisitUncheckedCreateInput> & ClinicVisitUncheckedCreateInput) | (Without<...> & ClinicVisitCreateInput)'.
+  Type '{ symptoms: string; diagnosis?: string; treatment?: string; sentHome: boolean; notes?: string; healthRecordId: string; }' is not assignable to type 'Without<ClinicVisitCreateInput, ClinicVisitUncheckedCreateInput> & ClinicVisitUncheckedCreateInput'.
+    Property 'schoolId' is missing in type '{ symptoms: string; diagnosis?: string; treatment?: string; sentHome: boolean; notes?: string; healthRecordId: string; }' but required in type 'ClinicVisitUncheckedCreateInput'.
+src/actions/health-actions.ts(81,7): error TS2322: Type '{ vaccineName: string; dateGiven?: Date; status: string; notes?: string; healthRecordId: string; }' is not assignable to type '(Without<ImmunizationCreateInput, ImmunizationUncheckedCreateInput> & ImmunizationUncheckedCreateInput) | (Without<...> & ImmunizationCreateInput)'.
+  Type '{ vaccineName: string; dateGiven?: Date; status: string; notes?: string; healthRecordId: string; }' is not assignable to type 'Without<ImmunizationCreateInput, ImmunizationUncheckedCreateInput> & ImmunizationUncheckedCreateInput'.
+    Property 'schoolId' is missing in type '{ vaccineName: string; dateGiven?: Date; status: string; notes?: string; healthRecordId: string; }' but required in type 'ImmunizationUncheckedCreateInput'.
+src/actions/hr-actions.ts(23,7): error TS2322: Type '{ userId: string; startDate: Date; endDate: Date; reason: string; }' is not assignable to type '(Without<LeaveRequestCreateInput, LeaveRequestUncheckedCreateInput> & LeaveRequestUncheckedCreateInput) | (Without<...> & LeaveRequestCreateInput)'.
+  Type '{ userId: string; startDate: Date; endDate: Date; reason: string; }' is not assignable to type 'Without<LeaveRequestCreateInput, LeaveRequestUncheckedCreateInput> & LeaveRequestUncheckedCreateInput'.
+    Property 'schoolId' is missing in type '{ userId: string; startDate: Date; endDate: Date; reason: string; }' but required in type 'LeaveRequestUncheckedCreateInput'.
+src/actions/hr-actions.ts(68,63): error TS2353: Object literal may only specify known properties, and 'isCurrent' does not exist in type 'TermWhereInput'.
+src/actions/hr-actions.ts(123,7): error TS2322: Type '{ timetableId: string; substituteId: string; date: Date; }' is not assignable to type '(Without<SubstituteAssignmentCreateInput, SubstituteAssignmentUncheckedCreateInput> & SubstituteAssignmentUncheckedCreateInput) | (Without<...> & SubstituteAssignmentCreateInput)'.
+  Type '{ timetableId: string; substituteId: string; date: Date; }' is not assignable to type 'Without<SubstituteAssignmentCreateInput, SubstituteAssignmentUncheckedCreateInput> & SubstituteAssignmentUncheckedCreateInput'.
+    Property 'schoolId' is missing in type '{ timetableId: string; substituteId: string; date: Date; }' but required in type 'SubstituteAssignmentUncheckedCreateInput'.
+src/actions/invoice-actions.ts(29,25): error TS2559: Type 'string' has no properties in common with type 'TermCreateNestedOneWithoutInvoicesInput'.
+src/actions/lms-assignment-actions.ts(12,7): error TS2322: Type '{ moduleId: string; title: string; points: number; description: string | undefined; dueDate: Date | undefined; }' is not assignable to type '(Without<AssignmentCreateInput, AssignmentUncheckedCreateInput> & AssignmentUncheckedCreateInput) | (Without<...> & AssignmentCreateInput)'.
+  Type '{ moduleId: string; title: string; points: number; description: string | undefined; dueDate: Date | undefined; }' is not assignable to type 'Without<AssignmentCreateInput, AssignmentUncheckedCreateInput> & AssignmentUncheckedCreateInput'.
+    Property 'schoolId' is missing in type '{ moduleId: string; title: string; points: number; description: string | undefined; dueDate: Date | undefined; }' but required in type 'AssignmentUncheckedCreateInput'.
+src/actions/lms-assignment-actions.ts(27,7): error TS2322: Type '{ assignmentId: string; studentId: string; fileUrl: string | undefined; body: string | undefined; }' is not assignable to type '(Without<SubmissionCreateInput, SubmissionUncheckedCreateInput> & SubmissionUncheckedCreateInput) | (Without<...> & SubmissionCreateInput)'.
+  Type '{ assignmentId: string; studentId: string; fileUrl: string | undefined; body: string | undefined; }' is not assignable to type 'Without<SubmissionCreateInput, SubmissionUncheckedCreateInput> & SubmissionUncheckedCreateInput'.
+    Property 'schoolId' is missing in type '{ assignmentId: string; studentId: string; fileUrl: string | undefined; body: string | undefined; }' but required in type 'SubmissionUncheckedCreateInput'.
+src/actions/lms-assignment-actions.ts(95,9): error TS2322: Type '{ studentId: string; subjectId: string; termId: string; ca1: number; }' is not assignable to type '(Without<TermGradeCreateInput, TermGradeUncheckedCreateInput> & TermGradeUncheckedCreateInput) | (Without<...> & TermGradeCreateInput)'.
+  Type '{ studentId: string; subjectId: string; termId: string; ca1: number; }' is not assignable to type 'Without<TermGradeCreateInput, TermGradeUncheckedCreateInput> & TermGradeUncheckedCreateInput'.
+    Property 'schoolId' is missing in type '{ studentId: string; subjectId: string; termId: string; ca1: number; }' but required in type 'TermGradeUncheckedCreateInput'.
+src/actions/lms-content-actions.ts(38,7): error TS2322: Type '{ title: string; subjectId: string; classId: string; order: number; }' is not assignable to type '(Without<LmsModuleCreateInput, LmsModuleUncheckedCreateInput> & LmsModuleUncheckedCreateInput) | (Without<...> & LmsModuleCreateInput)'.
+  Type '{ title: string; subjectId: string; classId: string; order: number; }' is not assignable to type 'Without<LmsModuleCreateInput, LmsModuleUncheckedCreateInput> & LmsModuleUncheckedCreateInput'.
+    Property 'schoolId' is missing in type '{ title: string; subjectId: string; classId: string; order: number; }' but required in type 'LmsModuleUncheckedCreateInput'.
+src/actions/lms-content-actions.ts(60,7): error TS2322: Type '{ moduleId: string; title: string; type: string; url: string | undefined; body: string | undefined; order: number; }' is not assignable to type '(Without<LmsContentCreateInput, LmsContentUncheckedCreateInput> & LmsContentUncheckedCreateInput) | (Without<...> & LmsContentCreateInput)'.
+  Type '{ moduleId: string; title: string; type: string; url: string | undefined; body: string | undefined; order: number; }' is not assignable to type 'Without<LmsContentCreateInput, LmsContentUncheckedCreateInput> & LmsContentUncheckedCreateInput'.
+    Property 'schoolId' is missing in type '{ moduleId: string; title: string; type: string; url: string | undefined; body: string | undefined; order: number; }' but required in type 'LmsContentUncheckedCreateInput'.
+src/actions/lms-quiz-actions.ts(12,7): error TS2322: Type '{ moduleId: string; title: string; description: string | undefined; timeLimit: number | undefined; }' is not assignable to type '(Without<QuizCreateInput, QuizUncheckedCreateInput> & QuizUncheckedCreateInput) | (Without<...> & QuizCreateInput)'.
+  Type '{ moduleId: string; title: string; description: string | undefined; timeLimit: number | undefined; }' is not assignable to type 'Without<QuizCreateInput, QuizUncheckedCreateInput> & QuizUncheckedCreateInput'.
+    Property 'schoolId' is missing in type '{ moduleId: string; title: string; description: string | undefined; timeLimit: number | undefined; }' but required in type 'QuizUncheckedCreateInput'.
+src/actions/lms-quiz-actions.ts(34,7): error TS2322: Type '{ quizId: string; question: string; type: string; correctAnswer: string; options: string | undefined; points: number; }' is not assignable to type '(Without<QuizQuestionCreateInput, QuizQuestionUncheckedCreateInput> & QuizQuestionUncheckedCreateInput) | (Without<...> & QuizQuestionCreateInput)'.
+  Type '{ quizId: string; question: string; type: string; correctAnswer: string; options: string | undefined; points: number; }' is not assignable to type 'Without<QuizQuestionCreateInput, QuizQuestionUncheckedCreateInput> & QuizQuestionUncheckedCreateInput'.
+    Property 'schoolId' is missing in type '{ quizId: string; question: string; type: string; correctAnswer: string; options: string | undefined; points: number; }' but required in type 'QuizQuestionUncheckedCreateInput'.
+src/actions/lms-quiz-actions.ts(75,7): error TS2322: Type '{ quizId: string; studentId: string; answers: string; score: number; completedAt: Date; }' is not assignable to type '(Without<QuizAttemptCreateInput, QuizAttemptUncheckedCreateInput> & QuizAttemptUncheckedCreateInput) | (Without<...> & QuizAttemptCreateInput)'.
+  Type '{ quizId: string; studentId: string; answers: string; score: number; completedAt: Date; }' is not assignable to type 'Without<QuizAttemptCreateInput, QuizAttemptUncheckedCreateInput> & QuizAttemptUncheckedCreateInput'.
+    Property 'schoolId' is missing in type '{ quizId: string; studentId: string; answers: string; score: number; completedAt: Date; }' but required in type 'QuizAttemptUncheckedCreateInput'.
+src/actions/lms-quiz-actions.ts(96,9): error TS2322: Type '{ studentId: string; subjectId: string; termId: string; ca1: number; }' is not assignable to type '(Without<TermGradeCreateInput, TermGradeUncheckedCreateInput> & TermGradeUncheckedCreateInput) | (Without<...> & TermGradeCreateInput)'.
+  Type '{ studentId: string; subjectId: string; termId: string; ca1: number; }' is not assignable to type 'Without<TermGradeCreateInput, TermGradeUncheckedCreateInput> & TermGradeUncheckedCreateInput'.
+    Property 'schoolId' is missing in type '{ studentId: string; subjectId: string; termId: string; ca1: number; }' but required in type 'TermGradeUncheckedCreateInput'.
+src/actions/midterm-actions.ts(3,69): error TS2305: Module '"@/lib/firebase-stubs"' has no exported member 'Timestamp'.
+src/actions/midterm-actions.ts(3,80): error TS2305: Module '"@/lib/firebase-stubs"' has no exported member 'writeBatch'.
+src/actions/midterm-actions.ts(17,21): error TS2339: Property 'id' does not exist on type 'never'.
+src/actions/midterm-actions.ts(18,20): error TS2339: Property 'data' does not exist on type 'never'.
+src/actions/midterm-actions.ts(52,26): error TS2339: Property 'empty' does not exist on type '{ docs: never[]; }'.
+src/actions/midterm-actions.ts(54,32): error TS2554: Expected 2-3 arguments, but got 1.
+src/actions/midterm-actions.ts(61,76): error TS2339: Property 'id' does not exist on type 'never'.
+src/actions/midterm-actions.ts(97,21): error TS2339: Property 'id' does not exist on type 'never'.
+src/actions/midterm-actions.ts(98,20): error TS2339: Property 'data' does not exist on type 'never'.
+src/actions/midterm-actions.ts(107,46): error TS2339: Property 'data' does not exist on type 'never'.
+src/actions/midterm-actions.ts(128,21): error TS2339: Property 'id' does not exist on type 'never'.
+src/actions/midterm-actions.ts(129,20): error TS2339: Property 'data' does not exist on type 'never'.
+src/actions/parent-actions.ts(23,48): error TS2353: Object literal may only specify known properties, and 'visitDate' does not exist in type 'ClinicVisitOrderByWithRelationInput | ClinicVisitOrderByWithRelationInput[]'.
+src/actions/parent-actions.ts(38,36): error TS2339: Property 'guardianProfile' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; schoolId: string; firstName: string; lastName: string; status: string; biometricId: string | null; staffId: string | null; email: string; ... 10 more ...; shiftId: string | null; }'.
+src/actions/parent-actions.ts(42,32): error TS2339: Property 'guardianProfile' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; schoolId: string; firstName: string; lastName: string; status: string; biometricId: string | null; staffId: string | null; email: string; ... 10 more ...; shiftId: string | null; }'.
+src/actions/parent-actions.ts(46,16): error TS2353: Object literal may only specify known properties, and 'isCurrent' does not exist in type 'TermWhereInput'.
+src/actions/parent-actions.ts(50,9): error TS7034: Variable 'grades' implicitly has type 'any[]' in some locations where its type cannot be determined.
+src/actions/parent-actions.ts(69,32): error TS2339: Property 'guardianProfile' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; schoolId: string; firstName: string; lastName: string; status: string; biometricId: string | null; staffId: string | null; email: string; ... 10 more ...; shiftId: string | null; }'.
+src/actions/parent-actions.ts(72,7): error TS7005: Variable 'grades' implicitly has an 'any[]' type.
+src/actions/payment-actions.ts(6,27): error TS2305: Module '"@/lib/firebase-stubs"' has no exported member 'Timestamp'.
+src/actions/payment-actions.ts(97,31): error TS2345: Argument of type 'null' is not assignable to parameter of type 'string'.
+src/actions/payroll-actions.ts(61,39): error TS2345: Argument of type 'null' is not assignable to parameter of type 'string'.
+src/actions/result-actions.ts(112,38): error TS2345: Argument of type 'null' is not assignable to parameter of type 'string'.
+src/actions/results-actions.ts(3,45): error TS2305: Module '"@/lib/firebase-stubs"' has no exported member 'writeBatch'.
+src/actions/results-actions.ts(3,62): error TS2305: Module '"@/lib/firebase-stubs"' has no exported member 'Timestamp'.
+src/actions/results-actions.ts(22,66): error TS2339: Property 'id' does not exist on type 'never'.
+src/actions/results-actions.ts(22,77): error TS2339: Property 'data' does not exist on type 'never'.
+src/actions/results-actions.ts(33,62): error TS2339: Property 'id' does not exist on type 'never'.
+src/actions/results-actions.ts(33,73): error TS2339: Property 'data' does not exist on type 'never'.
+src/actions/results-actions.ts(75,46): error TS2339: Property 'data' does not exist on type 'never'.
+src/actions/results-actions.ts(89,21): error TS2339: Property 'id' does not exist on type 'never'.
+src/actions/results-actions.ts(90,20): error TS2339: Property 'data' does not exist on type 'never'.
+src/actions/results-actions.ts(112,54): error TS2339: Property 'data' does not exist on type 'never'.
+src/actions/results-actions.ts(156,26): error TS2339: Property 'empty' does not exist on type '{ docs: never[]; }'.
+src/actions/results-actions.ts(157,32): error TS2554: Expected 2-3 arguments, but got 1.
+src/actions/results-actions.ts(166,67): error TS2339: Property 'id' does not exist on type 'never'.
+src/actions/schedule-actions.ts(117,7): error TS2322: Type '{ termId: string; classId: string; subjectId: string; teacherId: string; roomId?: string | undefined; dayOfWeek: number; startTime: string; endTime: string; }' is not assignable to type '(Without<TimetableCreateInput, TimetableUncheckedCreateInput> & TimetableUncheckedCreateInput) | (Without<...> & TimetableCreateInput)'.
+  Type '{ termId: string; classId: string; subjectId: string; teacherId: string; roomId?: string | undefined; dayOfWeek: number; startTime: string; endTime: string; }' is not assignable to type 'Without<TimetableCreateInput, TimetableUncheckedCreateInput> & TimetableUncheckedCreateInput'.
+    Property 'schoolId' is missing in type '{ termId: string; classId: string; subjectId: string; teacherId: string; roomId?: string | undefined; dayOfWeek: number; startTime: string; endTime: string; }' but required in type 'TimetableUncheckedCreateInput'.
+src/actions/score-actions.ts(80,37): error TS2345: Argument of type 'null' is not assignable to parameter of type 'string'.
+src/actions/staff-actions.ts(85,34): error TS2339: Property 'uid' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; schoolId: string; firstName: string; lastName: string; status: string; biometricId: string | null; staffId: string | null; email: string; ... 10 more ...; shiftId: string | null; }'.
+src/actions/staff-actions.ts(92,23): error TS2339: Property 'uid' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; schoolId: string; firstName: string; lastName: string; status: string; biometricId: string | null; staffId: string | null; email: string; ... 10 more ...; shiftId: string | null; }'.
+src/actions/staff-actions.ts(118,46): error TS2339: Property 'uid' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; schoolId: string; firstName: string; lastName: string; status: string; biometricId: string | null; staffId: string | null; email: string; ... 10 more ...; shiftId: string | null; }'.
+src/actions/staff-actions.ts(168,31): error TS2339: Property 'uid' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; schoolId: string; firstName: string; lastName: string; status: string; biometricId: string | null; staffId: string | null; email: string; ... 10 more ...; shiftId: string | null; }'.
+src/actions/staff-actions.ts(194,41): error TS2339: Property 'uid' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; schoolId: string; firstName: string; lastName: string; status: string; biometricId: string | null; staffId: string | null; email: string; ... 10 more ...; shiftId: string | null; }'.
+src/actions/submission-actions.ts(75,33): error TS2345: Argument of type 'null' is not assignable to parameter of type 'string'.
+src/actions/tahfeez-actions.ts(3,35): error TS2307: Cannot find module '@/lib/firebase/admin' or its corresponding type declarations.
+src/actions/tahfeez-actions.ts(7,12): error TS2304: Cannot find name 'admin'.
+src/actions/token-actions.ts(3,69): error TS2305: Module '"@/lib/firebase-stubs"' has no exported member 'Timestamp'.
+src/actions/token-actions.ts(21,23): error TS2339: Property 'empty' does not exist on type '{ docs: never[]; }'.
+src/actions/token-actions.ts(23,70): error TS2339: Property 'id' does not exist on type 'never'.
+src/actions/token-actions.ts(60,26): error TS2339: Property 'empty' does not exist on type '{ docs: never[]; }'.
+src/actions/token-actions.ts(64,52): error TS2339: Property 'id' does not exist on type 'never'.
+src/actions/token-actions.ts(64,80): error TS2339: Property 'data' does not exist on type 'never'.
+src/actions/token-actions.ts(76,24): error TS2339: Property 'empty' does not exist on type '{ docs: never[]; }'.
+src/actions/token-actions.ts(80,46): error TS2339: Property 'data' does not exist on type 'never'.
+src/actions/token-actions.ts(88,73): error TS2339: Property 'id' does not exist on type 'never'.
+src/actions/token-actions.ts(100,62): error TS2339: Property 'id' does not exist on type 'never'.
+src/actions/token-actions.ts(100,73): error TS2339: Property 'data' does not exist on type 'never'.
+src/actions/token-actions.ts(110,45): error TS2339: Property 'empty' does not exist on type '{ docs: never[]; }'.
+src/actions/token-actions.ts(110,84): error TS2339: Property 'data' does not exist on type 'never'.
+src/actions/upload-actions.ts(4,22): error TS2305: Module '"@/lib/firebase-stubs"' has no exported member 'writeBatch'.
+src/actions/upload-actions.ts(4,62): error TS2305: Module '"@/lib/firebase-stubs"' has no exported member 'Timestamp'.
+src/actions/upload-actions.ts(56,30): error TS2339: Property 'empty' does not exist on type '{ docs: never[]; }'.
+src/actions/upload-actions.ts(57,36): error TS2554: Expected 2-3 arguments, but got 1.
+src/actions/upload-actions.ts(72,71): error TS2339: Property 'id' does not exist on type 'never'.
+src/actions/upload-actions.ts(142,30): error TS2339: Property 'empty' does not exist on type '{ docs: never[]; }'.
+src/actions/upload-actions.ts(143,36): error TS2554: Expected 2-3 arguments, but got 1.
+src/actions/upload-actions.ts(155,80): error TS2339: Property 'id' does not exist on type 'never'.
+src/actions/upload-actions.ts(188,31): error TS2339: Property 'id' does not exist on type 'never'.
+src/actions/upload-actions.ts(189,36): error TS2339: Property 'data' does not exist on type 'never'.
+src/actions/upload-actions.ts(189,60): error TS2339: Property 'data' does not exist on type 'never'.
+src/actions/upload-actions.ts(190,37): error TS2339: Property 'data' does not exist on type 'never'.
+src/actions/upload-actions.ts(214,31): error TS2339: Property 'id' does not exist on type 'never'.
+src/actions/upload-actions.ts(215,36): error TS2339: Property 'data' does not exist on type 'never'.
+src/actions/upload-actions.ts(215,60): error TS2339: Property 'data' does not exist on type 'never'.
+src/actions/upload-actions.ts(216,37): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/admin/bursary/page.tsx(83,26): error TS2339: Property 'message' does not exist on type '{ success: boolean; invoice: { id: string; createdAt: Date; updatedAt: Date; schoolId: string; termId: string; studentId: string; status: string; description: string; dueDate: Date; amount: number; amountPaid: number; balance: number; }; receipt: { ...; }; } | { ...; }'.
+  Property 'message' does not exist on type '{ success: boolean; invoice: { id: string; createdAt: Date; updatedAt: Date; schoolId: string; termId: string; studentId: string; status: string; description: string; dueDate: Date; amount: number; amountPaid: number; balance: number; }; receipt: { ...; }; }'.
+src/app/[school]/admin/grading/page.tsx(53,9): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.
+src/app/[school]/dashboard/accountant/invoices/page.tsx(11,10): error TS2724: '"@/actions/invoice-actions"' has no exported member named 'generateInvoicesForClassGroup'. Did you mean 'generateInvoicesForClass'?
+src/app/[school]/dashboard/behavioural/enter/page.tsx(52,70): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/behavioural/enter/page.tsx(52,81): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/behavioural/enter/page.tsx(67,34): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/behavioural/page.tsx(12,45): error TS2305: Module '"@/lib/firebase-stubs"' has no exported member 'writeBatch'.
+src/app/[school]/dashboard/behavioural/page.tsx(52,72): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/behavioural/page.tsx(52,83): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/behavioural/page.tsx(69,27): error TS2339: Property 'forEach' does not exist on type '{ docs: never[]; }'.
+src/app/[school]/dashboard/behavioural/page.tsx(69,35): error TS7006: Parameter 'doc' implicitly has an 'any' type.
+src/app/[school]/dashboard/behavioural/page.tsx(142,85): error TS2554: Expected 2-3 arguments, but got 1.
+src/app/[school]/dashboard/exam-questions/page.tsx(31,21): error TS2305: Module '"@/lib/dbService"' has no exported member 'QueryConstraint'.
+src/app/[school]/dashboard/finance/fee-structures/page.tsx(4,66): error TS2305: Module '"@/lib/firebase-stubs"' has no exported member 'Timestamp'.
+src/app/[school]/dashboard/finance/fee-structures/page.tsx(37,66): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/finance/fee-structures/page.tsx(37,77): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/hod/hod-dashboard.tsx(91,26): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/hod/hod-dashboard.tsx(100,63): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/hod/hod-dashboard.tsx(105,21): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/hod/hod-dashboard.tsx(125,66): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/hod/hod-dashboard.tsx(125,77): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/inventory/items/page.tsx(4,66): error TS2305: Module '"@/lib/firebase-stubs"' has no exported member 'Timestamp'.
+src/app/[school]/dashboard/inventory/items/page.tsx(43,25): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/inventory/items/page.tsx(44,24): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/inventory/orders/page.tsx(4,55): error TS2305: Module '"@/lib/firebase-stubs"' has no exported member 'Timestamp'.
+src/app/[school]/dashboard/inventory/orders/page.tsx(54,25): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/inventory/orders/page.tsx(55,24): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/inventory/orders/page.tsx(59,25): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/inventory/orders/page.tsx(60,24): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/inventory/orders/page.tsx(64,25): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/inventory/orders/page.tsx(65,24): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/inventory/suppliers/page.tsx(41,25): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/inventory/suppliers/page.tsx(42,24): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/inventory/transactions/page.tsx(4,39): error TS2305: Module '"@/lib/firebase-stubs"' has no exported member 'Timestamp'.
+src/app/[school]/dashboard/inventory/transactions/page.tsx(57,25): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/inventory/transactions/page.tsx(58,24): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/inventory/transactions/page.tsx(62,25): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/inventory/transactions/page.tsx(63,24): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/logs/page.tsx(33,71): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/logs/page.tsx(33,82): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/messaging/page.tsx(4,39): error TS2305: Module '"@/lib/firebase-stubs"' has no exported member 'Timestamp'.
+src/app/[school]/dashboard/messaging/page.tsx(62,25): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/messaging/page.tsx(63,24): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/messaging/page.tsx(75,25): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/messaging/page.tsx(76,24): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/midterm/enter/page.tsx(48,57): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/midterm/enter/page.tsx(48,68): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/midterm/enter/page.tsx(67,25): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/midterm/enter/page.tsx(68,24): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/midterm/enter/page.tsx(86,34): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/midterm/page.tsx(12,45): error TS2305: Module '"@/lib/firebase-stubs"' has no exported member 'writeBatch'.
+src/app/[school]/dashboard/midterm/page.tsx(44,72): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/midterm/page.tsx(44,83): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/midterm/page.tsx(62,22): error TS2339: Property 'forEach' does not exist on type '{ docs: never[]; }'.
+src/app/[school]/dashboard/midterm/page.tsx(62,30): error TS7006: Parameter 'doc' implicitly has an 'any' type.
+src/app/[school]/dashboard/midterm/page.tsx(135,66): error TS2554: Expected 2-3 arguments, but got 1.
+src/app/[school]/dashboard/notifications/page.tsx(35,69): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/notifications/page.tsx(35,80): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/page.tsx(37,16): error TS2307: Cannot find module '@/app/dashboard/slt/page' or its corresponding type declarations.
+src/app/[school]/dashboard/page.tsx(41,16): error TS2307: Cannot find module '@/app/dashboard/accountant/page' or its corresponding type declarations.
+src/app/[school]/dashboard/reports/staff-directory/page.tsx(42,29): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/reports/staff-directory/page.tsx(42,40): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/reports/student-demographics/page.tsx(42,29): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/reports/student-demographics/page.tsx(42,40): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/results/broadsheet/page.tsx(43,25): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/results/broadsheet/page.tsx(44,24): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/results/broadsheet/page.tsx(69,25): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/results/broadsheet/page.tsx(70,24): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/results/class/page.tsx(39,70): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/results/class/page.tsx(39,81): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/results/class/page.tsx(45,66): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/results/class/page.tsx(45,77): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/results/class/page.tsx(51,76): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/results/class/page.tsx(51,87): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/results/generate/page.tsx(36,57): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/results/generate/page.tsx(36,68): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/results/tahfeez/page.tsx(38,70): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/results/tahfeez/page.tsx(38,81): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/results/tahfeez/page.tsx(43,66): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/results/tahfeez/page.tsx(43,77): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/results/tokens/page.tsx(37,65): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/results/tokens/page.tsx(37,76): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/results/view/[classId]/page.tsx(38,25): error TS2339: Property 'empty' does not exist on type '{ docs: never[]; }'.
+src/app/[school]/dashboard/results/view/[classId]/page.tsx(44,31): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/results/view/[classId]/page.tsx(44,42): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/scores/enter/page.tsx(49,57): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/scores/enter/page.tsx(49,68): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/scores/enter/page.tsx(68,25): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/scores/enter/page.tsx(69,24): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/scores/enter/page.tsx(86,34): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/scores/page.tsx(13,45): error TS2305: Module '"@/lib/firebase-stubs"' has no exported member 'writeBatch'.
+src/app/[school]/dashboard/scores/page.tsx(50,72): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/scores/page.tsx(50,83): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/scores/page.tsx(69,22): error TS2339: Property 'forEach' does not exist on type '{ docs: never[]; }'.
+src/app/[school]/dashboard/scores/page.tsx(69,30): error TS7006: Parameter 'doc' implicitly has an 'any' type.
+src/app/[school]/dashboard/scores/page.tsx(148,67): error TS2554: Expected 2-3 arguments, but got 1.
+src/app/[school]/dashboard/seating-plan/page.tsx(37,25): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/seating-plan/page.tsx(38,24): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/students/[id]/page.tsx(47,28): error TS2339: Property 'empty' does not exist on type '{ docs: never[]; }'.
+src/app/[school]/dashboard/students/[id]/page.tsx(49,50): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/students/[id]/page.tsx(49,68): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/students/admissions/page.tsx(4,30): error TS2305: Module '"@/lib/firebase-stubs"' has no exported member 'Timestamp'.
+src/app/[school]/dashboard/students/admissions/page.tsx(50,32): error TS2339: Property 'size' does not exist on type '{ docs: never[]; }'.
+src/app/[school]/dashboard/students/promote/page.tsx(4,47): error TS2305: Module '"@/lib/firebase-stubs"' has no exported member 'writeBatch'.
+src/app/[school]/dashboard/students/promote/page.tsx(47,25): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/students/promote/page.tsx(48,24): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/system/academic-year/page.tsx(4,55): error TS2305: Module '"@/lib/firebase-stubs"' has no exported member 'Timestamp'.
+src/app/[school]/dashboard/system/academic-year/page.tsx(50,25): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/system/academic-year/page.tsx(51,24): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/system/classes-subjects/page.tsx(53,77): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/system/classes-subjects/page.tsx(53,88): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/system/classes-subjects/page.tsx(58,74): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/system/classes-subjects/page.tsx(58,85): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/system/classes-subjects/page.tsx(62,77): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/system/classes-subjects/page.tsx(62,88): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/system/classes-subjects/page.tsx(73,73): error TS2339: Property 'teacherId' does not exist on type 'ClassData'.
+src/app/[school]/dashboard/system/classes-subjects/page.tsx(74,44): error TS2339: Property 'subjectIds' does not exist on type 'ClassData'.
+src/app/[school]/dashboard/system/classes-subjects/page.tsx(76,80): error TS2339: Property 'subjectTeachers' does not exist on type 'ClassData'.
+src/app/[school]/dashboard/system/classes-subjects/page.tsx(166,41): error TS2339: Property 'teacherId' does not exist on type 'ClassDetail'.
+src/app/[school]/dashboard/system/classes-subjects/page.tsx(204,45): error TS2353: Object literal may only specify known properties, and 'teacherId' does not exist in type 'ClassDetail | ((prevState: ClassDetail | null) => ClassDetail | null)'.
+src/app/[school]/dashboard/system/classes-subjects/page.tsx(262,53): error TS2339: Property 'teacherId' does not exist on type 'ClassDetail'.
+src/app/[school]/dashboard/system/grading/page.tsx(41,48): error TS2339: Property 'scale' does not exist on type '{}'.
+src/app/[school]/dashboard/system/maintenance/page.tsx(27,47): error TS2339: Property 'maintenanceMode' does not exist on type '{}'.
+src/app/[school]/dashboard/system/roles/page.tsx(58,34): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/system/roles/page.tsx(58,45): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/system/school-info/page.tsx(101,61): error TS2339: Property 'ref' does not exist on type '{}'.
+src/app/[school]/dashboard/tahfeez/enter/page.tsx(41,70): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/tahfeez/enter/page.tsx(41,81): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/tahfeez/enter/page.tsx(56,34): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/tahfeez/page.tsx(12,45): error TS2305: Module '"@/lib/firebase-stubs"' has no exported member 'writeBatch'.
+src/app/[school]/dashboard/tahfeez/page.tsx(42,72): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/tahfeez/page.tsx(42,83): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/tahfeez/page.tsx(60,22): error TS2339: Property 'forEach' does not exist on type '{ docs: never[]; }'.
+src/app/[school]/dashboard/tahfeez/page.tsx(60,30): error TS7006: Parameter 'doc' implicitly has an 'any' type.
+src/app/[school]/dashboard/tahfeez/page.tsx(120,66): error TS2554: Expected 2-3 arguments, but got 1.
+src/app/[school]/dashboard/teacher/teacher-dashboard.tsx(75,70): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/teacher/teacher-dashboard.tsx(75,104): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/teacher/teacher-dashboard.tsx(109,37): error TS2339: Property 'size' does not exist on type '{ docs: never[]; }'.
+src/app/[school]/dashboard/users/[id]/page.tsx(55,28): error TS2339: Property 'empty' does not exist on type '{ docs: never[]; }'.
+src/app/[school]/dashboard/users/[id]/page.tsx(57,44): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/users/[id]/page.tsx(57,59): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/[school]/dashboard/users/page.tsx(57,34): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/[school]/dashboard/users/page.tsx(57,45): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/api/v1/kiosk/activate/route.ts(2,10): error TS2459: Module '"@/lib/dbService"' declares 'prisma' locally, but it is not exported.
+src/app/api/v1/kiosk/activate/route.ts(37,62): error TS2339: Property 'ip' does not exist on type 'NextRequest'.
+src/app/api/v1/kiosk/activate/route.ts(44,62): error TS2339: Property 'ip' does not exist on type 'NextRequest'.
+src/app/api/v1/kiosk/enroll/route.ts(3,10): error TS2459: Module '"@/lib/dbService"' declares 'prisma' locally, but it is not exported.
+src/app/api/v1/kiosk/staff/route.ts(3,10): error TS2459: Module '"@/lib/dbService"' declares 'prisma' locally, but it is not exported.
+src/app/api/v1/kiosk/staff/route.ts(22,31): error TS7006: Parameter 'u' implicitly has an 'any' type.
+src/app/api/v1/kiosk/sync-attendance/route.ts(3,10): error TS2459: Module '"@/lib/dbService"' declares 'prisma' locally, but it is not exported.
+src/app/api/v1/kiosk/verify-pin/route.ts(3,10): error TS2459: Module '"@/lib/dbService"' declares 'prisma' locally, but it is not exported.
+src/app/api/v1/kiosk/verify/route.ts(3,10): error TS2459: Module '"@/lib/dbService"' declares 'prisma' locally, but it is not exported.
+src/app/setup/admin/page.tsx(69,26): error TS2339: Property 'empty' does not exist on type '{ docs: never[]; }'.
+src/components/auth/login-form.tsx(59,27): error TS2339: Property 'empty' does not exist on type '{ docs: never[]; }'.
+src/components/auth/login-form.tsx(62,42): error TS2339: Property 'data' does not exist on type 'never'.
+src/components/auth/login-form.tsx(69,27): error TS2339: Property 'empty' does not exist on type '{ docs: never[]; }'.
+src/components/auth/login-form.tsx(72,42): error TS2339: Property 'data' does not exist on type 'never'.
+src/components/dashboard/admin/new-admin-dashboard.tsx(37,48): error TS2339: Property 'size' does not exist on type '{ docs: never[]; }'.
+src/components/dashboard/admin/new-admin-dashboard.tsx(41,42): error TS2339: Property 'size' does not exist on type '{ docs: never[]; }'.
+src/components/dashboard/admin/new-admin-dashboard.tsx(45,63): error TS2339: Property 'data' does not exist on type 'never'.
+src/components/dashboard/admin/new-admin-dashboard.tsx(50,50): error TS2339: Property 'size' does not exist on type '{ docs: never[]; }'.
+src/components/dashboard/admin/new-admin-dashboard.tsx(54,47): error TS2339: Property 'size' does not exist on type '{ docs: never[]; }'.
+src/components/dashboard/auth/login-form.tsx(59,27): error TS2339: Property 'empty' does not exist on type '{ docs: never[]; }'.
+src/components/dashboard/auth/login-form.tsx(62,42): error TS2339: Property 'data' does not exist on type 'never'.
+src/components/dashboard/auth/login-form.tsx(69,27): error TS2339: Property 'empty' does not exist on type '{ docs: never[]; }'.
+src/components/dashboard/auth/login-form.tsx(72,42): error TS2339: Property 'data' does not exist on type 'never'.
+src/components/dashboard/departments/add-department-form.tsx(46,68): error TS2339: Property 'id' does not exist on type 'never'.
+src/components/dashboard/departments/add-department-form.tsx(46,79): error TS2339: Property 'data' does not exist on type 'never'.
+src/components/dashboard/exam-officer/exam-officer-dashboard.tsx(72,73): error TS2339: Property 'data' does not exist on type 'never'.
+src/components/dashboard/exam-officer/exam-officer-dashboard.tsx(102,36): error TS2339: Property 'size' does not exist on type '{ docs: never[]; }'.
+src/components/dashboard/exam-officer/exam-officer-dashboard.tsx(103,36): error TS2339: Property 'size' does not exist on type '{ docs: never[]; }'.
+src/components/dashboard/exam-officer/exam-officer-dashboard.tsx(104,39): error TS2339: Property 'size' does not exist on type '{ docs: never[]; }'.
+src/components/dashboard/lesson-notes/add-lesson-note-form.tsx(148,61): error TS2339: Property 'ref' does not exist on type '{}'.
+src/components/dashboard/lesson-notes/add-lesson-note-form.tsx(158,35): error TS2339: Property 'ref' does not exist on type '{}'.
+src/components/dashboard/lesson-notes/add-lesson-note-form.tsx(177,37): error TS2339: Property 'ref' does not exist on type '{}'.
+src/components/dashboard/lesson-notes/add-lesson-note-form.tsx(188,28): error TS2554: Expected 2-3 arguments, but got 1.
+src/components/dashboard/notifications/notification-bell.tsx(28,44): error TS7006: Parameter 'querySnapshot' implicitly has an 'any' type.
+src/components/dashboard/notifications/notification-bell.tsx(30,12): error TS2554: Expected 2 arguments, but got 3.
+src/components/dashboard/notifications/notification-bell.tsx(30,13): error TS7006: Parameter 'error' implicitly has an 'any' type.
+src/components/dashboard/parent/parent-dashboard.tsx(72,28): error TS2339: Property 'empty' does not exist on type '{ docs: never[]; }'.
+src/components/dashboard/parent/parent-dashboard.tsx(74,42): error TS2339: Property 'id' does not exist on type 'never'.
+src/components/dashboard/parent/parent-dashboard.tsx(74,60): error TS2339: Property 'data' does not exist on type 'never'.
+src/components/dashboard/parent/parent-dashboard.tsx(87,29): error TS2339: Property 'empty' does not exist on type '{ docs: never[]; }'.
+src/components/dashboard/parent/parent-dashboard.tsx(89,45): error TS2339: Property 'id' does not exist on type 'never'.
+src/components/dashboard/parent/parent-dashboard.tsx(89,62): error TS2339: Property 'data' does not exist on type 'never'.
+src/components/dashboard/profile/personal-info-form.tsx(81,32): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(storage: FirebaseStorage, url?: string | undefined): StorageReference', gave the following error.
+    Argument of type '{}' is not assignable to parameter of type 'FirebaseStorage'.
+      Type '{}' is missing the following properties from type 'FirebaseStorage': app, maxUploadRetryTime, maxOperationRetryTime
+  Overload 2 of 2, '(storageOrRef: FirebaseStorage | StorageReference, path?: string | undefined): StorageReference', gave the following error.
+    Argument of type '{}' is not assignable to parameter of type 'FirebaseStorage | StorageReference'.
+src/components/dashboard/students/add-student-form.tsx(36,10): error TS2305: Module '"@/actions/student-actions"' has no exported member 'createStudent'.
+src/components/dashboard/students/bulk-student-upload-dialog.tsx(18,10): error TS2305: Module '"@/actions/student-actions"' has no exported member 'bulkCreateStudents'.
+src/components/dashboard/teacher/teacher-dashboard.tsx(75,70): error TS2339: Property 'data' does not exist on type 'never'.
+src/components/dashboard/teacher/teacher-dashboard.tsx(75,104): error TS2339: Property 'id' does not exist on type 'never'.
+src/components/dashboard/teacher/teacher-dashboard.tsx(109,37): error TS2339: Property 'size' does not exist on type '{ docs: never[]; }'.
+src/context/maintenance-context.tsx(20,53): error TS7006: Parameter 'docSnap' implicitly has an 'any' type.
+src/context/maintenance-context.tsx(27,8): error TS2554: Expected 2 arguments, but got 3.
+src/context/maintenance-context.tsx(27,9): error TS7006: Parameter 'error' implicitly has an 'any' type.
+src/context/role-context.tsx(28,13): error TS2304: Cannot find name 'authService'.
+src/lib/analyticsService.ts(40,50): error TS2339: Property 'grade' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/lib/analyticsService.ts(71,31): error TS2353: Object literal may only specify known properties, and 'students' does not exist in type 'ClassCountOutputTypeSelect<DefaultArgs>'.
+src/lib/analyticsService.ts(78,63): error TS2339: Property '_count' does not exist on type '{ id: string; name: string; createdAt: Date; schoolId: string; teacherId: string | null; termId: string | null; }'.
+src/lib/analyticsService.ts(79,67): error TS2339: Property '_count' does not exist on type '{ id: string; name: string; createdAt: Date; schoolId: string; teacherId: string | null; termId: string | null; }'.
+src/lib/authService.ts(61,13): error TS2322: Type '{ email: string; passwordHash: string; firstName: any; lastName: any; role: any; }' is not assignable to type '(Without<UserCreateInput, UserUncheckedCreateInput> & UserUncheckedCreateInput) | (Without<...> & UserCreateInput)'.
+  Type '{ email: string; passwordHash: string; firstName: any; lastName: any; role: any; }' is not assignable to type 'Without<UserUncheckedCreateInput, UserCreateInput> & UserCreateInput'.
+    Property 'school' is missing in type '{ email: string; passwordHash: string; firstName: any; lastName: any; role: any; }' but required in type 'UserCreateInput'.
+src/lib/kiosk-auth.ts(2,10): error TS2459: Module '"./dbService"' declares 'prisma' locally, but it is not exported.
+src/lib/kiosk-auth.ts(16,63): error TS2339: Property 'ip' does not exist on type 'NextRequest'.

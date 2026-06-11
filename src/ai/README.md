@@ -1,6 +1,6 @@
-# AI Integration Strategy for GIIA Portal
+# AI Integration Strategy for SCHOOL Portal
 
-This document outlines the architecture and implementation strategy for integrating Generative AI features into the GIIA school management portal using Firebase Genkit.
+This document outlines the architecture and implementation strategy for integrating Generative AI features into the SCHOOL school management portal using Firebase Genkit.
 
 ## 1. Core Technology
 

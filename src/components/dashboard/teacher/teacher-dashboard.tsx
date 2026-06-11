@@ -21,8 +21,8 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useRole } from '@/context/role-context';
 import { useEffect, useState, useCallback } from 'react';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs, orderBy, limit } from '@/lib/firebase-stubs';
+import { db, auth, storage } from "@/lib/firebase";
 import type { MockLessonNote } from '@/lib/schema';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -72,10 +72,12 @@ export function TeacherDashboard() {
       // Fetch all notes for stats and charts
       const allNotesQuery = query(collection(db, 'lessonNotes'), where('teacherId', '==', user.uid));
       const allNotesSnapshot = await getDocs(allNotesQuery);
-      const allNotesList = allNotesSnapshot.docs.map(doc => ({...doc.data() as MockLessonNote, id: doc.id}));
       
-      // Sort client-side to avoid needing a composite index
-      allNotesList.sort((a, b) => (b.submittedOn?.seconds || 0) - (a.submittedOn?.seconds || 0));
+      // Explicitly type doc as any to avoid implicit any errors
+      const allNotesList = allNotesSnapshot.docs.map((doc: any) => ({...doc.data() as MockLessonNote, id: doc.id}));
+      
+      // Sort client-side to avoid needing a composite index. Explicitly type sorting parameters.
+      allNotesList.sort((a: any, b: any) => (b.submittedOn?.seconds || 0) - (a.submittedOn?.seconds || 0));
 
       setRecentNotes(allNotesList.slice(0, 3));
       
@@ -85,7 +87,8 @@ export function TeacherDashboard() {
       ];
       monthNames.forEach((m) => (monthCounts[m] = 0));
 
-      allNotesList.forEach((note) => {
+      // Explicitly type note as any
+      allNotesList.forEach((note: any) => {
         if (note.submittedOn?.seconds) {
             const date = new Date(note.submittedOn.seconds * 1000);
             const month = monthNames[date.getMonth()];
@@ -102,10 +105,11 @@ export function TeacherDashboard() {
       const examsQuery = query(collection(db, 'examQuestions'), where('teacherId', '==', user.uid), where('status', '==', 'Pending Review'));
       const examsSnapshot = await getDocs(examsQuery);
 
+      // Explicitly type n as any inside the filter lambdas
       setStats({
-        pendingPlans: allNotesList.filter(n => n.status.includes('Pending')).length,
-        approvedPlans: allNotesList.filter(n => n.status.includes('Approved')).length,
-        rejectedPlans: allNotesList.filter(n => n.status.includes('Rejected') || n.status.includes('Revision')).length,
+        pendingPlans: allNotesList.filter((n: any) => n.status.includes('Pending')).length,
+        approvedPlans: allNotesList.filter((n: any) => n.status.includes('Approved')).length,
+        rejectedPlans: allNotesList.filter((n: any) => n.status.includes('Rejected') || n.status.includes('Revision')).length,
         pendingExams: examsSnapshot.size,
       });
 

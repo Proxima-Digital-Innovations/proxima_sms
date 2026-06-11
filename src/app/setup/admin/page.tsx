@@ -4,8 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { useRouter } from 'next/navigation';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { collection, doc, getDocs, query, setDoc, where } from 'firebase/firestore';
+import { createUserWithEmailAndPassword } from '@/lib/firebase-stubs';
+import { collection, doc, getDocs, query, setDoc, where } from '@/lib/firebase-stubs';
 import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { auth, db } from '@/lib/firebase';
+import { db, auth, storage } from "@/lib/firebase";
 import {
   Card,
   CardContent,
@@ -134,7 +134,7 @@ export default function SetupAdminPage() {
             <div className="mx-auto mb-4">
               <Image
                 src="/school-logo.png"
-                alt="Great Insight International Academy Logo"
+                alt="School OS Logo"
                 width={250}
                 height={60}
                 priority
@@ -173,7 +173,7 @@ export default function SetupAdminPage() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input placeholder="admin@giia.com.ng" {...field} />
+                        <Input placeholder="admin@school.edu" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

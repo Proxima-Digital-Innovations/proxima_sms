@@ -1,261 +1,318 @@
-
 'use server';
 
-import { z } from 'zod';
-import { dbService } from '@/lib/dbService';
-import { storageService } from '@/lib/storageService';
-import { authService } from '@/lib/authService';
-import { Student } from '@/lib/schema';
-import { serverTimestamp } from 'firebase/firestore';
+import { prisma } from "@/lib/prisma";
+import { requireSchoolId } from "@/lib/server-context";
+import { z } from "zod";
+import { revalidatePath } from "next/cache";
 
+
+export async function getStudentDashboardData(studentId: string) {
+  try {
+    const schoolId = await requireSchoolId();
+    // 1. Fetch Student Core Data
+    const student = await prisma.student.findUnique({
+      where: { id: studentId, schoolId },
+      include: { class: true }
+    });
+
+    if (!student) throw new Error("Student not found.");
+
+    // 2. Fetch SIS Data: Attendance & Finance
+    const attendanceCount = await prisma.attendance.count({ where: { studentId, schoolId } });
+    const attendancePresent = await prisma.attendance.count({ where: { studentId, status: 'PRESENT', schoolId } });
+    const attendanceRate = attendanceCount > 0 ? (attendancePresent / attendanceCount) * 100 : 100;
+
+    const invoices = await prisma.invoice.findMany({ where: { studentId, schoolId } });
+    const totalBalance = invoices.reduce((sum, inv) => sum + (inv.amount - inv.amountPaid), 0);
+
+    // 3. Fetch LMS Data: Upcoming Assignments & Quizzes
+    // Find modules for the student's class
+    const modules = await prisma.lmsModule.findMany({
+      where: { classId: student.classId || "", schoolId },
+      include: {
+        assignments: {
+          include: { submissions: { where: { studentId } } },
+          orderBy: { dueDate: 'asc' }
+        },
+        quizzes: {
+          include: { attempts: { where: { studentId } } }
+        }
+      }
+    });
+
+    // Flatten and filter for upcoming
+    const now = new Date();
+    const upcomingAssignments = modules.flatMap(m => m.assignments)
+      .filter(as => as.submissions.length === 0 && (!as.dueDate || as.dueDate > now))
+      .slice(0, 5);
+
+    const availableQuizzes = modules.flatMap(m => m.quizzes)
+      .filter(q => q.attempts.length === 0)
+      .slice(0, 5);
+
+    return {
+      success: true,
+      data: {
+        profile: student,
+        stats: {
+          attendanceRate,
+          totalBalance,
+          pendingTasks: upcomingAssignments.length + availableQuizzes.length
+        },
+        upcomingAssignments,
+        availableQuizzes,
+        recentModules: modules.slice(0, 4)
+      }
+    };
+  } catch (error: any) {
+    return { success: false, message: error.message };
+  }
+}
+
+/**
+ * Fetches all active students enrolled in a given class (by class name),
+ * scoped to the current school. Results are sorted alphabetically.
+ */
+export async function getStudentsByClass(className: string) {
+  const schoolId = await requireSchoolId();
+  return prisma.student.findMany({
+    where: {
+      // Filter by class name, active status, and current school
+      class: { name: className },
+      schoolId,
+      status: 'Active',
+    },
+    orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
+    select: {
+      id: true,
+      studentId: true,
+      firstName: true,
+      lastName: true,
+      class: { select: { name: true } },
+    },
+  });
+}
+
+/**
+ * Generate a unique display student ID formatted as [SCHOOL_PREFIX]-[YEAR][SEQUENCE_NUMBER]
+ * e.g., KINGS-260001
+ */
+async function generateStudentId(schoolId: string, offset = 0): Promise<string> {
+    const school = await prisma.school.findUnique({ where: { id: schoolId } });
+    const slug = school ? school.slug.toUpperCase().slice(0, 5) : 'STU';
+    const year = new Date().getFullYear().toString().slice(-2);
+    const count = await prisma.student.count({ where: { schoolId } });
+    const nextId = (count + offset + 1).toString().padStart(4, '0');
+    return `${slug}-${year}${nextId}`;
+}
+
+// Zod schema for validating the createStudent FormData input
 const studentSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   middleName: z.string().optional(),
-  gender: z.enum(['Male', 'Female', 'Other']),
-  dateOfBirth: z.string(),
+  gender: z.enum(['Male', 'Female']),
+  dateOfBirth: z.string(), // ISO String representation
   address: z.string().min(1),
   guardianName: z.string().min(1),
   guardianContact: z.string().min(1),
   guardianEmail: z.string().email(),
-  class: z.string().min(1),
-  admissionDate: z.string(),
-  session: z.string().min(1),
+  classId: z.string().min(1),
+  admissionDate: z.string(), // ISO String representation
+  session: z.string(),
   medicalConditions: z.string().optional(),
-  profilePicture: z.instanceof(File).optional(),
-  documents: z.array(z.instanceof(File)).optional(),
 });
 
-async function generateStudentId(offset = 0): Promise<string> {
-    const year = new Date().getFullYear().toString().slice(-2);
-    const studentCount = await dbService.getCountFromServer('students');
-    const nextId = (studentCount + offset + 1).toString().padStart(4, '0');
-    return `GIIA/STU/${year}/${nextId}`;
-}
-
-
+/**
+ * Create a new student, create their guardian user account if missing,
+ * and link them in the database.
+ */
 export async function createStudent(formData: FormData) {
   try {
-    const documents = formData.getAll('documents[0]').filter(f => f instanceof File) as File[];
-
-    const rawData = {
-        ...Object.fromEntries(formData.entries()),
-        profilePicture: formData.get('profilePicture') instanceof File ? formData.get('profilePicture') : undefined,
-        documents: documents.length > 0 ? documents : undefined,
-    };
-
+    const schoolId = await requireSchoolId();
+    
+    // Convert FormData entries to a plain object and validate
+    const rawData = Object.fromEntries(formData.entries());
     const parsed = studentSchema.safeParse(rawData);
-
     if (!parsed.success) {
-      console.error(parsed.error);
-      return { error: 'Invalid form data. ' + JSON.stringify(parsed.error.flatten().fieldErrors) };
+      return { error: 'Invalid form data: ' + JSON.stringify(parsed.error.flatten().fieldErrors) };
     }
-
-    const { profilePicture, documents: studentDocs, ...studentData } = parsed.data;
-
-    const guardianAuthUser = await authService.createUser({
-        email: studentData.guardianEmail,
-        password: studentData.guardianContact, 
+    
+    const data = parsed.data;
+    const studentId = await generateStudentId(schoolId);
+    
+    // 1. Create or resolve User account for the guardian
+    let parentUser = await prisma.user.findUnique({
+      where: { email: data.guardianEmail }
     });
-
-    const guardianUserDoc = {
-        uid: guardianAuthUser.uid,
-        name: studentData.guardianName,
-        email: studentData.guardianEmail,
-        phone: studentData.guardianContact,
-        role: 'Parent',
-        status: 'active',
-        generatedPassword: studentData.guardianContact,
-        createdAt: serverTimestamp(),
-    };
-    await dbService.setDoc('users', guardianAuthUser.uid, guardianUserDoc);
     
-    const studentId = await generateStudentId();
-
-    let profilePictureUrl = '';
-    if (profilePicture) {
-      const { downloadURL } = await storageService.uploadFile(
-        `student-photos/${studentId.replace(/\//g, '-')}/${Date.now()}-${profilePicture.name}`,
-        profilePicture
-      );
-      profilePictureUrl = downloadURL;
+    if (!parentUser) {
+      const nameParts = data.guardianName.trim().split(/\s+/);
+      const parentFirstName = nameParts[0] || 'Parent';
+      const parentLastName = nameParts.slice(1).join(' ') || 'Guardian';
+      
+      parentUser = await prisma.user.create({
+        data: {
+          schoolId,
+          email: data.guardianEmail,
+          phone: data.guardianContact,
+          firstName: parentFirstName,
+          lastName: parentLastName,
+          role: 'PARENT',
+          passwordHash: data.guardianContact, // Default password is phone number
+          status: 'active'
+        }
+      });
     }
     
-    let uploadedDocuments: { documentType: string, fileUrl: string, storagePath: string }[] = [];
-    if (studentDocs && studentDocs.length > 0) {
-        uploadedDocuments = await Promise.all(
-            studentDocs.map(async (doc) => {
-                const { downloadURL, storagePath } = await storageService.uploadFile(
-                    `student-documents/${studentId.replace(/\//g, '-')}/${Date.now()}-${doc.name}`,
-                    doc
-                );
-                return { documentType: doc.name.split('.').slice(0, -1).join('.'), fileUrl: downloadURL, storagePath };
-            })
-        );
-    }
-
-    const newStudent: Omit<Student, 'id' | 'createdAt' | 'status'> & { createdAt: any, status: string } = {
-        studentId: studentId,
-        firstName: studentData.firstName,
-        lastName: studentData.lastName,
-        middleName: studentData.middleName,
-        gender: studentData.gender,
-        dateOfBirth: new Date(studentData.dateOfBirth),
-        classLevel: studentData.class,
-        sessionYear: studentData.session,
-        profilePicture: profilePictureUrl,
-        creditBalance: 0,
-        guardians: [{
-            fullName: studentData.guardianName,
-            relationship: 'Parent/Guardian',
-            phone: studentData.guardianContact,
-            email: studentData.guardianEmail,
-            address: studentData.address,
-            isPrimary: true,
-            userId: guardianAuthUser.uid,
-        }],
-        contacts: [{
-             emergencyContactName: studentData.guardianName,
-             emergencyContactPhone: studentData.guardianContact,
-             relationToStudent: 'Parent/Guardian'
-        }],
-        documents: uploadedDocuments,
-        health: { medicalConditions: studentData.medicalConditions },
-        admissionDate: new Date(studentData.admissionDate),
-        createdAt: serverTimestamp(),
+    // 2. Create the student database record
+    const student = await prisma.student.create({
+      data: {
+        schoolId,
+        studentId,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        middleName: data.middleName || null,
+        gender: data.gender,
+        dateOfBirth: new Date(data.dateOfBirth),
+        classId: data.classId,
+        sessionYear: data.session,
         status: 'Active',
-    };
+        admissionDate: new Date(data.admissionDate),
+      }
+    });
     
-    await dbService.addDoc('students', newStudent);
-
-    return { success: true };
+    // 3. Link them by creating a Guardian record
+    await prisma.guardian.create({
+      data: {
+        schoolId,
+        studentId: student.id,
+        userId: parentUser.id,
+        fullName: data.guardianName,
+        relationship: 'PARENT',
+        phone: data.guardianContact,
+        email: data.guardianEmail,
+        address: data.address,
+        isPrimary: true,
+      }
+    });
+    
+    revalidatePath('/dashboard/students');
+    return { success: true, student };
   } catch (error: any) {
     console.error('Error creating student:', error);
-    if (error.code === 'auth/email-already-in-use') {
-      return { error: 'A user with this guardian email already exists.' };
-    }
-    if (error.code === 'auth/weak-password') {
-      return { error: `The guardian's phone number is too weak to be a password. It must be at least 6 characters.` };
-    }
-    return { error: error.message || 'An unexpected server error occurred.' };
+    return { error: error.message || 'An unexpected error occurred.' };
   }
 }
 
-export async function bulkCreateStudents(students: any[]) {
-    try {
-        const batch = dbService.createBatch();
-        const validStudents: any[] = [];
-        const invalidRecords: any[] = [];
-        
-        const requiredFields = ["firstName", "lastName", "class", "guardianName", "guardianContact", "guardianEmail"];
-
-        for (let i = 0; i < students.length; i++) {
-            const student = students[i];
-            const missingFields = requiredFields.filter(field => !student[field]);
-            
-            if (missingFields.length > 0) {
-                invalidRecords.push({ ...student, error: `Missing required fields: ${missingFields.join(', ')}` });
-                continue;
-            }
-             if (!z.string().email().safeParse(student.guardianEmail).success) {
-                invalidRecords.push({ ...student, error: 'Invalid guardian email format.' });
-                continue;
-            }
-
-            validStudents.push(student);
+/**
+ * Bulk create student profiles and matching parent logins from spreadsheet data.
+ */
+export async function bulkCreateStudents(studentList: any[]) {
+  try {
+    const schoolId = await requireSchoolId();
+    let importedCount = 0;
+    let errorCount = 0;
+    const invalidRecords: any[] = [];
+    
+    for (const record of studentList) {
+      try {
+        if (!record.guardianEmail && !record.email) {
+          throw new Error('Guardian email is required.');
+        }
+        if (!record.firstName || !record.lastName) {
+          throw new Error('Student first and last names are required.');
         }
         
-        for (let i = 0; i < validStudents.length; i++) {
-            const student = validStudents[i];
-            
-            const guardianAuthUser = await authService.createUser({
-                email: student.guardianEmail,
-                password: String(student.guardianContact),
-            });
-
-            const guardianUserDoc = {
-                uid: guardianAuthUser.uid,
-                name: student.guardianName,
-                email: student.guardianEmail,
-                phone: String(student.guardianContact),
-                role: 'Parent',
-                status: 'active',
-                generatedPassword: String(student.guardianContact),
-                createdAt: serverTimestamp(),
-            };
-            batch.set('users', guardianAuthUser.uid, guardianUserDoc);
-            
-            const studentId = await generateStudentId(i);
-            
-            const newStudent: Omit<Student, 'id' | 'createdAt' | 'status'> & { createdAt: any; status: string } = {
-                studentId: studentId,
-                firstName: student.firstName,
-                lastName: student.lastName,
-                middleName: student.middleName || '',
-                gender: student.gender || 'Other',
-                dateOfBirth: student['dateOfBirth(YYYY-MM-DD)'] ? new Date(student['dateOfBirth(YYYY-MM-DD)']) : new Date(),
-                classLevel: student.class,
-                sessionYear: student['session(YYYY/YYYY)'] || '',
-                profilePicture: '',
-                creditBalance: 0,
-                guardians: [{
-                    fullName: student.guardianName,
-                    relationship: 'Parent/Guardian',
-                    phone: String(student.guardianContact),
-                    email: student.guardianEmail,
-                    address: student.address || '',
-                    isPrimary: true,
-                    userId: guardianAuthUser.uid,
-                }],
-                contacts: [{
-                    emergencyContactName: student.guardianName,
-                    emergencyContactPhone: String(student.guardianContact),
-                    relationToStudent: 'Parent/Guardian'
-                }],
-                documents: [],
-                health: { medicalConditions: student.medicalConditions || 'N/A' },
-                admissionDate: student['admissionDate(YYYY-MM-DD)'] ? new Date(student['admissionDate(YYYY-MM-DD)']) : new Date(),
-                createdAt: serverTimestamp(),
-                status: 'Active',
-            };
-            
-            batch.set('students', null, newStudent);
+        // Match Class ID from the class name (e.g., "JSS 1")
+        let classId: string | null = null;
+        if (record.class) {
+          const classRecord = await prisma.class.findFirst({
+            where: { name: record.class, schoolId }
+          });
+          if (classRecord) {
+            classId = classRecord.id;
+          }
         }
-
-        if (validStudents.length > 0) {
-            await batch.commit();
-        }
-
-        return { 
-            success: true, 
-            importedCount: validStudents.length,
-            errorCount: invalidRecords.length,
-            invalidRecords: invalidRecords
-        };
-
-    } catch (error: any) {
-        console.error('Error in bulk student creation:', error);
-        if (error.code === 'auth/email-already-in-use') {
-          return { error: 'One or more guardian email addresses are already in use.' };
-        }
-        return { error: error.message || 'An unexpected server error occurred during bulk import.' };
-    }
-}
-
-export async function bulkDeleteStudents(studentIds: string[]) {
-    if (!studentIds || studentIds.length === 0) {
-        return { error: 'No student IDs provided for deletion.' };
-    }
-
-    try {
-        const batch = dbService.createBatch();
-        studentIds.forEach(id => {
-            batch.delete('students', id);
+        
+        const studentId = await generateStudentId(schoolId, importedCount);
+        
+        const guardianEmail = record.guardianEmail || record.email;
+        const guardianContact = record.guardianContact || record.phone || '0000000000';
+        const guardianName = record.guardianName || 'Parent / Guardian';
+        
+        // Resolve parent login record
+        let parentUser = await prisma.user.findUnique({
+          where: { email: guardianEmail }
         });
-        await batch.commit();
-        return { success: true, deletedCount: studentIds.length };
-    } catch (error: any) {
-        console.error('Error in bulk student deletion:', error);
-        return { error: error.message || 'An unexpected server error occurred during bulk deletion.' };
+        
+        if (!parentUser) {
+          const nameParts = guardianName.trim().split(/\s+/);
+          const parentFirstName = nameParts[0] || 'Parent';
+          const parentLastName = nameParts.slice(1).join(' ') || 'Guardian';
+          
+          parentUser = await prisma.user.create({
+            data: {
+              schoolId,
+              email: guardianEmail,
+              phone: guardianContact,
+              firstName: parentFirstName,
+              lastName: parentLastName,
+              role: 'PARENT',
+              passwordHash: guardianContact,
+              status: 'active'
+            }
+          });
+        }
+        
+        // Create student record
+        const student = await prisma.student.create({
+          data: {
+            schoolId,
+            studentId,
+            firstName: record.firstName,
+            lastName: record.lastName,
+            middleName: record.middleName || null,
+            gender: record.gender || 'Male',
+            dateOfBirth: record.dateOfBirth ? new Date(record.dateOfBirth) : new Date('2015-01-01'),
+            classId,
+            sessionYear: record.session || '2024/2025',
+            status: 'Active',
+            admissionDate: record.admissionDate ? new Date(record.admissionDate) : new Date(),
+          }
+        });
+        
+        // Link parent and child
+        await prisma.guardian.create({
+          data: {
+            schoolId,
+            studentId: student.id,
+            userId: parentUser.id,
+            fullName: guardianName,
+            relationship: record.relationship || 'PARENT',
+            phone: guardianContact,
+            email: guardianEmail,
+            address: record.address || 'N/A',
+            isPrimary: true,
+          }
+        });
+        
+        importedCount++;
+      } catch (err: any) {
+        errorCount++;
+        invalidRecords.push({
+          firstName: record.firstName || 'N/A',
+          lastName: record.lastName || '',
+          error: err.message || 'Database error'
+        });
+      }
     }
+    
+    revalidatePath('/dashboard/students');
+    return { success: true, importedCount, errorCount, invalidRecords };
+  } catch (error: any) {
+    console.error('Error bulk creating students:', error);
+    return { error: error.message || 'An unexpected error occurred.' };
+  }
 }
+

@@ -77,7 +77,7 @@ export default function AnnouncementsPage() {
     const handleDelete = async (id: string) => {
         try {
             const result = await deleteAnnouncement(id);
-            if (result.error) throw new Error(result.error);
+            if ((result as any).error) throw new Error((result as any).error);
             toast({ title: 'Success', description: 'Announcement deleted successfully.' });
             fetchAnnouncements();
         } catch (error: any) {

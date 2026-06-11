@@ -4,7 +4,7 @@
 
 export const KNOWLEDGE_BASE = `
 ## Application Overview
-The GIIA Portal is a role-based school management system for Great Insight International Academy.
+The SCHOOL Portal is a role-based school management system for School OS.
 
 ## User Roles and General Permissions
 - Admin: Has full access to all features, including system configuration and user management.

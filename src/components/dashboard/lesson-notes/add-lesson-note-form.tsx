@@ -5,8 +5,8 @@ import React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { collection, doc, setDoc, updateDoc, getDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { collection, doc, setDoc, updateDoc, getDoc } from '@/lib/firebase-stubs';
+import { ref, uploadBytes, getDownloadURL } from '@/lib/firebase-stubs';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { db, storage } from '@/lib/firebase';
+import { db, auth, storage } from "@/lib/firebase";
 import { dbService } from '@/lib/dbService';
 import { UploadCloud, Loader2 } from 'lucide-react';
 import { useRole } from '@/context/role-context';

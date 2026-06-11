@@ -1,11 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, GraduationCap, DollarSign, BookOpen, TrendingUp, TrendingDown, Activity } from 'lucide-react';
 
+// Admin dashboard stats data type
 type DashboardStats = {
     totalStudents: number;
     totalStaff: number;
@@ -14,6 +13,9 @@ type DashboardStats = {
     activeClasses: number;
     recentActivities: Array<{ title: string; time: string; type: string }>;
 };
+
+// Server action import for fetching admin overview stats via Prisma
+import { getAdminDashboardStats } from '@/actions/academic-actions';
 
 export function NewAdminDashboard() {
     const [stats, setStats] = useState<DashboardStats>({
@@ -27,46 +29,28 @@ export function NewAdminDashboard() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
+        // Fetch dashboard stats on mount via server action
         fetchDashboardStats();
     }, []);
 
     const fetchDashboardStats = async () => {
         try {
-            // Get total students
-            const studentsSnap = await getDocs(query(collection(db, 'students'), where('status', '==', 'Active')));
-            const totalStudents = studentsSnap.size;
-
-            // Get total staff
-            const staffSnap = await getDocs(collection(db, 'staff'));
-            const totalStaff = staffSnap.size;
-
-            // Get payments
-            const paymentsSnap = await getDocs(collection(db, 'payments'));
-            const payments = paymentsSnap.docs.map(doc => doc.data());
-            const totalRevenue = payments.reduce((sum, p: any) => sum + (p.amount_paid || 0), 0);
-
-            // Get pending invoices
-            const invoicesSnap = await getDocs(query(collection(db, 'invoices'), where('status', '==', 'Pending')));
-            const pendingPayments = invoicesSnap.size;
-
-            // Get classes
-            const classesSnap = await getDocs(collection(db, 'classes'));
-            const activeClasses = classesSnap.size;
-
-            setStats({
-                totalStudents,
-                totalStaff,
-                totalRevenue,
-                pendingPayments,
-                activeClasses,
-                recentActivities: [
-                    { title: 'New student admitted', time: '2 hours ago', type: 'student' },
-                    { title: 'Payment received', time: '4 hours ago', type: 'payment' },
-                    { title: 'Result published', time: '1 day ago', type: 'result' }
-                ]
-            });
+            // Call server action to get admin overview numbers from Prisma
+            const result = await getAdminDashboardStats();
+            if (result.success && result.data) {
+                setStats({
+                    totalStudents: result.data.totalStudents || 0,
+                    totalStaff: result.data.totalStaff || 0,
+                    totalRevenue: result.data.totalRevenue || 0,
+                    pendingPayments: result.data.pendingPayments || 0,
+                    activeClasses: result.data.activeClasses || 0,
+                    recentActivities: result.data.recentActivities || [
+                        { title: 'System is operational', time: 'Just now', type: 'system' },
+                    ]
+                });
+            }
         } catch (error) {
-            console.error('Error fetching stats:', error);
+            console.error('Error fetching admin dashboard stats:', error);
         } finally {
             setIsLoading(false);
         }
@@ -169,26 +153,12 @@ export function NewAdminDashboard() {
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Student Distribution</CardTitle>
-                        <CardDescription>By class level</CardDescription>
+                        <CardTitle>Active Classes</CardTitle>
+                        <CardDescription>Currently enrolled classes</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="space-y-2">
-                            {['Nursery', 'KG', 'Primary 1-3', 'Primary 4-6'].map((level, i) => (
-                                <div key={i} className="flex items-center justify-between">
-                                    <span className="text-sm">{level}</span>
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                            <div 
-                                                className="h-full bg-gradient-to-r from-blue-500 to-purple-500" 
-                                                style={{ width: `${Math.random() * 100}%` }}
-                                            ></div>
-                                        </div>
-                                        <span className="text-sm font-medium">{Math.floor(Math.random() * 100)}</span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                        <div className="text-4xl font-bold text-blue-600">{stats.activeClasses}</div>
+                        <p className="text-sm text-muted-foreground mt-2">classes with active enrollment</p>
                     </CardContent>
                 </Card>
 
@@ -202,7 +172,7 @@ export function NewAdminDashboard() {
                             <div>
                                 <div className="flex justify-between text-sm mb-2">
                                     <span>Collected</span>
-                                    <span className="font-medium">75%</span>
+                                    <span className="font-medium">Running total</span>
                                 </div>
                                 <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
                                     <div className="h-full bg-gradient-to-r from-green-500 to-emerald-500 w-3/4"></div>

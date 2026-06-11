@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword } from '@/lib/firebase-stubs';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -18,7 +18,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useRole } from '@/context/role-context';
 import { useToast } from '@/hooks/use-toast';
-import { auth } from '@/lib/firebase';
+import { db, auth, storage } from "@/lib/firebase";
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -77,7 +77,7 @@ export function AdminLoginForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="admin@giia.com.ng" {...field} />
+                <Input placeholder="admin@school.edu" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

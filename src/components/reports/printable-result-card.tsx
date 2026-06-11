@@ -17,9 +17,9 @@ export function PrintableResultCard({
   results,
   term,
   session,
-  schoolHeaderUrl = '/assets/legacy/school_images/giia_header.jpg',
+  schoolHeaderUrl = '/placeholder-header.jpg',
   signatureUrl = '/assets/legacy/school_images/USMAN_SANI_page-0001.jpg',
-  watermarkUrl = '/assets/legacy/pics/giialogo.png',
+  watermarkUrl = '/placeholder-logo.png',
 }: PrintableResultCardProps) {
   const averageScore =
     results.length > 0

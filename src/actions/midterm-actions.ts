@@ -1,21 +1,58 @@
 'use server';
 
-import { collection, getDocs, query, where, addDoc, updateDoc, doc, Timestamp, writeBatch } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+// Import Prisma database client
+import { prisma } from '@/lib/prisma';
 
+/**
+ * Fetches midterm results for all students in a given class, term, and session.
+ */
 export async function getMidtermResults(classLevel: string, term: string, session: string) {
     try {
-        const q = query(
-            collection(db, 'midterm_results'),
-            where('class', '==', classLevel),
-            where('term', '==', term),
-            where('session', '==', session)
-        );
-        
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
+        const termRecord = await prisma.term.findFirst({
+            where: {
+                OR: [
+                    { id: term },
+                    { name: term },
+                    { name: term.replace("First Term", "Term 1").replace("Second Term", "Term 2").replace("Third Term", "Term 3") },
+                    { name: term.replace("Term 1", "First Term").replace("Term 2", "Second Term").replace("Term 3", "Third Term") }
+                ]
+            }
+        });
+
+        if (!termRecord) return [];
+
+        const results = await prisma.midtermResult.findMany({
+            where: {
+                student: {
+                    class: {
+                        name: classLevel
+                    }
+                },
+                termId: termRecord.id,
+                session: session
+            },
+            include: {
+                student: {
+                    include: {
+                        class: true
+                    }
+                },
+                subject: true,
+                term: true
+            }
+        });
+
+        return results.map(r => ({
+            id: r.id,
+            studentId: r.studentId,
+            studentName: `${r.student.firstName} ${r.student.lastName}`,
+            subjectId: r.subjectId,
+            subjectName: r.subject.name,
+            class: r.student.class?.name || classLevel,
+            term: r.term.name,
+            session: r.session,
+            score: r.score,
+            achievement: r.achievement
         }));
     } catch (error) {
         console.error('Error fetching midterm results:', error);
@@ -23,6 +60,9 @@ export async function getMidtermResults(classLevel: string, term: string, sessio
     }
 }
 
+/**
+ * Saves a batch of midterm results, performing upserts to ensure uniqueness.
+ */
 export async function saveMidtermResults(results: Array<{
     studentId: string;
     studentName: string;
@@ -35,38 +75,80 @@ export async function saveMidtermResults(results: Array<{
     achievement: string;
 }>) {
     try {
-        const batch = writeBatch(db);
-        
         for (const result of results) {
-            // Check if result already exists
-            const q = query(
-                collection(db, 'midterm_results'),
-                where('studentId', '==', result.studentId),
-                where('subjectId', '==', result.subjectId),
-                where('term', '==', result.term),
-                where('session', '==', result.session)
-            );
-            
-            const existing = await getDocs(q);
-            
-            if (existing.empty) {
-                // Create new
-                const docRef = doc(collection(db, 'midterm_results'));
-                batch.set(docRef, {
-                    ...result,
-                    createdAt: Timestamp.now()
-                });
-            } else {
-                // Update existing
-                const docRef = doc(db, 'midterm_results', existing.docs[0].id);
-                batch.update(docRef, {
-                    score: result.score,
-                    achievement: result.achievement
+            // Find student by ID or display studentId
+            const student = await prisma.student.findFirst({
+                where: {
+                    OR: [
+                        { id: result.studentId },
+                        { studentId: result.studentId }
+                    ]
+                }
+            });
+
+            if (!student) continue;
+
+            // Find or create the subject in the school
+            let subject = await prisma.subject.findFirst({
+                where: {
+                    OR: [
+                        { id: result.subjectId },
+                        { name: result.subjectId },
+                        { name: result.subjectName }
+                    ],
+                    schoolId: student.schoolId
+                }
+            });
+
+            if (!subject) {
+                subject = await prisma.subject.create({
+                    data: {
+                        schoolId: student.schoolId,
+                        name: result.subjectName || result.subjectId
+                    }
                 });
             }
+
+            // Find the term record
+            const termRecord = await prisma.term.findFirst({
+                where: {
+                    OR: [
+                        { id: result.term },
+                        { name: result.term },
+                        { name: result.term.replace("First Term", "Term 1").replace("Second Term", "Term 2").replace("Third Term", "Term 3") },
+                        { name: result.term.replace("Term 1", "First Term").replace("Term 2", "Second Term").replace("Term 3", "Third Term") }
+                    ]
+                }
+            });
+
+            if (!termRecord) continue;
+
+            // Upsert midterm result
+            await prisma.midtermResult.upsert({
+                where: {
+                    studentId_subjectId_termId: {
+                        studentId: student.id,
+                        subjectId: subject.id,
+                        termId: termRecord.id
+                    }
+                },
+                update: {
+                    score: result.score,
+                    achievement: result.achievement,
+                    session: result.session
+                },
+                create: {
+                    schoolId: student.schoolId,
+                    studentId: student.id,
+                    subjectId: subject.id,
+                    termId: termRecord.id,
+                    session: result.session,
+                    score: result.score,
+                    achievement: result.achievement
+                }
+            });
         }
         
-        await batch.commit();
         return { success: true };
     } catch (error) {
         console.error('Error saving midterm results:', error);
@@ -74,6 +156,9 @@ export async function saveMidtermResults(results: Array<{
     }
 }
 
+/**
+ * Helper to compute achievement descriptor from raw midterm score.
+ */
 export async function calculateAchievement(score: number): Promise<string> {
     if (score >= 0 && score <= 6) return 'Emerging';
     if (score >= 7 && score <= 9) return 'Emerging +';
@@ -83,32 +168,80 @@ export async function calculateAchievement(score: number): Promise<string> {
     return 'Invalid';
 }
 
+/**
+ * Generates a midterm report card summary for a specific student.
+ */
 export async function getStudentMidtermReport(studentId: string, term: string, session: string) {
     try {
-        const q = query(
-            collection(db, 'midterm_results'),
-            where('studentId', '==', studentId),
-            where('term', '==', term),
-            where('session', '==', session)
-        );
-        
-        const snapshot = await getDocs(q);
-        const results = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
+        const termRecord = await prisma.term.findFirst({
+            where: {
+                OR: [
+                    { id: term },
+                    { name: term },
+                    { name: term.replace("First Term", "Term 1").replace("Second Term", "Term 2").replace("Third Term", "Term 3") },
+                    { name: term.replace("Term 1", "First Term").replace("Term 2", "Second Term").replace("Term 3", "Third Term") }
+                ]
+            }
+        });
+
+        if (!termRecord) {
+            throw new Error('Term not found');
+        }
+
+        const student = await prisma.student.findFirst({
+            where: {
+                OR: [
+                    { id: studentId },
+                    { studentId: studentId }
+                ]
+            },
+            include: {
+                class: true
+            }
+        });
+
+        if (!student) {
+            throw new Error('Student not found');
+        }
+
+        const results = await prisma.midtermResult.findMany({
+            where: {
+                studentId: student.id,
+                termId: termRecord.id,
+                session: session
+            },
+            include: {
+                subject: true,
+                term: true
+            }
+        });
+
+        const mappedResults = results.map(r => ({
+            id: r.id,
+            studentId: student.id,
+            studentName: `${student.firstName} ${student.lastName}`,
+            subjectId: r.subjectId,
+            subjectName: r.subject.name,
+            class: student.class?.name || '',
+            term: termRecord.name,
+            session: r.session,
+            score: r.score,
+            achievement: r.achievement
         }));
-        
-        // Calculate average score
-        const totalScore = results.reduce((sum: number, r: any) => sum + r.score, 0);
+
+        const totalScore = results.reduce((sum, r) => sum + r.score, 0);
         const averageScore = results.length > 0 ? totalScore / results.length : 0;
-        
-        // Get student info
-        const studentSnap = await getDocs(query(collection(db, 'students'), where('id', '==', studentId)));
-        const student = studentSnap.docs[0]?.data();
-        
+
         return {
-            student,
-            results,
+            student: {
+                id: student.id,
+                studentId: student.studentId,
+                firstName: student.firstName,
+                lastName: student.lastName,
+                classLevel: student.class?.name || '',
+                status: student.status
+            },
+            results: mappedResults,
             averageScore
         };
     } catch (error) {
@@ -117,23 +250,28 @@ export async function getStudentMidtermReport(studentId: string, term: string, s
     }
 }
 
+/**
+ * Fetches midterm reports for all students enrolled in a class.
+ */
 export async function getClassMidtermReports(classLevel: string, term: string, session: string) {
     try {
-        // Get all students in class
-        const studentsSnap = await getDocs(
-            query(collection(db, 'students'), where('classLevel', '==', classLevel))
-        );
-        
-        const students = studentsSnap.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
-        
+        const students = await prisma.student.findMany({
+            where: {
+                class: {
+                    name: classLevel
+                },
+                status: 'Active'
+            }
+        });
+
         const reports = [];
-        
         for (const student of students) {
-            const report = await getStudentMidtermReport(student.id, term, session);
-            reports.push(report);
+            try {
+                const report = await getStudentMidtermReport(student.id, term, session);
+                reports.push(report);
+            } catch (e) {
+                console.error(`Error generating report for student ${student.id}:`, e);
+            }
         }
         
         return reports;

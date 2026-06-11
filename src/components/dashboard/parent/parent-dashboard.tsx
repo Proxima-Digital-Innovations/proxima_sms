@@ -28,8 +28,8 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLe
 import { PieChart, Pie, Cell } from 'recharts';
 import { useRole } from '@/context/role-context';
 import { useEffect, useState, useCallback } from 'react';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs, orderBy, limit } from '@/lib/firebase-stubs';
+import { db, auth, storage } from "@/lib/firebase";
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Student, ReportCard } from '@/lib/schema';
 import Link from 'next/link';

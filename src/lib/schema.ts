@@ -79,7 +79,7 @@ export type Announcement = {
 // New, detailed Student Schema
 export type Student = {
     id: string;
-    studentId: string; // GIIA/STU/24/0001
+    studentId: string; // SCHOOL/STU/24/0001
     firstName: string;
     lastName: string;
     middleName?: string;
@@ -241,7 +241,7 @@ export type PayrollRun = {
 export type Payslip = {
   id: string;
   payrollRunId: string;
-  staffId: string; // GIIA Staff ID
+  staffId: string; // SCHOOL Staff ID
   employeeName: string;
   payPeriod: string; // e.g., "October 2025"
   amount: number;

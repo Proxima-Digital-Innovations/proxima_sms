@@ -4,7 +4,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc } from '@/lib/firebase-stubs';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { db } from '@/lib/firebase';
+import { db, auth, storage } from "@/lib/firebase";
 import type { MockUser } from '@/lib/schema';
 import { Save } from 'lucide-react';
 import { useState } from 'react';

@@ -88,15 +88,14 @@ export function AnnouncementForm({ initialData, onFormSubmit }: AnnouncementForm
     }
     setIsSubmitting(true);
     try {
-      const result = await saveAnnouncement({ ...values, authorId: user.uid });
-      if (result.error) {
-          Object.entries(result.error).forEach(([key, messages]) => {
-              if (Array.isArray(messages)) {
-                form.setError(key as keyof AnnouncementFormValues, { message: messages.join(', ') });
-              }
-          });
+      const result = await saveAnnouncement({ ...values });
+      
+      // If the result contains a validation or execution error, display it and stop
+      if (result && 'error' in result && typeof result.error === 'string') {
+          toast({ variant: 'destructive', title: 'Error', description: result.error });
           throw new Error('Validation failed.');
       }
+      
       toast({ title: 'Success', description: 'Announcement saved successfully.' });
       onFormSubmit(true);
     } catch (error: any) {

@@ -4,10 +4,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-
+import { useRouter, useSearchParams } from 'next/navigation';
+import { signIn } from 'next-auth/react';
+import { useState } from 'react';
+import { Loader2, AlertCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -19,147 +19,121 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useRole } from '@/context/role-context';
 import { useToast } from '@/hooks/use-toast';
-import { auth, db } from '@/lib/firebase';
-import type { MockUser } from '@/lib/schema';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const formSchema = z.object({
-  identifier: z.string().min(1, { message: 'ID or Email is required.' }),
+  email: z.string().email({ message: 'Enter a valid email address.' }),
   password: z.string().min(1, { message: 'Password is required.' }),
 });
 
-export function LoginForm() {
+export function LoginForm({ schoolSlug }: { schoolSlug?: string }) {
   const router = useRouter();
-  const { setRole } = useRole();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || (schoolSlug ? `/${schoolSlug}/dashboard` : '/dashboard');
   const { toast } = useToast();
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      identifier: '',
+      email: '',
       password: '',
     },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    setError(null);
     try {
-      // 1. Determine if the identifier is an email or a Staff/Student ID
-      const isEmail = values.identifier.includes('@');
-      let userEmail = '';
-      let userData: MockUser | null = null;
-
-      const usersRef = collection(db, 'users');
-      
-      if (isEmail) {
-        // If it's an email, we already have it. Find the user doc to get the role.
-        userEmail = values.identifier.toLowerCase(); // Standardize email to lowercase
-        const q = query(usersRef, where('email', '==', userEmail));
-        const querySnapshot = await getDocs(q);
-        if (querySnapshot.empty) {
-            throw new Error("auth/user-not-found");
-        }
-        userData = querySnapshot.docs[0].data() as MockUser;
-
-      } else {
-        // If it's a Staff/Student ID, find the user doc to get the email.
-        const staffId = values.identifier.toUpperCase(); // Standardize staffId to uppercase
-        const q = query(usersRef, where('staffId', '==', staffId));
-        const querySnapshot = await getDocs(q);
-        if (querySnapshot.empty) {
-           throw new Error("auth/user-not-found");
-        }
-        userData = querySnapshot.docs[0].data() as MockUser;
-        userEmail = userData.email;
-      }
-      
-
-      if (!userEmail || !userData) {
-        throw new Error("auth/user-not-found");
-      }
-
-      // 2. Sign in with the user's email and provided password
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        userEmail,
-        values.password
-      );
-      
-      const user = userCredential.user;
-
-      if (user) {
-        setRole(userData.role);
-
-        // 3. Show password change reminder if needed (case-insensitive check)
-        const isDefaultPassword = (userData.stateOfOrigin && values.password.toLowerCase() === userData.stateOfOrigin.toLowerCase()) || 
-                                (userData.generatedPassword && values.password.toLowerCase() === userData.generatedPassword.toLowerCase());
-        
-        if (isDefaultPassword) {
-           toast({
-              title: 'Welcome!',
-              description: 'For your security, please update your password in your profile settings.',
-              duration: 9000,
-            });
-        } else {
-             toast({
-              title: 'Login Successful',
-              description: `Welcome back! You are logged in as ${userData.role}.`,
-            });
-        }
-        router.push('/dashboard');
-      }
-    } catch (error: any) {
-        let description = 'An unexpected error occurred.';
-        if (error.code === 'auth/user-not-found') {
-            description = 'No user found with that ID or Email.';
-        } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-            description = 'Incorrect password. Please try again.';
-        }
-       toast({
-        variant: 'destructive',
-        title: 'Login Failed',
-        description,
+      const result = await signIn('credentials', {
+        email: values.email,
+        password: values.password,
+        redirect: false,
       });
+
+      if (result?.error) {
+        setError('Invalid email or password.');
+        return;
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Signing you in...',
+      });
+
+      router.push(callbackUrl);
+      router.refresh();
+    } catch (err: any) {
+      setError('An unexpected error occurred.');
     }
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="identifier"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Staff/Student ID or Email</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g. GIIA24TEA0001 or name@giia.com.ng" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Password</FormLabel>
-              <FormControl>
-                <Input type="password" placeholder="••••••••" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={form.formState.isSubmitting}
-        >
-          {form.formState.isSubmitting ? 'Signing In...' : 'Sign In'}
-        </Button>
-      </form>
-    </Form>
+    <div className="space-y-6">
+      {error && (
+        <Alert variant="destructive" className="py-2 bg-red-50 border-red-200 text-red-600">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="text-xs font-semibold">
+            {error}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem className="space-y-1">
+                <FormLabel className="text-xs font-bold text-slate-700">
+                  Email Address
+                </FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="name@school.edu" 
+                    {...field} 
+                    className="h-10 border-slate-200 focus:border-slate-400 focus:ring-0 transition-all rounded-lg"
+                  />
+                </FormControl>
+                <FormMessage className="text-[10px]" />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem className="space-y-1">
+                <FormLabel className="text-xs font-bold text-slate-700">
+                  Password
+                </FormLabel>
+                <FormControl>
+                  <Input 
+                    type="password" 
+                    placeholder="••••••••" 
+                    {...field} 
+                    className="h-10 border-slate-200 focus:border-slate-400 focus:ring-0 transition-all rounded-lg"
+                  />
+                </FormControl>
+                <FormMessage className="text-[10px]" />
+              </FormItem>
+            )}
+          />
+          
+          <Button
+            type="submit"
+            className="w-full h-10 rounded-lg font-bold bg-slate-900 hover:bg-slate-800 text-white transition-all mt-2"
+            disabled={form.formState.isSubmitting}
+          >
+            {form.formState.isSubmitting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              'Sign In'
+            )}
+          </Button>
+        </form>
+      </Form>
+    </div>
   );
 }

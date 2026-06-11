@@ -1,83 +1,37 @@
 
-'use client';
+import { auth } from '@/auth';
+import { redirect } from 'next/navigation';
 
-import { useRole } from '@/context/role-context';
-import { Skeleton } from '@/components/ui/skeleton';
-import dynamic from 'next/dynamic';
+export default async function DashboardRedirect() {
+  const session = await auth();
 
-const DashboardSkeleton = () => (
-  <div className="space-y-4">
-    <Skeleton className="h-8 w-1/4" />
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Skeleton className="h-32" />
-      <Skeleton className="h-32" />
-      <Skeleton className="h-32" />
-      <Skeleton className="h-32" />
-    </div>
-    <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-            <Skeleton className="h-96" />
-        </div>
-        <div className="lg:col-span-1">
-            <Skeleton className="h-96" />
-        </div>
-    </div>
-  </div>
-);
-
-const AdminDashboard = dynamic(
-  () => import('@/components/dashboard/admin/new-admin-dashboard').then(mod => mod.NewAdminDashboard),
-  { loading: () => <DashboardSkeleton />, ssr: false }
-);
-const HodDashboard = dynamic(
-  () => import('@/components/dashboard/hod/hod-dashboard').then(mod => mod.HodDashboard),
-  { loading: () => <DashboardSkeleton />, ssr: false }
-);
-const SltDashboard = dynamic(
-  () => import('@/app/dashboard/slt/page').then(mod => mod.default),
-  { loading: () => <DashboardSkeleton />, ssr: false }
-);
-const AccountantDashboard = dynamic(
-  () => import('@/app/dashboard/accountant/page').then(mod => mod.default),
-  { loading: () => <DashboardSkeleton />, ssr: false }
-);
-const TeacherDashboard = dynamic(
-  () => import('@/components/dashboard/teacher/teacher-dashboard').then(mod => mod.TeacherDashboard),
-  { loading: () => <DashboardSkeleton />, ssr: false }
-);
-const ParentDashboard = dynamic(
-  () => import('@/components/dashboard/parent/parent-dashboard').then(mod => mod.ParentDashboard),
-  { loading: () => <DashboardSkeleton />, ssr: false }
-);
-const ExamOfficerDashboard = dynamic(
-  () => import('@/components/dashboard/exam-officer/exam-officer-dashboard').then(mod => mod.ExamOfficerDashboard),
-  { loading: () => <DashboardSkeleton />, ssr: false }
-);
-
-export default function DashboardPage() {
-  const { role, isLoading } = useRole();
-
-  if (isLoading) {
-    return <DashboardSkeleton />;
+  if (!session) {
+    redirect('/login');
   }
 
-  switch (role) {
-    case 'Admin':
-      return <AdminDashboard />;
-    case 'SLT':
-      return <SltDashboard />;
-    case 'HeadOfDepartment':
-      return <HodDashboard />;
-    case 'Accountant':
-      return <AccountantDashboard />;
-    case 'ExamOfficer':
-        return <ExamOfficerDashboard />;
-    case 'Teacher':
-      return <TeacherDashboard />;
-    case 'Parent':
-    case 'Student': // Students use the Parent dashboard for now
-      return <ParentDashboard />;
-    default:
-      return <div>Invalid role or dashboard not yet implemented. Please log out and try again.</div>;
+  if (session.user.isSuperAdmin) {
+    redirect('/super-admin');
   }
+
+  if (session.user.schoolId) {
+    // We need to find the school subdomain to redirect correctly
+    // But since we are already authenticated, we can just use the user data
+    // In a real app, we'd fetch the school subdomain here.
+    // For now, if we are on a subdomain, the middleware should have handled this.
+    // If we are on the root domain, we need the school slug.
+    
+    // For testing on localhost:9002/dashboard:
+    // We'll try to find the school subdomain from the DB.
+    const { prisma } = await import('@/lib/prisma');
+    const school = await prisma.school.findUnique({
+      where: { id: session.user.schoolId },
+      select: { subdomain: true }
+    });
+
+    if (school) {
+      redirect(`/${school.subdomain}/dashboard`);
+    }
+  }
+
+  redirect('/');
 }

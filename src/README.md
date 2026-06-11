@@ -1,6 +1,6 @@
-# GIIA Portal - School Management System
+# SCHOOL Portal - School Management System
 
-This is a comprehensive, role-based school management portal built with a modern technology stack. It is designed to streamline administrative tasks, improve communication, and provide real-time insights for administrators, teachers, and parents at Great Insight International Academy (GIIA).
+This is a comprehensive, role-based school management portal built with a modern technology stack. It is designed to streamline administrative tasks, improve communication, and provide real-time insights for administrators, teachers, and parents at Proxima Hub (SCHOOL).
 
 ## ✨ Features
 

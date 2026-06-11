@@ -25,7 +25,7 @@ export function PrintableExamResultCard({
   feeInfo,
   behaviouralAssessment,
   comments,
-  schoolHeaderUrl = '/assets/legacy/school_images/giia_header.jpg',
+  schoolHeaderUrl = '/placeholder-header.jpg',
   signatureUrl = '/assets/legacy/school_images/USMAN_SANI_page-0001.jpg',
 }: PrintableExamResultCardProps) {
   const totalScore = results.reduce((acc, curr) => acc + (curr.totalScore || 0), 0);

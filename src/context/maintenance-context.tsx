@@ -1,7 +1,6 @@
 'use client';
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import React, { createContext, useContext, useState } from 'react';
+
 
 type MaintenanceContextType = {
   isMaintenanceMode: boolean;
@@ -11,27 +10,10 @@ type MaintenanceContextType = {
 const MaintenanceContext = createContext<MaintenanceContextType | undefined>(undefined);
 
 export const MaintenanceProvider = ({ children }: { children: React.ReactNode }) => {
-  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const settingsDocRef = doc(db, 'system', 'settings');
-
-    const unsubscribe = onSnapshot(settingsDocRef, (docSnap) => {
-      if (docSnap.exists()) {
-        setIsMaintenanceMode(docSnap.data().maintenanceMode || false);
-      } else {
-        setIsMaintenanceMode(false);
-      }
-      setIsLoading(false);
-    }, (error) => {
-      console.error("Error fetching maintenance status:", error);
-      setIsMaintenanceMode(false); // Default to off if there's an error
-      setIsLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
+  // Since we are migrating from Firebase to Prisma and there is no system settings
+  // model in the relational database yet, we default maintenance mode to false.
+  const [isMaintenanceMode] = useState(false);
+  const [isLoading] = useState(false);
 
   return (
     <MaintenanceContext.Provider value={{ isMaintenanceMode, isLoading }}>

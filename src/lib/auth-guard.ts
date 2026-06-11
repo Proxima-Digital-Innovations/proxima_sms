@@ -71,7 +71,7 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
 };
 
 export const navConfig: Record<string, { group: string; links: (keyof typeof allNavLinks)[] }[]> = {
-  Admin: [
+  ADMIN: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
     { group: 'Communication', links: ['announcements', 'messaging'] },
     { group: 'Management', links: ['reports', 'system', 'manageStaff', 'manageStudents', 'departments'] },
@@ -86,28 +86,28 @@ export const navConfig: Record<string, { group: string; links: (keyof typeof all
     { group: 'Academics', links: ['lessonApprovals', 'enterScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'generateResults', 'viewResults', 'gradingSystem', 'classesAndSubjects', 'aiSettings'] },
     { group: 'Finance', links: ['financialReports'] },
   ],
-  HeadOfDepartment: [
+  HOD: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
     { group: 'Communication', links: ['announcements', 'messaging'] },
     { group: 'Department', links: ['lessonApprovals', 'enterScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'hodAnalytics', 'manageStaff'] },
     { group: 'Academics', links: ['classesAndSubjects'] },
   ],
-  Accountant: [
+  ACCOUNTANT: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
     { group: 'Communication', links: ['announcements', 'messaging'] },
     { group: 'Finance', links: ['feeSystem', 'invoices', 'payments', 'expenses', 'payroll', 'reconciliation', 'financialReports'] },
   ],
-  ExamOfficer: [
+  EXAM_OFFICER: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
     { group: 'Communication', links: ['announcements', 'messaging'] },
     { group: 'Examinations', links: ['reviewQuestions', 'enterScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'generateResults', 'viewResults', 'timetable', 'examRegistration', 'seatingPlans'] },
   ],
-  Teacher: [
+  TEACHER: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
     { group: 'Communication', links: ['announcements', 'messaging'] },
     { group: 'My Work', links: ['lessonPlans', 'examQuestions', 'bulkUpload', 'enterScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'attendance', 'myStudents'] },
   ],
-  Parent: [
+  PARENT: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
     { group: 'My Child', links: ['parentResults', 'parentPayments', 'parentAnnouncements', 'timetable', 'messaging'] },
   ],
@@ -156,7 +156,7 @@ export function isPathAuthorized(pathname: string, role: string): boolean {
         return false;
     }
 
-    if (role === 'Admin') {
+    if (role === 'ADMIN') {
         return true;
     }
     

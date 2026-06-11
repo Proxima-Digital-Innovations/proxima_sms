@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Albabello | Attendance Terminal</title>
+<link rel="icon" href="data:,">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://maxst.icons8.com/vue-static/landings/line-awesome/line-awesome/1.3.0/css/line-awesome.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+body{font-family:'Inter',sans-serif}
+@keyframes pulse-ring{0%{transform:scale(.95);opacity:.7}50%{transform:scale(1.05);opacity:1}100%{transform:scale(.95);opacity:.7}}
+.pulse{animation:pulse-ring 2s ease-in-out infinite}
+@keyframes slide-up{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+.slide-up{animation:slide-up .4s ease}
+</style>
+</head>
+<body class="bg-slate-50 h-screen flex flex-col overflow-hidden">
+
+<!-- HEADER -->
+<header class="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center">
+  <div class="flex items-center gap-4">
+    <div class="w-11 h-11 bg-blue-600 rounded-xl flex items-center justify-center text-white text-xl"><i class="las la-fingerprint"></i></div>
+    <div><h1 class="text-lg font-extrabold text-blue-600">ALBABELLO</h1>
+    <p class="text-[10px] text-slate-400 font-semibold uppercase tracking-widest flex items-center gap-2">
+      Attendance Terminal
+      <span class="text-slate-300">|</span>
+      <span id="branch-name" class="text-blue-500 font-bold">DETECTING...</span>
+    </p></div>
+  </div>
+
+  <!-- MODE TOGGLE -->
+  <div class="flex items-center gap-3 bg-slate-100 rounded-full p-1">
+    <button id="btn-att" onclick="setMode('attendance')" class="px-5 py-2 rounded-full text-sm font-bold transition-all bg-blue-600 text-white">
+      <i class="las la-clock mr-1"></i> Attendance
+    </button>
+    <button id="btn-enr" onclick="setMode('enrollment')" class="px-5 py-2 rounded-full text-sm font-bold transition-all text-slate-500">
+      <i class="las la-user-plus mr-1"></i> Enrollment
+    </button>
+  </div>
+
+  <button onclick="reinitScanner()" class="p-2.5 bg-slate-100 text-slate-500 rounded-xl hover:bg-red-50 hover:text-red-600 transition-all group flex items-center gap-2 border border-slate-200">
+    <i class="las la-sync-alt group-hover:rotate-180 transition-transform duration-500 text-lg"></i>
+    <span class="text-[10px] font-bold uppercase tracking-tight">Reset Scanner</span>
+  </button>
+
+  <div class="text-right">
+    <h2 id="clk" class="text-2xl font-extrabold text-slate-800 tabular-nums">00:00:00</h2>
+    <p id="dte" class="text-xs text-slate-400"></p>
+  </div>
+</header>
+
+<!-- ═══════════════ ATTENDANCE MODE ═══════════════ -->
+<div id="mode-attendance" class="flex-1 flex flex-col items-center justify-center relative">
+  <div class="text-center">
+    <div class="w-56 h-56 mx-auto rounded-full border-4 border-slate-200 flex items-center justify-center mb-6 transition-all duration-500" id="ring">
+      <i class="las la-fingerprint text-[7rem] text-slate-300 pulse transition-colors duration-300" id="fp-icon"></i>
+    </div>
+    <h2 id="status" class="text-3xl font-black text-slate-800">READY</h2>
+    <p id="substatus" class="text-slate-400 mt-2">Place your finger on the scanner</p>
+    <button onclick="document.getElementById('pin-modal').style.display='flex'" class="mt-6 px-6 py-2 rounded-full border border-slate-300 text-slate-500 font-bold text-sm hover:bg-slate-100 transition-all">
+      <i class="las la-keyboard mr-1"></i> USE PIN
+    </button>
+  </div>
+
+  <!-- Activity Log -->
+  <div class="absolute bottom-5 left-0 right-0 px-8">
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 max-w-2xl mx-auto">
+      <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Recent Activity</h3>
+      <div id="activity" class="space-y-1 max-h-28 overflow-y-auto">
+        <p class="text-sm text-slate-300 italic">No activity yet</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ ENROLLMENT MODE ═══════════════ -->
+<div id="mode-enrollment" class="flex-1 flex-col hidden overflow-hidden">
+  <div class="flex h-full">
+
+    <!-- Staff List -->
+    <div class="w-1/2 border-r border-slate-200 bg-white flex flex-col">
+      <div class="p-6 border-b border-slate-100">
+        <h2 class="text-lg font-extrabold mb-3">Select Staff to Enroll</h2>
+        <input type="text" id="srch" oninput="filt()" placeholder="Search by name or ID..."
+               class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+      <div id="stbl" class="flex-1 overflow-y-auto p-4 space-y-2"></div>
+    </div>
+
+    <!-- Scan Area -->
+    <div class="w-1/2 flex flex-col items-center justify-center bg-slate-50 p-10">
+      <div id="enr-idle" class="text-center">
+        <i class="las la-hand-pointer text-6xl text-slate-300 mb-4 block"></i>
+        <h3 class="text-xl font-bold text-slate-400">Select a staff member</h3>
+        <p class="text-slate-300 text-sm mt-1">Then follow the 4-scan enrollment</p>
+      </div>
+
+      <div id="enr-active" class="text-center hidden">
+        <i class="las la-fingerprint text-7xl text-blue-500 pulse mb-4 block"></i>
+        <h2 id="e-name" class="text-2xl font-black text-slate-800 mb-1"></h2>
+        <p id="e-msg" class="text-slate-400 text-lg mb-6">Place finger on scanner</p>
+        <div id="e-dots" class="flex justify-center gap-3 mb-8">
+          <div class="dot w-5 h-5 rounded-full bg-slate-200 transition-all"></div>
+          <div class="dot w-5 h-5 rounded-full bg-slate-200 transition-all"></div>
+          <div class="dot w-5 h-5 rounded-full bg-slate-200 transition-all"></div>
+          <div class="dot w-5 h-5 rounded-full bg-slate-200 transition-all"></div>
+          <div class="dot w-5 h-5 rounded-full bg-slate-200 transition-all"></div>
+        </div>
+        <button onclick="cancelE()" class="px-6 py-2 rounded-xl border border-slate-300 text-slate-500 font-bold text-sm hover:bg-slate-100">CANCEL</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS MODAL (ID CARD STYLE) -->
+<div id="modal" class="fixed inset-0 bg-slate-900/95 z-[60] hidden items-center justify-center backdrop-blur-sm">
+  <div class="bg-white rounded-2xl w-full max-w-xl slide-up shadow-2xl relative overflow-hidden flex border border-slate-200">
+    <div class="w-1/3 bg-slate-100 flex items-center justify-center p-6 border-r border-slate-200">
+      <img id="m-photo" src="" class="w-40 h-40 rounded-xl object-cover shadow-md bg-white p-1"
+           onerror="this.src='https://ui-avatars.com/api/?name=User&size=256&background=2563eb&color=fff&bold=true'">
+    </div>
+    <div class="w-2/3 p-8 relative bg-white">
+      <!-- Watermark logo -->
+      <i class="las la-fingerprint absolute right-[-20px] bottom-[-20px] text-[150px] text-slate-50 opacity-50 z-0"></i>
+      
+      <div class="relative z-10 flex flex-col h-full justify-between">
+          <div>
+            <div class="flex justify-between items-start mb-2">
+                <h1 id="m-name" class="text-3xl font-black text-slate-800 leading-tight"></h1>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4 mt-4 mb-6">
+                <div>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Personnel Number</p>
+                    <p id="m-role" class="text-slate-800 font-bold text-sm bg-slate-50 inline-block px-2 py-1 rounded border border-slate-100"></p>
+                </div>
+                <div>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Department</p>
+                    <p id="m-dept" class="text-slate-800 font-bold text-sm bg-slate-50 inline-block px-2 py-1 rounded border border-slate-100"></p>
+                </div>
+            </div>
+          </div>
+          
+          <div class="flex items-center justify-between border-t border-slate-100 pt-4 mt-auto">
+            <div>
+              <p id="m-time" class="text-xl font-bold text-slate-800"></p>
+              <p id="m-type" class="text-xs font-bold text-blue-500 uppercase tracking-widest"></p>
+              <button id="btn-early-out" onclick="forceOut()" class="hidden mt-3 px-4 py-2 bg-red-50 text-red-600 font-bold text-xs rounded-lg border border-red-100 hover:bg-red-100 transition">
+                CLOCK OUT EARLY (EMERGENCY)
+              </button>
+            </div>
+            <div id="m-type-pill" class="px-5 py-2 rounded-lg text-white font-extrabold text-sm tracking-wide shadow-md"></div>
+          </div>
+
+          <div id="m-offline-warn" class="hidden absolute top-0 right-0 bg-yellow-100 text-yellow-700 text-[10px] font-bold px-3 py-1 rounded-bl-lg flex items-center gap-1">
+             <i class="las la-wifi"></i> SAVED LOCALLY
+          </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PIN FALLBACK MODAL -->
+<div id="pin-modal" class="fixed inset-0 bg-slate-900/90 z-50 hidden items-center justify-center">
+  <div class="bg-white rounded-3xl p-8 text-center max-w-sm w-full slide-up shadow-2xl">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-xl font-bold text-slate-800">PIN Entry</h2>
+      <button onclick="document.getElementById('pin-modal').style.display='none'" class="text-slate-400 hover:text-slate-600"><i class="las la-times text-2xl"></i></button>
+    </div>
+    
+    <input type="text" id="pin-emp" placeholder="Employee ID" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-center text-lg font-bold mb-3 focus:outline-none focus:border-blue-500">
+    <input type="password" id="pin-pass" placeholder="Enter PIN" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-center text-2xl font-bold tracking-[0.5em] mb-6 focus:outline-none focus:border-blue-500" readonly>
+    
+    <!-- NUMPAD -->
+    <div class="grid grid-cols-3 gap-3 mb-6">
+      <button onclick="addPin('1')" class="py-4 bg-slate-50 rounded-xl text-xl font-bold hover:bg-slate-100">1</button>
+      <button onclick="addPin('2')" class="py-4 bg-slate-50 rounded-xl text-xl font-bold hover:bg-slate-100">2</button>
+      <button onclick="addPin('3')" class="py-4 bg-slate-50 rounded-xl text-xl font-bold hover:bg-slate-100">3</button>
+      <button onclick="addPin('4')" class="py-4 bg-slate-50 rounded-xl text-xl font-bold hover:bg-slate-100">4</button>
+      <button onclick="addPin('5')" class="py-4 bg-slate-50 rounded-xl text-xl font-bold hover:bg-slate-100">5</button>
+      <button onclick="addPin('6')" class="py-4 bg-slate-50 rounded-xl text-xl font-bold hover:bg-slate-100">6</button>
+      <button onclick="addPin('7')" class="py-4 bg-slate-50 rounded-xl text-xl font-bold hover:bg-slate-100">7</button>
+      <button onclick="addPin('8')" class="py-4 bg-slate-50 rounded-xl text-xl font-bold hover:bg-slate-100">8</button>
+      <button onclick="addPin('9')" class="py-4 bg-slate-50 rounded-xl text-xl font-bold hover:bg-slate-100">9</button>
+      <button onclick="delPin()" class="py-4 bg-slate-50 rounded-xl text-xl font-bold hover:bg-slate-100 text-red-500"><i class="las la-backspace"></i></button>
+      <button onclick="addPin('0')" class="py-4 bg-slate-50 rounded-xl text-xl font-bold hover:bg-slate-100">0</button>
+      <button onclick="submitPin()" class="py-4 bg-blue-600 rounded-xl text-xl font-bold hover:bg-blue-700 text-white"><i class="las la-check"></i></button>
+    </div>
+    <p id="pin-err" class="text-red-500 text-sm font-bold hidden"></p>
+  </div>
+</div>
+
+<!-- SETUP PIN MODAL -->
+<div id="setup-pin-modal" class="fixed inset-0 bg-slate-900/90 z-50 hidden items-center justify-center">
+  <div class="bg-white rounded-3xl p-8 text-center max-w-sm w-full slide-up shadow-2xl">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-xl font-bold text-slate-800">Set Fallback PIN</h2>
+      <button onclick="closeSetupPin()" class="text-slate-400 hover:text-slate-600"><i class="las la-times text-2xl"></i></button>
+    </div>
+    <p class="text-slate-500 mb-4 text-sm">Assign a 4-digit PIN for <span id="setup-pin-name" class="font-bold text-slate-700"></span></p>
+    <input type="password" id="setup-pin-pass" placeholder="••••" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-center text-3xl font-bold tracking-[0.5em] mb-6 focus:outline-none focus:border-blue-500" readonly>
+    <div class="grid grid-cols-3 gap-3 mb-6">
+      <button onclick="addSetupPin('1')" class="py-4 bg-slate-50 rounded-xl text-xl font-bold hover:bg-slate-100">1</button>
+      <button onclick="addSetupPin('2')" class="py-4 bg-slate-50 rounded-xl text-xl font-bold hover:bg-slate-100">2</button>
+      <button onclick="addSetupPin('3')" class="py-4 bg-slate-50 rounded-xl text-xl font-bold hover:bg-slate-100">3</button>
+      <button onclick="addSetupPin('4')" class="py-4 bg-slate-50 rounded-xl text-xl font-bold hover:bg-slate-100">4</button>
+      <button onclick="addSetupPin('5')" class="py-4 bg-slate-50 rounded-xl text-xl font-bold hover:bg-slate-100">5</button>
+      <button onclick="addSetupPin('6')" class="py-4 bg-slate-50 rounded-xl text-xl font-bold hover:bg-slate-100">6</button>
+      <button onclick="addSetupPin('7')" class="py-4 bg-slate-50 rounded-xl text-xl font-bold hover:bg-slate-100">7</button>
+      <button onclick="addSetupPin('8')" class="py-4 bg-slate-50 rounded-xl text-xl font-bold hover:bg-slate-100">8</button>
+      <button onclick="addSetupPin('9')" class="py-4 bg-slate-50 rounded-xl text-xl font-bold hover:bg-slate-100">9</button>
+      <button onclick="delSetupPin()" class="py-4 bg-slate-50 rounded-xl text-xl font-bold hover:bg-slate-100 text-red-500"><i class="las la-backspace"></i></button>
+      <button onclick="addSetupPin('0')" class="py-4 bg-slate-50 rounded-xl text-xl font-bold hover:bg-slate-100">0</button>
+      <button onclick="submitSetupPin()" class="py-4 bg-emerald-600 rounded-xl text-xl font-bold hover:bg-emerald-700 text-white"><i class="las la-check"></i></button>
+    </div>
+    <p id="setup-pin-err" class="text-red-500 text-sm font-bold hidden"></p>
+    <input type="hidden" id="setup-pin-id">
+  </div>
+</div>
+
+<script>
+const B = window.location.origin;
+const ERP = 'http://127.0.0.1:8000';
+let mode = 'attendance', lts = 0, staff = [], enrolling = false;
+loadStaff();
+
+// Clock
+setInterval(()=>{
+  const n=new Date();
+  document.getElementById('clk').innerText=n.toLocaleTimeString('en-GB');
+  document.getElementById('dte').innerText=n.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+},1000);
+
+// ── MODE SWITCH ──────────────────────────────────────────
+function setMode(m){
+  mode = m;
+  // UI toggle
+  document.getElementById('mode-attendance').style.display = m==='attendance' ? 'flex' : 'none';
+  document.getElementById('mode-enrollment').style.display = m==='enrollment' ? 'flex' : 'none';
+  document.getElementById('mode-enrollment').classList.toggle('hidden', m!=='enrollment');
+
+  document.getElementById('btn-att').className = 'px-5 py-2 rounded-full text-sm font-bold transition-all '
+    + (m==='attendance' ? 'bg-blue-600 text-white' : 'text-slate-500');
+  document.getElementById('btn-enr').className = 'px-5 py-2 rounded-full text-sm font-bold transition-all '
+    + (m==='enrollment' ? 'bg-blue-600 text-white' : 'text-slate-500');
+
+  // Tell agent to pause/resume capture loop
+  fetch(B + '/set_mode', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({mode: m})}).catch(()=>{});
+
+  if(m==='enrollment') loadStaff();
+}
+
+async function reinitScanner(){
+  try {
+    const btn = event.currentTarget;
+    btn.classList.add('opacity-50', 'pointer-events-none');
+    await fetch(B + '/reinit');
+    setTimeout(() => {
+        btn.classList.remove('opacity-50', 'pointer-events-none');
+    }, 1000);
+  } catch(e){}
+}
+
+// ── ATTENDANCE POLL ──────────────────────────────────────
+setInterval(async()=>{
+  if(mode !== 'attendance') return;
+  try{
+    const r = await fetch(B+'/capture');
+    const d = await r.json();
+    if(!d.timestamp || d.timestamp <= lts) return;
+    lts = d.timestamp;
+    if(d.status === 'MATCHED'){
+      showSuccess({
+        staff_id: d.staff_id,
+        name: d.name, 
+        photo_url: d.photo_url, 
+        type: d.type || 'Clock-In',
+        personnel_number: d.personnel_number,
+        department: d.department,
+        offline: d.offline,
+        message: d.message,
+        time: new Date().toLocaleTimeString('en-GB')
+      });
+    } else if(d.status === 'NO_MATCH'){ showDeny(); }
+    else if(d.status === 'READY') { resetAtt(); }
+  }catch(e){}
+}, 500);
+
+// ── PIN LOGIC ────────────────────────────────────────────
+function addPin(num){ document.getElementById('pin-pass').value += num; }
+function delPin(){ const v = document.getElementById('pin-pass').value; document.getElementById('pin-pass').value = v.slice(0,-1); }
+
+async function submitPin(){
+  const emp = document.getElementById('pin-emp').value;
+  const pin = document.getElementById('pin-pass').value;
+  const err = document.getElementById('pin-err');
+  err.classList.add('hidden');
+  
+  if(!emp || !pin){ err.innerText="Enter ID and PIN"; err.classList.remove('hidden'); return; }
+  
+  try {
+    const r = await fetch(ERP+'/kiosk/pin-verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Terminal-ID': 'KB-08-PRO' }, // Use agent's TID logic if possible, or hardcode here
+      body: JSON.stringify({ personnel_number: emp, pin: pin })
+    });
+    const d = await r.json();
+    
+    if(d.success){
+      document.getElementById('pin-modal').style.display='none';
+      document.getElementById('pin-pass').value = '';
+      showSuccess({
+        name: d.name, 
+        photo_url: d.photo_url, 
+        type: d.type || 'Clock-In', 
+        personnel_number: d.personnel_number,
+        department: d.department,
+        time: d.time
+      });
+    } else {
+      err.innerText = d.message || "Verification Failed";
+      err.classList.remove('hidden');
+      document.getElementById('pin-pass').value = '';
+    }
+  } catch(e) {
+    // PIN currently doesn't support offline, would need local PIN cache in agent
+    err.innerText = "Network Error connecting to ERP";
+    err.classList.remove('hidden');
+  }
+}
+
+function showSuccess(d){
+  document.getElementById('m-name').innerText = d.name;
+  document.getElementById('m-photo').src = d.photo_url||'';
+  document.getElementById('m-time').innerText = d.time;
+  
+  // New ID Card Fields
+  document.getElementById('m-role').innerText = d.personnel_number || 'N/A';
+  document.getElementById('m-dept').innerText = d.department || 'Staff';
+  
+  // Offline Warning
+  if(d.offline) {
+      document.getElementById('m-offline-warn').classList.remove('hidden');
+  } else {
+      document.getElementById('m-offline-warn').classList.add('hidden');
+  }
+
+  const tb = document.getElementById('m-type');
+  tb.innerText = d.type;
+  
+  // Early Out Button logic
+  const ebtn = document.getElementById('btn-early-out');
+  if(d.type === 'Already Clocked-In' && !d.offline) {
+      ebtn.classList.remove('hidden');
+      ebtn.dataset.id = d.staff_id;
+  } else {
+      ebtn.classList.add('hidden');
+  }
+
+  const tbp = document.getElementById('m-type-pill');
+  tbp.innerText = d.type;
+  tbp.className = 'px-5 py-2 rounded-lg text-white font-extrabold text-sm tracking-wide shadow-md '
+    + (d.type.includes('Out') ? 'bg-amber-500' : (d.type === 'Already Clocked-In' ? 'bg-amber-400' : 'bg-emerald-500'));
+    
+  document.getElementById('modal').style.display = 'flex';
+  document.getElementById('ring').classList.replace('border-slate-200','border-emerald-400');
+  document.getElementById('fp-icon').classList.replace('text-slate-300','text-emerald-400');
+  document.getElementById('status').innerText = 'VERIFIED';
+  
+  if(d.message) {
+      document.getElementById('substatus').innerText = d.message;
+      document.getElementById('substatus').className = 'text-amber-600 font-bold mt-2';
+  } else {
+      document.getElementById('substatus').innerText = 'Access Granted';
+      document.getElementById('substatus').className = 'text-slate-500';
+  }
+
+  addLog(d.name, d.type, d.time);
+  setTimeout(resetAtt, 5000); // Wait longer if they need to press button
+}
+
+async function forceOut(){
+  const btn = document.getElementById('btn-early-out');
+  const id = btn.dataset.id;
+  if(!id) return;
+  
+  try {
+      btn.innerText = 'CLOCKING OUT...';
+      const r = await fetch(ERP + '/kiosk/verify', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json', 'X-Terminal-ID': 'KB-08-PRO'},
+          body: JSON.stringify({staff_id: id, force: true})
+      });
+      const d = await r.json();
+      if(d.success) {
+          btn.classList.add('hidden');
+          showSuccess({
+              staff_id: id,
+              name: d.name,
+              photo_url: d.photo_url,
+              type: d.type,
+              personnel_number: d.personnel_number,
+              department: d.department,
+              time: d.time
+          });
+      }
+  } catch(e){}
+}
+
+function showDeny(){
+  document.getElementById('ring').classList.replace('border-slate-200','border-red-400');
+  document.getElementById('fp-icon').classList.replace('text-slate-300','text-red-400');
+  document.getElementById('status').innerText = 'NOT RECOGNIZED';
+  document.getElementById('substatus').innerText = 'Try again or contact HR';
+  setTimeout(resetAtt, 3000);
+}
+
+function resetAtt(){
+  document.getElementById('modal').style.display = 'none';
+  document.getElementById('ring').className = 'w-56 h-56 mx-auto rounded-full border-4 border-slate-200 flex items-center justify-center mb-6 transition-all duration-500';
+  document.getElementById('fp-icon').className = 'las la-fingerprint text-[7rem] text-slate-300 pulse transition-colors duration-300';
+  document.getElementById('status').innerText = 'READY';
+  document.getElementById('substatus').innerText = 'Place your finger on the scanner';
+}
+
+function addLog(name, type, time){
+  const c = document.getElementById('activity');
+  if(c.querySelector('p.italic')) c.innerHTML = '';
+  const el = document.createElement('div');
+  el.className = 'flex justify-between items-center py-1';
+  el.innerHTML = `<span class="text-sm font-semibold text-slate-700">${name}</span>
+    <span class="text-xs font-bold ${type.includes('Out')?'text-amber-500':'text-emerald-500'}">${type} — ${time}</span>`;
+  c.prepend(el);
+}
+
+// ── ENROLLMENT ───────────────────────────────────────────
+async function loadStaff(){
+  try{
+    const r=await fetch(B+'/staff');
+    const d=await r.json();
+    if(d.branch) document.getElementById('branch-name').innerText = d.branch;
+    staff=d.data||[];
+    renderStaff(staff);
+  }catch(e){}
+}
+
+function renderStaff(list){
+  document.getElementById('stbl').innerHTML = list.map(s=>`
+    <div class="flex justify-between items-center p-4 rounded-xl border border-slate-100 hover:border-blue-400 hover:bg-blue-50 cursor-pointer transition">
+      <div onclick="startE('${s.id}','${s.firstname} ${s.surname}')" class="flex-1">
+        <p class="font-bold text-slate-800">${s.firstname} ${s.surname}</p>
+        <p class="text-xs text-slate-400">${s.personnel_number||'—'}</p>
+        <div class="mt-1">
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${s.is_biometric_enrolled?'bg-emerald-100 text-emerald-600':'bg-amber-100 text-amber-600'}">
+            ${s.is_biometric_enrolled?'BIO OK':'BIO PENDING'}</span>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${s.has_pin?'bg-blue-100 text-blue-600':'bg-slate-100 text-slate-400'} ml-1">
+            ${s.has_pin?'PIN SET':'NO PIN'}</span>
+        </div>
+      </div>
+      <button onclick="openSetupPin('${s.id}', '${s.firstname} ${s.surname}')" class="ml-2 p-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-blue-100 hover:text-blue-600 transition">
+        <i class="las la-key"></i>
+      </button>
+    </div>`).join('');
+}
+
+function filt(){
+  const q=document.getElementById('srch').value.toLowerCase();
+  renderStaff(staff.filter(s=>s.firstname.toLowerCase().includes(q)||s.surname.toLowerCase().includes(q)||(s.personnel_number||'').toLowerCase().includes(q)));
+}
+
+async function startE(id,name){
+  enrolling=true;
+  document.getElementById('enr-idle').classList.add('hidden');
+  document.getElementById('enr-active').classList.remove('hidden');
+  document.getElementById('e-name').innerText=name;
+  document.getElementById('e-msg').innerText='Place finger on scanner (1 of 5)';
+  document.getElementById('e-msg').style.color='';
+  resetDots();
+  try{
+    await fetch(B+'/enroll',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({staff_id:id})});
+    pollE();
+  }catch(e){cancelE();}
+}
+
+async function pollE(){
+  if(!enrolling)return;
+  try{
+    const r=await fetch(B+'/enroll_status');
+    const d=await r.json();
+    if(d.status==='SCANNING'){
+      setDots(d.stage||0);
+      document.getElementById('e-msg').innerText=d.message||`Scan ${(d.stage||0)+1} of 5`;
+      setTimeout(pollE,500);
+    }else if(d.status==='SUCCESS'){
+      setDots(5);
+      document.getElementById('e-msg').innerText='✓ ENROLLED SUCCESSFULLY';
+      document.getElementById('e-msg').style.color='#10b981';
+      setTimeout(()=>{finishE();loadStaff();},2000);
+    }else if(d.status==='FAILED'){
+      document.getElementById('e-msg').innerText='✗ '+d.message;
+      document.getElementById('e-msg').style.color='#ef4444';
+      setTimeout(finishE,3000);
+    }else{setTimeout(pollE,500);}
+  }catch(e){setTimeout(pollE,1000);}
+}
+
+function setDots(n){
+  document.querySelectorAll('#e-dots .dot').forEach((d,i)=>{
+    d.className='dot w-5 h-5 rounded-full transition-all '+(i<n?'bg-emerald-500 scale-110':i===n?'bg-blue-500 scale-125':'bg-slate-200');
+  });
+}
+function resetDots(){setDots(0);}
+
+function finishE(){
+  enrolling=false;
+  document.getElementById('enr-active').classList.add('hidden');
+  document.getElementById('enr-idle').classList.remove('hidden');
+}
+
+async function cancelE(){
+  enrolling=false;
+  document.getElementById('enr-active').classList.add('hidden');
+  document.getElementById('enr-idle').classList.remove('hidden');
+  try{await fetch(B+'/enroll_reset')}catch(e){}
+}
+
+// ── SETUP PIN LOGIC ──────────────────────────────────────
+function openSetupPin(id, name){
+  document.getElementById('setup-pin-id').value = id;
+  document.getElementById('setup-pin-name').innerText = name;
+  document.getElementById('setup-pin-pass').value = '';
+  document.getElementById('setup-pin-err').classList.add('hidden');
+  document.getElementById('setup-pin-modal').style.display = 'flex';
+}
+function closeSetupPin(){ document.getElementById('setup-pin-modal').style.display = 'none'; }
+function addSetupPin(n){ 
+  if(document.getElementById('setup-pin-pass').value.length < 6)
+    document.getElementById('setup-pin-pass').value += n; 
+}
+function delSetupPin(){
+  const v = document.getElementById('setup-pin-pass').value;
+  document.getElementById('setup-pin-pass').value = v.slice(0,-1);
+}
+async function submitSetupPin(){
+  const id = document.getElementById('setup-pin-id').value;
+  const pin = document.getElementById('setup-pin-pass').value;
+  const err = document.getElementById('setup-pin-err');
+  if(pin.length < 4){ err.innerText="PIN must be at least 4 digits"; err.classList.remove('hidden'); return; }
+  try {
+    const r = await fetch(ERP+'/kiosk/set-pin', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({staff_id: id, pin: pin})
+    });
+    const d = await r.json();
+    if(d.success){ closeSetupPin(); loadStaff(); }
+    else { err.innerText = d.message || "Failed to set PIN"; err.classList.remove('hidden'); }
+  } catch(e){ err.innerText="Network Error"; err.classList.remove('hidden'); }
+}
+</script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 
 'use server';
 
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from '@/lib/firebase-stubs';
 import { db } from './firebase';
 import type { AppNotification } from './schema';
 

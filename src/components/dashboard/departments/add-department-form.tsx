@@ -4,7 +4,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { collection, addDoc, doc, updateDoc, getDocs, query, where } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, getDocs, query, where } from '@/lib/firebase-stubs';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { db } from '@/lib/firebase';
+import { db, auth, storage } from "@/lib/firebase";
 import { PlusCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import type { MockUser } from '@/lib/schema';
@@ -43,7 +43,7 @@ export function AddDepartmentForm({ onDepartmentAdded }: { onDepartmentAdded: ()
       // Fetches users who are HODs or Teachers to assign as HOD
       const q = query(collection(db, 'users'), where('role', 'in', ['HeadOfDepartment', 'Teacher']));
       const querySnapshot = await getDocs(q);
-      const teacherList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MockUser));
+      const teacherList = querySnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as MockUser));
       setTeachers(teacherList);
     };
     fetchTeachers();

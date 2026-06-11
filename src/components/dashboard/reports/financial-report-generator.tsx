@@ -154,7 +154,7 @@ export function FinancialReportGenerator() {
                 <div id="print-area" className="space-y-6">
                     <div className="max-w-4xl mx-auto">
                          <div className="hidden print:block text-center mb-8">
-                            <h1 className="text-2xl font-bold">Great Insight International Academy</h1>
+                            <h1 className="text-2xl font-bold">Proxima Hub</h1>
                             <h2 className="text-xl font-semibold">{reportTitle}</h2>
                         </div>
                          <Card>

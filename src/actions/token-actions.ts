@@ -1,44 +1,71 @@
 'use server';
 
-import { collection, addDoc, getDocs, query, where, updateDoc, doc, Timestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { randomBytes } from 'crypto';
+// Import Prisma client
+import { prisma } from '@/lib/prisma';
+import { randomBytes } from 'node:crypto';
 
+/**
+ * Generates a unique 8-character token for a student to access their result.
+ * Performs an upsert to either create a new token or reset an existing one for the student/term.
+ */
 export async function generateResultToken(studentId: string, term: string, session: string) {
     try {
         // Generate unique 8-character token
         const token = randomBytes(4).toString('hex').toUpperCase();
 
-        // Check if token already exists for this student/term/session
-        const existingQuery = query(
-            collection(db, 'result_tokens'),
-            where('studentId', '==', studentId),
-            where('term', '==', term),
-            where('session', '==', session)
-        );
-        const existing = await getDocs(existingQuery);
+        // Resolve term record
+        const termRecord = await prisma.term.findFirst({
+            where: {
+                OR: [
+                    { id: term },
+                    { name: term },
+                    { name: term.replace("First Term", "Term 1").replace("Second Term", "Term 2").replace("Third Term", "Term 3") },
+                    { name: term.replace("Term 1", "First Term").replace("Term 2", "Second Term").replace("Term 3", "Third Term") }
+                ]
+            }
+        });
 
-        if (!existing.empty) {
-            // Update existing token
-            const docRef = doc(db, 'result_tokens', existing.docs[0].id);
-            await updateDoc(docRef, {
+        if (!termRecord) {
+            throw new Error(`Term ${term} not found`);
+        }
+
+        // Resolve student record
+        const student = await prisma.student.findFirst({
+            where: {
+                OR: [
+                    { id: studentId },
+                    { studentId: studentId }
+                ]
+            }
+        });
+
+        if (!student) {
+            throw new Error(`Student ${studentId} not found`);
+        }
+
+        // Perform upsert of ResultToken
+        await prisma.resultToken.upsert({
+            where: {
+                studentId_termId: {
+                    studentId: student.id,
+                    termId: termRecord.id
+                }
+            },
+            update: {
                 token,
                 usageCount: 0,
                 maxUsage: 5,
-                createdAt: Timestamp.now()
-            });
-            return { success: true, token };
-        }
-
-        // Create new token
-        await addDoc(collection(db, 'result_tokens'), {
-            studentId,
-            term,
-            session,
-            token,
-            usageCount: 0,
-            maxUsage: 5,
-            createdAt: Timestamp.now()
+                session
+            },
+            create: {
+                schoolId: student.schoolId,
+                studentId: student.id,
+                termId: termRecord.id,
+                session,
+                token,
+                usageCount: 0,
+                maxUsage: 5
+            }
         });
 
         return { success: true, token };
@@ -48,70 +75,108 @@ export async function generateResultToken(studentId: string, term: string, sessi
     }
 }
 
+/**
+ * Validates a given result token and admission number, increments the usage count,
+ * and returns the student's result data (TermGrades and Behavioural Assessment).
+ */
 export async function validateAndUseToken(admissionNumber: string, token: string, term: string, session: string) {
     try {
         // Find student by admission number
-        const studentsQuery = query(
-            collection(db, 'students'),
-            where('studentId', '==', admissionNumber)
-        );
-        const studentsSnap = await getDocs(studentsQuery);
+        const student = await prisma.student.findFirst({
+            where: {
+                OR: [
+                    { id: admissionNumber },
+                    { studentId: admissionNumber }
+                ]
+            },
+            include: {
+                class: true
+            }
+        });
 
-        if (studentsSnap.empty) {
+        if (!student) {
             return { success: false, error: 'Student not found' };
         }
 
-        const student = { id: studentsSnap.docs[0].id, ...studentsSnap.docs[0].data() };
+        // Resolve term record
+        const termRecord = await prisma.term.findFirst({
+            where: {
+                OR: [
+                    { id: term },
+                    { name: term },
+                    { name: term.replace("First Term", "Term 1").replace("Second Term", "Term 2").replace("Third Term", "Term 3") },
+                    { name: term.replace("Term 1", "First Term").replace("Term 2", "Second Term").replace("Term 3", "Third Term") }
+                ]
+            }
+        });
 
-        // Find token
-        const tokensQuery = query(
-            collection(db, 'result_tokens'),
-            where('studentId', '==', student.id),
-            where('token', '==', token),
-            where('term', '==', term),
-            where('session', '==', session)
-        );
-        const tokensSnap = await getDocs(tokensQuery);
+        if (!termRecord) {
+            return { success: false, error: 'Term not found' };
+        }
 
-        if (tokensSnap.empty) {
+        // Find token record
+        const tokenRecord = await prisma.resultToken.findFirst({
+            where: {
+                studentId: student.id,
+                token: token,
+                termId: termRecord.id,
+                session: session
+            }
+        });
+
+        if (!tokenRecord) {
             return { success: false, error: 'Invalid token' };
         }
 
-        const tokenData = tokensSnap.docs[0].data();
-
-        // Check usage count
-        if (tokenData.usageCount >= tokenData.maxUsage) {
+        // Check usage count limit
+        if (tokenRecord.usageCount >= tokenRecord.maxUsage) {
             return { success: false, error: 'Token usage limit exceeded' };
         }
 
         // Increment usage count
-        const tokenDocRef = doc(db, 'result_tokens', tokensSnap.docs[0].id);
-        await updateDoc(tokenDocRef, {
-            usageCount: tokenData.usageCount + 1
+        await prisma.resultToken.update({
+            where: { id: tokenRecord.id },
+            data: {
+                usageCount: tokenRecord.usageCount + 1
+            }
         });
 
-        // Fetch result data
-        const scoresQuery = query(
-            collection(db, 'scores'),
-            where('studentId', '==', student.id),
-            where('term', '==', term)
-        );
-        const scoresSnap = await getDocs(scoresQuery);
-        const scores = scoresSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // Fetch academic TermGrade data for the student
+        const scores = await prisma.termGrade.findMany({
+            where: {
+                studentId: student.id,
+                termId: termRecord.id
+            },
+            include: {
+                subject: true
+            }
+        });
 
-        // Fetch behavioural
-        const behaviouralQuery = query(
-            collection(db, 'behavioural_assessments'),
-            where('studentId', '==', student.id),
-            where('term', '==', term),
-            where('session', '==', session)
-        );
-        const behaviouralSnap = await getDocs(behaviouralQuery);
-        const behavioural = behaviouralSnap.empty ? null : behaviouralSnap.docs[0].data();
+        const mappedScores = scores.map(s => ({
+            id: s.id,
+            subjectId: s.subjectId,
+            subjectName: s.subject.name,
+            ca1: s.ca1,
+            ca2: s.ca2,
+            exam: s.exam,
+            totalScore: s.total,
+            grade: s.grade,
+            remarks: s.remarks
+        }));
 
-        const totalMarks = scores.reduce((sum, s: any) => sum + (s.totalScore || 0), 0);
-        const average = scores.length > 0 ? totalMarks / scores.length : 0;
+        // Fetch behavioural assessment data
+        const behavioural = await prisma.behaviouralAssessment.findFirst({
+            where: {
+                studentId: student.id,
+                termId: termRecord.id,
+                session: session
+            }
+        });
 
+        const totalMarks = mappedScores.reduce((sum, s) => sum + (s.totalScore || 0), 0);
+        const average = mappedScores.length > 0 ? totalMarks / mappedScores.length : 0;
+
+        // Calculate overall grade descriptor based on average score
         let overallGrade = 'F';
         if (average >= 80) overallGrade = 'A';
         else if (average >= 70) overallGrade = 'B';
@@ -122,13 +187,20 @@ export async function validateAndUseToken(admissionNumber: string, token: string
         return {
             success: true,
             data: {
-                student,
-                scores,
+                student: {
+                    id: student.id,
+                    studentId: student.studentId,
+                    firstName: student.firstName,
+                    lastName: student.lastName,
+                    classLevel: student.class?.name || '',
+                    status: student.status
+                },
+                scores: mappedScores,
                 behavioural,
                 totalMarks,
                 average,
                 overallGrade,
-                remainingUses: tokenData.maxUsage - (tokenData.usageCount + 1)
+                remainingUses: tokenRecord.maxUsage - (tokenRecord.usageCount + 1)
             }
         };
     } catch (error) {

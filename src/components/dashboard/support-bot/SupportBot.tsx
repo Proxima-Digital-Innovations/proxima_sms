@@ -49,7 +49,7 @@ export function SupportBot() {
   const [messages, setMessages] = useState<Message[]>([
     {
         role: 'bot',
-        content: "Hello! I'm your AI assistant, the GIIA Support Bot. How can I help you today?",
+        content: "Hello! I'm your AI assistant, the SCHOOL Support Bot. How can I help you today?",
     }
   ]);
   const [input, setInput] = useState('');
@@ -116,10 +116,10 @@ export function SupportBot() {
           <CardHeader className="border-b">
             <CardTitle className="flex items-center gap-2">
               <Sparkles className="text-primary" />
-              GIIA Support Bot
+              SCHOOL Support Bot
             </CardTitle>
              <CardDescription>
-              Your AI-powered guide to the GIIA Portal.
+              Your AI-powered guide to the SCHOOL Portal.
             </CardDescription>
           </CardHeader>
           

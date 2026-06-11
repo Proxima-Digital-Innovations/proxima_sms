@@ -2,214 +2,158 @@
 'use server';
 
 import { z } from 'zod';
-import { authService } from '@/lib/authService';
-import { dbService } from '@/lib/dbService';
-import { storageService } from '@/lib/storageService';
-import { serverTimestamp } from 'firebase/firestore';
+import { prisma } from '@/lib/prisma';
+import { revalidatePath } from 'next/cache';
+import { requireSchoolId } from '@/lib/server-context';
+import { Role } from '@prisma/client';
 
 const staffSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   gender: z.enum(['Male', 'Female']),
   dateOfBirth: z.string(),
-  stateOfOrigin: z.string().min(1, 'State of Origin is required and will be the default password.'),
+  stateOfOrigin: z.string().min(1, 'State of Origin is required.'),
   phone: z.string().min(1),
   email: z.string().email(),
   address: z.string().min(1),
-  role: z.enum(['Admin', 'SLT', 'HeadOfDepartment', 'Teacher', 'Accountant', 'ExamOfficer']),
-  department: z.string().optional(),
+  role: z.enum(['ADMIN', 'SLT', 'HOD', 'TEACHER', 'ACCOUNTANT', 'EXAM_OFFICER']),
+  departmentId: z.string().optional(),
   dateOfEmployment: z.string(),
-  profilePicture: z.instanceof(File).optional(),
-  documents: z.array(z.instanceof(File)).optional(),
-}).refine(data => {
-    if (['HeadOfDepartment', 'Teacher'].includes(data.role)) {
-      return !!data.department && data.department.length > 0;
-    }
-    return true;
-  }, {
-    message: "Department is required for this role.",
-    path: ["department"],
-  });
+});
 
-const ROLE_CODES: { [key: string]: string } = {
-    Admin: 'ADM',
-    SLT: 'SLT',
-    HeadOfDepartment: 'HOD',
-    Teacher: 'TEA',
-    Accountant: 'ACC',
-    ExamOfficer: 'EXO',
-};
-
-async function generateStaffId(role: string, offset = 0): Promise<string> {
-    const roleCode = ROLE_CODES[role] || 'GEN';
+async function generateStaffId(role: Role, schoolId: string, offset = 0): Promise<string> {
+    const roleCode = role.slice(0, 3).toUpperCase();
     const year = new Date().getFullYear().toString().slice(-2);
 
-    const staffCountForRole = await dbService.getCountFromServer('users', [
-        { type: 'where', fieldPath: 'role', opStr: '==', value: role }
-    ]);
-    const nextId = (staffCountForRole + offset + 1).toString().padStart(4, '0');
+    const staffCount = await prisma.user.count({
+        where: { role, schoolId }
+    });
+    const nextId = (staffCount + offset + 1).toString().padStart(4, '0');
 
-    return `GIIA${year}${roleCode}${nextId}`;
+    return `PROX-${year}${roleCode}${nextId}`;
 }
-
 
 export async function createStaff(formData: FormData) {
   try {
-    const documents = formData.getAll('documents[0]').filter(f => f instanceof File) as File[];
-
-    const rawData = {
-        ...Object.fromEntries(formData.entries()),
-        profilePicture: formData.get('profilePicture') instanceof File ? formData.get('profilePicture') : undefined,
-        documents: documents.length > 0 ? documents : undefined,
-    };
-
+    const schoolId = await requireSchoolId();
+    
+    const rawData = Object.fromEntries(formData.entries());
     const parsed = staffSchema.safeParse(rawData);
 
     if (!parsed.success) {
-        console.error('Zod Errors:', parsed.error.flatten().fieldErrors);
-        return { error: 'Invalid form data provided. ' + parsed.error.flatten().formErrors.join(', ') };
+        return { error: 'Invalid form data: ' + JSON.stringify(parsed.error.flatten().fieldErrors) };
     }
     
-    const { profilePicture, documents: staffDocs, ...staffData } = parsed.data;
+    const data = parsed.data;
+    const staffId = await generateStaffId(data.role as Role, schoolId);
 
-    const staffId = await generateStaffId(staffData.role);
-
-    const authUser = await authService.createUser({
-        email: staffData.email,
-        password: staffData.stateOfOrigin, 
+    const user = await prisma.user.create({
+      data: {
+        schoolId,
+        staffId,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        phone: data.phone,
+        role: data.role as Role,
+        departmentId: data.departmentId,
+        passwordHash: data.stateOfOrigin, // Default password
+        status: 'active',
+        // metadata or personal info could go here if needed, but keeping it simple for now
+      }
     });
 
-    let profilePictureUrl = '';
-    if (profilePicture) {
-      const { downloadURL } = await storageService.uploadFile(
-        `staff-photos/${authUser.uid}/${Date.now()}-${profilePicture.name}`,
-        profilePicture
-      );
-      profilePictureUrl = downloadURL;
-    }
-
-    const newStaffData = {
-        uid: authUser.uid,
-        staffId: staffId,
-        name: `${staffData.firstName} ${staffData.lastName}`,
-        email: staffData.email,
-        phone: staffData.phone,
-        role: staffData.role,
-        department: staffData.department || 'N/A',
-        stateOfOrigin: staffData.stateOfOrigin,
-        generatedPassword: staffData.stateOfOrigin,
-        status: 'active',
-        createdAt: serverTimestamp(),
-        employmentDate: new Date(staffData.dateOfEmployment),
-        personalInfo: {
-            address: staffData.address,
-            gender: staffData.gender,
-            dob: new Date(staffData.dateOfBirth),
-            profilePicture: profilePictureUrl,
-        },
-        salary: {
-            amount: 0,
-            bankName: null,
-            accountNumber: null,
-            accountName: null,
-        }
-    };
-    
-    await dbService.setDoc('users', authUser.uid, newStaffData);
-
-    return { success: true };
+    revalidatePath("/admin/staff");
+    return { success: true, user };
 
   } catch (error: any) {
     console.error('Error creating staff:', error);
-    if (error.code === 'auth/email-already-in-use') {
-      return { error: 'This email is already registered.' };
+    if (error.code === 'P2002') {
+      return { error: 'Email already exists.' };
     }
-     if (error.code === 'auth/weak-password') {
-      return { error: `The password is too weak. It must be at least 6 characters.` };
-    }
-    return { error: error.message || 'An unexpected server error occurred.' };
+    return { error: error.message || 'An unexpected error occurred.' };
   }
 }
 
-export async function bulkCreateStaff(staffList: any[]) {
-    try {
-        const batch = dbService.createBatch();
-        const validStaff: any[] = [];
-        const invalidRecords: any[] = [];
-        
-        const requiredFields = ["firstName", "lastName", "email", "role", "phone", "stateOfOrigin"];
-
-        for (let i = 0; i < staffList.length; i++) {
-            const staff = staffList[i];
-            const missingFields = requiredFields.filter(field => !staff[field]);
-            
-            if (missingFields.length > 0) {
-                invalidRecords.push({ ...staff, error: `Missing required fields: ${missingFields.join(', ')}` });
-                continue;
-            }
-             if (!z.string().email().safeParse(staff.email).success) {
-                invalidRecords.push({ ...staff, error: 'Invalid email format.' });
-                continue;
-            }
-
-            validStaff.push(staff);
-        }
-        
-        for (let i = 0; i < validStaff.length; i++) {
-            const staff = validStaff[i];
-            const staffId = await generateStaffId(staff.role, i);
-            
-            const authUser = await authService.createUser({
-                email: staff.email,
-                password: staff.stateOfOrigin,
-            });
-
-            const newStaffData = {
-                uid: authUser.uid,
-                staffId,
-                name: `${staff.firstName} ${staff.lastName}`,
-                email: staff.email,
-                phone: staff.phone,
-                role: staff.role,
-                department: staff.department || 'N/A',
-                stateOfOrigin: staff.stateOfOrigin,
-                generatedPassword: staff.stateOfOrigin,
-                status: 'active',
-                createdAt: serverTimestamp(),
-                employmentDate: staff['employmentDate(YYYY-MM-DD)'] ? new Date(staff['employmentDate(YYYY-MM-DD)']) : new Date(),
-                personalInfo: {
-                    address: staff.address || '',
-                    gender: staff.gender || 'Other',
-                    dob: staff['dateOfBirth(YYYY-MM-DD)'] ? new Date(staff['dateOfBirth(YYYY-MM-DD)']) : new Date(),
-                    profilePicture: '',
-                },
-                salary: {
-                    amount: 0,
-                    bankName: null,
-                    accountNumber: null,
-                    accountName: null,
-                }
-            };
-            
-            batch.set('users', authUser.uid, newStaffData);
-        }
-
-        if (validStaff.length > 0) {
-            await batch.commit();
-        }
-
-        return { 
-            success: true, 
-            importedCount: validStaff.length,
-            errorCount: invalidRecords.length,
-            invalidRecords: invalidRecords
-        };
-
-    } catch (error: any) {
-        console.error('Error in bulk staff creation:', error);
-         if (error.code === 'auth/email-already-in-use') {
-          return { error: 'One or more email addresses are already in use.' };
-        }
-        return { error: error.message || 'An unexpected server error occurred during bulk import.' };
-    }
+export async function getStaffList() {
+  try {
+    const schoolId = await requireSchoolId();
+    const staff = await prisma.user.findMany({
+      where: { 
+        schoolId,
+        role: { not: Role.PARENT }
+      },
+      include: { department: true },
+      orderBy: { lastName: 'asc' }
+    });
+    return { success: true, staff };
+  } catch (error: any) {
+    return { success: false, staff: [], message: error.message };
+  }
 }
+
+/**
+ * Bulk create staff accounts from a list of records parsed from a spreadsheet.
+ * Generates structured IDs using generateStaffId with an offset to avoid collisions
+ * during loop execution.
+ */
+export async function bulkCreateStaff(staffList: any[]) {
+  try {
+    // Ensure the school context is resolved
+    const schoolId = await requireSchoolId();
+    let importedCount = 0;
+    let errorCount = 0;
+    const invalidRecords: any[] = [];
+
+    // Loop through each record to validate and create the user
+    for (const record of staffList) {
+      try {
+        if (!record.email || !record.firstName || !record.lastName) {
+          throw new Error('Email, First Name, and Last Name are required.');
+        }
+
+        // Standardize the role to uppercase matching the Role enum
+        const roleStr = (record.role || 'TEACHER').toUpperCase();
+        if (!['ADMIN', 'SLT', 'HOD', 'TEACHER', 'ACCOUNTANT', 'EXAM_OFFICER'].includes(roleStr)) {
+          throw new Error(`Invalid role: ${record.role}`);
+        }
+        const role = roleStr as Role;
+
+        // Generate a new unique staff ID with the current imported count as offset
+        const staffId = await generateStaffId(role, schoolId, importedCount);
+
+        // Write the new staff user record to the database
+        await prisma.user.create({
+          data: {
+            schoolId,
+            staffId,
+            firstName: record.firstName,
+            lastName: record.lastName,
+            email: record.email,
+            phone: record.phone ? String(record.phone) : null,
+            role,
+            passwordHash: record.stateOfOrigin || 'password123',
+            status: 'active',
+          }
+        });
+        importedCount++;
+      } catch (err: any) {
+        errorCount++;
+        // Capture invalid record details along with error messages to show the user
+        invalidRecords.push({
+          firstName: record.firstName || '',
+          lastName: record.lastName || '',
+          email: record.email || '',
+          error: err.code === 'P2002' ? 'Email already exists' : (err.message || 'Database error')
+        });
+      }
+    }
+
+    revalidatePath("/admin/staff");
+    return { success: true, importedCount, errorCount, invalidRecords };
+  } catch (error: any) {
+    console.error('Error bulk creating staff:', error);
+    return { error: error.message || 'An unexpected error occurred.' };
+  }
+}
+
