@@ -4,7 +4,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { collection, addDoc, doc, updateDoc, getDocs, query, where } from '@/lib/firebase-stubs';
+import { addDepartment, getStaffUsers } from '@/actions/user-actions';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -23,7 +23,6 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { db, auth, storage } from "@/lib/firebase";
 import { PlusCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import type { MockUser } from '@/lib/schema';
@@ -40,11 +39,12 @@ export function AddDepartmentForm({ onDepartmentAdded }: { onDepartmentAdded: ()
 
   useEffect(() => {
     const fetchTeachers = async () => {
-      // Fetches users who are HODs or Teachers to assign as HOD
-      const q = query(collection(db, 'users'), where('role', 'in', ['HeadOfDepartment', 'Teacher']));
-      const querySnapshot = await getDocs(q);
-      const teacherList = querySnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as MockUser));
-      setTeachers(teacherList);
+      const result = await getStaffUsers();
+      if (result.success && result.data) {
+        // filter for teachers/hods
+        const eligible = result.data.filter((u: any) => u.role === 'Teacher' || u.role === 'HeadOfDepartment');
+        setTeachers(eligible as any);
+      }
     };
     fetchTeachers();
   }, []);
@@ -60,18 +60,13 @@ export function AddDepartmentForm({ onDepartmentAdded }: { onDepartmentAdded: ()
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     try {
-      const newDeptRef = await addDoc(collection(db, 'departments'), {
+      const result = await addDepartment({
         name: values.name,
-        hodId: values.hodId || null,
+        hodId: values.hodId || undefined,
       });
 
-      // If an HOD was assigned, update that user's department field
-      if (values.hodId) {
-        const userRef = doc(db, 'users', values.hodId);
-        await updateDoc(userRef, {
-          department: values.name,
-          role: 'HeadOfDepartment' // Promote to HOD if they weren't already
-        });
+      if (!result.success) {
+        throw new Error(result.error);
       }
 
       toast({

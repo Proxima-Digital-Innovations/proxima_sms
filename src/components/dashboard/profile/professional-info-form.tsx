@@ -4,7 +4,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { doc, updateDoc } from '@/lib/firebase-stubs';
+import { updateProfileInfo } from '@/actions/profile-actions';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -22,7 +22,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { db, auth, storage } from "@/lib/firebase";
 import type { MockUser } from '@/lib/schema';
 import { Save } from 'lucide-react';
 import { useState } from 'react';
@@ -81,12 +80,13 @@ export function ProfessionalInfoForm({
   async function onSubmit(values: ProfessionalInfoFormValues) {
     setIsSubmitting(true);
     try {
-      const userRef = doc(db, 'users', user.id);
-      await updateDoc(userRef, {
+      const result = await updateProfileInfo(user.id, {
         role: values.role,
         department: values.department,
         employmentType: values.employmentType,
       });
+
+      if (!result.success) throw new Error(result.error);
 
       toast({
         title: 'Success',

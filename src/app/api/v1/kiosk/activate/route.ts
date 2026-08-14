@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
 
     // Find first school in database to link the Kiosk to, wrapped in withGlobal
     const kiosk = await withGlobal(async () => {
-      const firstSchool = await prisma.school.findFirst();
+      const firstSchool = await prisma.systemProfile.findFirst();
       if (!firstSchool) {
         throw new Error("No school found to register kiosk.");
       }
@@ -43,7 +43,6 @@ export async function POST(req: NextRequest) {
           ipAddress: ip,
         },
         create: {
-          schoolId: firstSchool.id,
           terminalId: terminal_id,
           name: device_name || `Kiosk ${terminal_id.slice(-4)}`,
           isActive: true,

@@ -26,8 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useEffect, useState, useCallback } from 'react';
-import { collection, query, where, getDocs, orderBy, limit } from '@/lib/firebase-stubs';
-import { db, auth, storage } from "@/lib/firebase";
+import { getDashboardStats } from '@/actions/dashboard-actions';
 import { useToast } from '@/hooks/use-toast';
 import { useRole } from '@/context/role-context';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -66,44 +65,17 @@ export function ExamOfficerDashboard() {
     if (!user) return;
     setIsLoading(true);
     try {
-      // Fetch exam questions for stats
-      const allQuestionsQuery = query(collection(db, 'examQuestions'), orderBy('submittedOn', 'desc'));
-      const allQuestionsSnapshot = await getDocs(allQuestionsQuery);
-      const allQuestionsList = allQuestionsSnapshot.docs.map((doc: any) => doc.data() as ExamQuestion);
-      
-      const pendingQuestions = allQuestionsList.filter((q: any) => q.status.includes('Pending'));
-      const approvedQuestions = allQuestionsList.filter((q: any) => q.status.includes('Approved'));
-      const rejectedQuestions = allQuestionsList.filter((q: any) => q.status.includes('Rejected'));
-      
-      setQuestions(pendingQuestions.slice(0, 5)); // Show recent 5 pending
-
-      setSubmissionStatusData([
-          { name: 'Pending', value: pendingQuestions.length, fill: 'hsl(var(--chart-4))' },
-          { name: 'Approved', value: approvedQuestions.length, fill: 'hsl(var(--chart-2))' },
-          { name: 'Rejected', value: rejectedQuestions.length, fill: 'hsl(var(--destructive))' },
-      ]);
-
-
-      // Fetch pending scores
-      const scoresQuery = query(collection(db, 'scores'), where('status', '==', 'Pending'));
-      const scoresSnapshot = await getDocs(scoresQuery);
-
-
-      // Fetch teacher and subject counts
-      const teachersQuery = query(collection(db, 'users'), where('role', '==', 'Teacher'));
-      const subjectsQuery = query(collection(db, 'subjects'));
-      
-      const [teachersSnapshot, subjectsSnapshot] = await Promise.all([
-          getDocs(teachersQuery),
-          getDocs(subjectsQuery),
-      ]);
-      
-      setStats({
-        subjects: subjectsSnapshot.size,
-        teachers: teachersSnapshot.size,
-        pendingScores: scoresSnapshot.size,
-        pendingQuestions: pendingQuestions.length,
-      });
+      const response = await getDashboardStats('EXAM_OFFICER', user.uid);
+      if (response.success && response.data) {
+          setStats({
+              subjects: response.data.classesCount || 0,
+              teachers: response.data.teachersCount || 0,
+              pendingScores: 0,
+              pendingQuestions: 0
+          });
+      }
+      setQuestions([]);
+      setSubmissionStatusData([]);
 
     } catch (error) {
        console.error("Error fetching Exam Officer data:", error);

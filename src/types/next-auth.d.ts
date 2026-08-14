@@ -1,6 +1,6 @@
 import { DefaultSession, DefaultUser } from "next-auth";
 import { JWT as DefaultJWT } from "next-auth/jwt";
-import { Role } from "@prisma/client";
+type Role = 'ADMIN' | 'SLT' | 'HOD' | 'TEACHER' | 'ACCOUNTANT' | 'EXAM_OFFICER' | 'PARENT';
 
 /**
  * Declaring modifications to the "@auth/core/types" module to support
@@ -11,7 +11,7 @@ declare module "@auth/core/types" {
   interface User {
     id?: string;
     role: Role;
-    schoolId: string;
+    
     isSuperAdmin: boolean;
   }
 
@@ -19,7 +19,7 @@ declare module "@auth/core/types" {
     user: {
       id: string;
       role: Role;
-      schoolId: string;
+      
       isSuperAdmin: boolean;
     } & DefaultSession["user"];
   }
@@ -34,14 +34,14 @@ declare module "next-auth" {
     user: {
       id: string;
       role: Role;
-      schoolId: string;
+      
       isSuperAdmin: boolean;
     } & DefaultSession["user"];
   }
 
   interface User extends DefaultUser {
     role: Role;
-    schoolId: string;
+    
     isSuperAdmin: boolean;
   }
 }
@@ -53,7 +53,7 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
   interface JWT extends DefaultJWT {
     role: Role;
-    schoolId: string;
+    
     isSuperAdmin: boolean;
   }
 }

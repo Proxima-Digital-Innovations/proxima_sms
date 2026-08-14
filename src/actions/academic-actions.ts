@@ -1,225 +1,188 @@
-
 'use server';
 
-import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { requireSchoolId } from '@/lib/server-context';
 
-// --- Standards Management ---
-
-export async function createStandard(data: { code: string; description: string; subjectId: string }) {
-    try {
-        const schoolId = await requireSchoolId();
-        const standard = await prisma.standard.create({
-            data: {
-                ...data,
-                schoolId
-            }
-        });
-        revalidatePath('/dashboard/admin/academics/standards');
-        return { success: true, standard };
-    } catch (error: any) {
-        console.error('Error creating standard:', error);
-        return { error: error.message };
-    }
-}
-
-export async function getStandards(subjectId?: string) {
-    return await prisma.standard.findMany({
-        where: subjectId ? { subjectId } : {},
-        include: { subject: true }
-    });
-}
-
-// --- Assignment Management ---
-
-const assignmentSchema = z.object({
-    title: z.string().min(1),
-    description: z.string().optional(),
-    dueDate: z.date(),
-    maxPoints: z.number().positive(),
-    classId: z.string().min(1),
-    subjectId: z.string().min(1),
-    standardId: z.string().optional(),
-});
-
-export async function createAssignment(formData: FormData) {
-    try {
-        const data = {
-            title: formData.get('title') as string,
-            description: formData.get('description') as string,
-            dueDate: new Date(formData.get('dueDate') as string),
-            maxPoints: Number(formData.get('maxPoints')),
-            classId: formData.get('classId') as string,
-            subjectId: formData.get('subjectId') as string,
-            standardId: (formData.get('standardId') as string) || undefined,
-        };
-
-        const parsed = assignmentSchema.parse(data);
-        const schoolId = await requireSchoolId();
-
-        // Find the active term to associate with the module
-        const activeTerm = await prisma.term.findFirst({
-            where: { schoolId, isActive: true }
-        });
-        if (!activeTerm) {
-            throw new Error("No active term found. Cannot create assignment.");
-        }
-
-        // Assignments must belong to an LMS module in schema.prisma.
-        // We find or create a default module for this class/subject/term.
-        let lmsModule = await prisma.lmsModule.findFirst({
-            where: {
-                classId: parsed.classId,
-                subjectId: parsed.subjectId,
-                termId: activeTerm.id,
-                schoolId
-            }
-        });
-
-        if (!lmsModule) {
-            lmsModule = await prisma.lmsModule.create({
-                data: {
-                    title: 'General Coursework',
-                    classId: parsed.classId,
-                    subjectId: parsed.subjectId,
-                    termId: activeTerm.id,
-                    schoolId
-                }
-            });
-        }
-
-        // Create the assignment linking it to the resolved LMS module
-        const assignment = await prisma.assignment.create({
-            data: {
-                title: parsed.title,
-                description: parsed.description,
-                points: parsed.maxPoints,
-                dueDate: parsed.dueDate,
-                classId: parsed.classId,
-                subjectId: parsed.subjectId,
-                standardId: parsed.standardId || null,
-                moduleId: lmsModule.id,
-                schoolId
-            }
-        });
-
-        revalidatePath('/dashboard/teacher/assignments');
-        return { success: true, assignment };
-    } catch (error: any) {
-        console.error('Error creating assignment:', error);
-        return { error: error.message };
-    }
-}
-
-// --- Grading (SBG & Traditional) ---
-
-export async function submitGrades(assignmentId: string, grades: { studentId: string; score: number; feedback?: string }[]) {
-    try {
-        const schoolId = await requireSchoolId();
-        return await prisma.$transaction(async (tx) => {
-            const results = await Promise.all(
-                grades.map(grade => 
-                    tx.submission.create({
-                        data: {
-                            studentId: grade.studentId,
-                            assignmentId,
-                            schoolId,
-                            score: grade.score,
-                            feedback: grade.feedback,
-                            gradedAt: new Date()
-                        }
-                    })
-                )
-            );
-            return { success: true, count: results.length };
-        });
-    } catch (error: any) {
-        console.error('Error submitting grades:', error);
-        return { error: error.message };
-    }
-}
-
-/**
- * Returns high-level admin dashboard statistics from Prisma.
- * Used by the admin dashboard overview cards.
- */
 export async function getAdminDashboardStats() {
     try {
-        const schoolId = await requireSchoolId();
+        const totalStudents = await prisma.student.count({ where: { status: 'ACTIVE' } });
+        const totalStaff = await prisma.user.count({ where: { status: 'active' } });
+        const activeClasses = await prisma.class.count();
 
-        // Count active students enrolled in this school
-        const totalStudents = await prisma.student.count({
-            where: { schoolId, status: 'Active' }
+        const currentTerm = await prisma.term.findFirst({
+            where: { isActive: true },
+            select: { id: true }
         });
 
-        // Count staff (users that are not super-admins)
-        const totalStaff = await prisma.user.count({
-            where: { schoolId, isSuperAdmin: false }
-        });
+        let totalRevenue = 0;
+        let pendingPayments = 0;
 
-        // Sum of total amount paid across all invoices for this school
-        const revenueAgg = await prisma.invoice.aggregate({
-            where: { schoolId },
-            _sum: { amountPaid: true }
-        });
-        const totalRevenue = revenueAgg._sum.amountPaid || 0;
+        if (currentTerm) {
+            const receipts = await prisma.paymentReceipt.aggregate({
+                _sum: { amount: true },
+                where: { invoice: { termId: currentTerm.id } }
+            });
+            totalRevenue = receipts._sum.amount || 0;
 
-        // Count invoices with non-zero balance (unpaid/partially paid)
-        const pendingPayments = await prisma.invoice.count({
-            where: { schoolId, status: { not: 'PAID' } }
-        });
+            const pending = await prisma.invoice.aggregate({
+                _sum: { balance: true },
+                where: { termId: currentTerm.id, status: { not: 'PAID' } }
+            });
+            pendingPayments = pending._sum.balance || 0;
+        } else {
+            // Fallback to all time if no active term
+            const receipts = await prisma.paymentReceipt.aggregate({
+                _sum: { amount: true }
+            });
+            totalRevenue = receipts._sum.amount || 0;
+            
+            const pending = await prisma.invoice.aggregate({
+                _sum: { balance: true },
+                where: { status: { not: 'PAID' } }
+            });
+            pendingPayments = pending._sum.balance || 0;
+        }
 
-        // Count classes in this school
-        const activeClasses = await prisma.class.count({
-            where: { schoolId }
-        });
-
-        // Get recent audit logs as activity feed
-        const recentLogs = await prisma.auditLog.findMany({
-            where: { schoolId },
-            orderBy: { createdAt: 'desc' },
+        const recentActivities = await prisma.auditLog.findMany({
             take: 5,
+            orderBy: { createdAt: 'desc' },
             select: { action: true, entity: true, createdAt: true }
         });
 
-        const recentActivities = recentLogs.map(log => ({
-            title: `${log.action} ${log.entity}`,
-            time: log.createdAt.toLocaleString(),
-            type: log.entity.toLowerCase()
+        const formattedActivities = recentActivities.map(log => ({
+            title: `${log.action} on ${log.entity}`,
+            time: log.createdAt.toISOString(),
+            type: 'system'
         }));
 
-        return {
-            success: true,
-            data: { totalStudents, totalStaff, totalRevenue, pendingPayments, activeClasses, recentActivities }
+        const allReceipts = await prisma.paymentReceipt.findMany({
+            select: { amount: true, date: true }
+        });
+        
+        const monthlyRevenue = Array(6).fill(0).map((_, i) => {
+            const d = new Date();
+            d.setMonth(d.getMonth() - (5 - i));
+            return {
+                name: d.toLocaleString('default', { month: 'short' }),
+                total: 0,
+                monthIndex: d.getMonth(),
+                year: d.getFullYear()
+            };
+        });
+
+        allReceipts.forEach(r => {
+            const d = new Date(r.date);
+            const m = monthlyRevenue.find(mr => mr.monthIndex === d.getMonth() && mr.year === d.getFullYear());
+            if (m) m.total += r.amount;
+        });
+        
+        const chartRevenueData = monthlyRevenue.map(m => ({ name: m.name, total: m.total }));
+
+        const attendanceData = [
+            { name: 'Mon', present: 0, absent: 0 },
+            { name: 'Tue', present: 0, absent: 0 },
+            { name: 'Wed', present: 0, absent: 0 },
+            { name: 'Thu', present: 0, absent: 0 },
+            { name: 'Fri', present: 0, absent: 0 },
+        ];
+        
+        const recentAttendance = await prisma.staffAttendance.findMany({
+            where: {
+                date: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
+            }
+        });
+        
+        recentAttendance.forEach(a => {
+            const dayName = new Date(a.date).toLocaleString('default', { weekday: 'short' });
+            const day = attendanceData.find(d => d.name === dayName);
+            if (day) {
+                if (a.timeIn) day.present++;
+                else day.absent++;
+            }
+        });
+
+        return { 
+            success: true, 
+            data: {
+                totalStudents,
+                totalStaff,
+                totalRevenue,
+                pendingPayments,
+                activeClasses,
+                recentActivities: formattedActivities,
+                revenueData: chartRevenueData,
+                attendanceData
+            } 
         };
     } catch (error: any) {
-        console.error('Error fetching admin dashboard stats:', error);
-        return { success: false, data: null, error: error.message };
+        return { success: false, error: error.message };
+    }
+}
+export async function getMidtermResults(classId: string) {
+    try {
+        const results = await prisma.termGrade.findMany({
+            where: { student: { classId } },
+            include: { student: true, subject: true }
+        });
+        return { success: true, data: results };
+    } catch (error: any) {
+        return { success: false, error: error.message };
     }
 }
 
-/**
- * Calculates Mastery level for a student on a specific standard
- */
-export async function getStandardMastery(studentId: string, standardId: string) {
-    const grades = await prisma.submission.findMany({
-        where: {
-            studentId,
-            assignment: {
-                standardId
+export async function saveMidtermResult(data: any) {
+    try {
+        const { studentId, subjectId, score, comment, termId = 'current' } = data;
+        const result = await prisma.termGrade.upsert({
+            where: { 
+                studentId_subjectId_termId: {
+                    studentId, subjectId, termId
+                }
+            },
+            update: { ca1: Number(score), remarks: comment },
+            create: {
+                studentId, subjectId, ca1: Number(score), remarks: comment, termId
             }
-        },
-        orderBy: {
-            submittedAt: 'desc'
-        },
-        take: 3 // PowerSchool often uses "Decaying Average" or "Most Recent"
-    });
+        });
+        revalidatePath('/dashboard/midterm/view');
+        return { success: true, data: result };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
+}
 
-    if (grades.length === 0) return 0;
+export async function getTahfeezScores(classId?: string) {
+    try {
+        const whereClause = classId ? { student: { classId } } : {};
+        const scores = await prisma.tahfeezScore.findMany({
+            where: whereClause,
+            include: { student: true }
+        });
+        return { success: true, data: scores };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
+}
 
-    // Simple average for now
-    const sum = grades.reduce((acc: number, g: any) => acc + (g.score || 0), 0);
-    return sum / grades.length;
+export async function saveTahfeezScore(data: any) {
+    try {
+        const score = await prisma.tahfeezScore.create({
+            data: {
+                studentId: data.studentId,
+                surah: data.surah,
+                startAyah: data.ayahFrom ? Number(data.ayahFrom) : undefined,
+                endAyah: data.ayahTo ? Number(data.ayahTo) : undefined,
+                marks: Number(data.score),
+                fluencyScore: data.fluency ? Number(data.fluency) : undefined,
+                memorizationScore: data.memorization ? Number(data.memorization) : undefined,
+                tajweedScore: data.tajweed ? Number(data.tajweed) : undefined,
+                termId: data.termId || 'current',
+                session: data.session || 'current'
+            }
+        });
+        revalidatePath('/dashboard/tahfeez');
+        return { success: true, data: score };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
 }

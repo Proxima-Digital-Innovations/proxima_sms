@@ -1,12 +1,9 @@
-
 'use client';
 
 import React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { collection, doc, setDoc, updateDoc, getDoc } from '@/lib/firebase-stubs';
-import { ref, uploadBytes, getDownloadURL } from '@/lib/firebase-stubs';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -26,16 +23,16 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { db, auth, storage } from "@/lib/firebase";
-import { dbService } from '@/lib/dbService';
 import { UploadCloud, Loader2 } from 'lucide-react';
 import { useRole } from '@/context/role-context';
 import { useState, useEffect } from 'react';
 import { useAcademicData } from '@/hooks/use-academic-data';
 import type { MockLessonNote } from '@/lib/schema';
+import { submitLessonNote } from '@/actions/lms-actions';
+import { useSession } from 'next-auth/react';
 
 const formSchema = z.object({
-  title: z.string().optional(), // Made optional, will be derived from filename if not provided
+  title: z.string().optional(),
   type: z.enum(['Lesson Plan', 'Exam Question', 'Test Question']),
   paperType: z.string().optional(),
   class: z.string().min(1, { message: 'Please select a class.' }),
@@ -61,7 +58,7 @@ export function DocumentSubmissionForm({
   existingNoteData?: MockLessonNote | null;
   isResubmission?: boolean;
 }) {
-  const { user } = useRole();
+  const { data: session } = useSession();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileRef = React.useRef<HTMLInputElement>() as React.MutableRefObject<HTMLInputElement>;
@@ -81,7 +78,7 @@ export function DocumentSubmissionForm({
   });
 
   const documentTypeValue = form.watch('type');
-  const showTypeSelector = !documentType; // Only show if not pre-set
+  const showTypeSelector = !documentType;
 
   useEffect(() => {
     if (documentType) {
@@ -98,7 +95,7 @@ export function DocumentSubmissionForm({
   }, [documentType, form, isResubmission, existingNoteData]);
 
   async function onSubmit(values: z.infer<typeof currentSchema>) {
-    if (!user) {
+    if (!session?.user?.id) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -116,86 +113,34 @@ export function DocumentSubmissionForm({
       return;
     }
 
-
     setIsSubmitting(true);
 
     try {
       const file = values.file[0];
-      const { type } = values;
+      const formData = new FormData();
       
-      const documentTitle = values.title || file.name.replace(/\.[^/.]+$/, '');
+      formData.append('teacherId', session.user.id);
+      formData.append('title', values.title || file.name.replace(/\.[^/.]+$/, ''));
+      formData.append('type', values.type);
+      formData.append('class', values.class);
+      formData.append('subject', values.subject);
+      formData.append('file', file);
       
-      let collectionName = 'lessonNotes';
-      let status = 'Pending HOD Approval';
-      let reviewer = 'HeadOfDepartment';
-
-      if (type === 'Exam Question') {
-        collectionName = 'examQuestions';
-        status = 'Pending Review';
-        reviewer = 'Exam Officer';
-      } else if (type === 'Test Question') {
-        collectionName = 'testQuestions';
-        status = 'Pending Review';
-        reviewer = 'Exam Officer';
-      }
-
-      const storageRef = ref(
-        storage,
-        `${collectionName}/${user.uid}/${Date.now()}-${file.name}`
-      );
-
-      const uploadResult = await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(uploadResult.ref);
-      
-      const userDoc = await dbService.getDoc<{ name: string }>('users', user.uid);
-      const teacherName = userDoc?.name || user.name || 'Unknown Teacher';
-
-      const submissionData: any = {
-        title: documentTitle,
-        class: values.class,
-        subject: values.subject,
-        fileUrl: downloadURL,
-        storagePath: uploadResult.ref.fullPath,
-        teacherId: user.uid,
-        teacherName: teacherName,
-        status: status,
-        submissionDate: new Date().toLocaleDateString('en-CA'),
-        submittedOn: new Date(),
-        reviewer: reviewer,
-        type: type,
-      };
-
       if (values.paperType) {
-        submissionData.paperType = values.paperType;
+          formData.append('paperType', values.paperType);
       }
 
-
-      if (isResubmission && existingNoteData) {
-        const docRef = doc(db, collectionName, existingNoteData.id);
-        await updateDoc(docRef, {
-          fileUrl: downloadURL,
-          storagePath: uploadResult.ref.fullPath,
-          status: status, 
-          submittedOn: new Date(), 
-          admin_review: null, 
-          hod_review: null,
-        });
-        toast({
-          title: 'Document Resubmitted',
-          description: `Your corrected ${type} has been sent for review.`,
-        });
-      } else {
-         const newDocRef = doc(collection(db, collectionName));
-        await setDoc(newDocRef, {
-          ...submissionData,
-          id: newDocRef.id,
-        });
-
-        toast({
-          title: 'Document Submitted',
-          description: `Your ${type} has been sent to the ${reviewer} for review.`,
-        });
+      const result = await submitLessonNote(formData);
+      
+      if (!result.success) {
+          throw new Error(result.error);
       }
+
+      toast({
+        title: 'Document Submitted',
+        description: `Your ${values.type} has been successfully submitted.`,
+      });
+      
       form.reset();
       if (fileRef.current) {
         fileRef.current.value = '';

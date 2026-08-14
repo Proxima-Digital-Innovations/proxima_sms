@@ -85,10 +85,9 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      // Clock In: log staff check-in with schoolId context
+      // Clock In: log staff check-in with context
       await prisma.staffAttendance.create({
         data: {
-          schoolId: kiosk.schoolId,
           staffId: user.id,
           date: today,
           timeIn: timeStr,

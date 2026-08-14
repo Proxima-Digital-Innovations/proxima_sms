@@ -1,9 +1,9 @@
 import { prisma } from './prisma';
 import { notFound } from 'next/navigation';
 
-export async function getSchoolContext(subdomain: string) {
-  const school = await prisma.school.findUnique({
-    where: { subdomain },
+export async function getSchoolContext(name: string) {
+  const school = await prisma.systemProfile.findFirst({
+    where: { name },
   });
 
   if (!school) {
@@ -12,7 +12,7 @@ export async function getSchoolContext(subdomain: string) {
 
   // License Check
   const now = new Date();
-  const isExpired = school.expiresAt < now;
+  const isExpired = school.expiresAt ? school.expiresAt < now : false;
   const isSuspended = school.licenseStatus === 'SUSPENDED';
 
   return {

@@ -117,7 +117,7 @@ export function BulkExpenseUploadDialog({ children, open, onOpenChange, onUpload
     setIsSubmitting(true);
     setImportResult(null);
     try {
-        const result = await bulkCreateExpenses(expenseData, user.uid);
+        const result = await bulkCreateExpenses(expenseData, user.uid) as any;
         if (result.error) {
             throw new Error(result.error);
         }

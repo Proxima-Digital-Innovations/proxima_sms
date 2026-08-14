@@ -20,13 +20,13 @@ export const analyticsService = {
 
         const pendingPayroll = await prisma.payroll.aggregate({
             where: { status: 'pending' },
-            _sum: { amount: true }
+            _sum: { netAmount: true }
         });
 
         return {
             totalLiquidity: totalBalance,
             receivables: unpaidInvoices._sum.amount || 0,
-            pendingLiabilities: pendingPayroll._sum.amount || 0,
+            pendingLiabilities: pendingPayroll._sum?.netAmount || 0,
             fundBreakdown: funds.map(f => ({ name: f.name, balance: f.balance }))
         };
     },

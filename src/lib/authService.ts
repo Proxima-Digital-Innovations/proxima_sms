@@ -74,7 +74,6 @@ export const authService = {
                 firstName: rest.firstName || '',
                 lastName: rest.lastName || '',
                 role: (rest.role || 'TEACHER').toUpperCase() as any,
-                schoolId: schoolId,
                 status: rest.status || 'active',
                 phone: rest.phone || null,
                 staffId: rest.staffId || null,

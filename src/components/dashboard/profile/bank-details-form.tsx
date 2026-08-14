@@ -4,7 +4,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { doc, updateDoc } from '@/lib/firebase-stubs';
+import { updateProfileInfo } from '@/actions/profile-actions';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -16,7 +16,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { db, auth, storage } from "@/lib/firebase";
 import type { MockUser } from '@/lib/schema';
 import { Save } from 'lucide-react';
 import { useState } from 'react';
@@ -66,21 +65,20 @@ export function BankDetailsForm({
   async function onSubmit(values: BankDetailsFormValues) {
     setIsSubmitting(true);
     try {
-      const userRef = doc(db, 'users', user.id);
-      
       const bankLabel = NIGERIAN_BANKS.find(b => b.value === values.bankName)?.label || values.bankName;
 
       const updateData: any = {
-        'salary.bankName': bankLabel,
-        'salary.accountNumber': values.accountNumber,
-        'salary.accountName': values.accountName,
+        bankName: bankLabel,
+        accountNumber: values.accountNumber,
+        accountName: values.accountName,
       };
 
       if (canEditSalary && values.salaryAmount) {
-        updateData['salary.amount'] = Number(values.salaryAmount);
+        updateData.salaryAmount = Number(values.salaryAmount);
       }
 
-      await updateDoc(userRef, updateData);
+      const result = await updateProfileInfo(user.id, updateData);
+      if (!result.success) throw new Error(result.error);
 
       toast({
         title: 'Success',

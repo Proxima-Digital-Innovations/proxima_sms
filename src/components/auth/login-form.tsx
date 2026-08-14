@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -23,7 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const formSchema = z.object({
-  email: z.string().email({ message: 'Enter a valid email address.' }),
+  identifier: z.string().min(1, { message: 'Enter a valid email address or Staff ID.' }),
   password: z.string().min(1, { message: 'Password is required.' }),
 });
 
@@ -37,8 +36,8 @@ export function LoginForm({ schoolSlug }: { schoolSlug?: string }) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: '',
-      password: '',
+      identifier: searchParams.get('identifier') || '',
+      password: searchParams.get('password') || '',
     },
   });
 
@@ -46,13 +45,13 @@ export function LoginForm({ schoolSlug }: { schoolSlug?: string }) {
     setError(null);
     try {
       const result = await signIn('credentials', {
-        email: values.email,
+        identifier: values.identifier,
         password: values.password,
         redirect: false,
       });
 
       if (result?.error) {
-        setError('Invalid email or password.');
+        setError('Invalid credentials.');
         return;
       }
 
@@ -83,20 +82,20 @@ export function LoginForm({ schoolSlug }: { schoolSlug?: string }) {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
             control={form.control}
-            name="email"
+            name="identifier"
             render={({ field }) => (
-              <FormItem className="space-y-1">
-                <FormLabel className="text-xs font-bold text-slate-700">
-                  Email Address
+              <FormItem className="space-y-1.5">
+                <FormLabel className="text-[13px] font-semibold text-slate-700">
+                  Email, Username, or Staff ID
                 </FormLabel>
                 <FormControl>
                   <Input 
-                    placeholder="name@school.edu" 
+                    placeholder="Enter your email, username, or ID" 
                     {...field} 
-                    className="h-10 border-slate-200 focus:border-slate-400 focus:ring-0 transition-all rounded-lg"
+                    className="h-11 rounded-xl bg-slate-50/50 border-slate-200 focus-visible:ring-1 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all text-sm px-4 shadow-sm"
                   />
                 </FormControl>
-                <FormMessage className="text-[10px]" />
+                <FormMessage className="text-[11px]" />
               </FormItem>
             )}
           />
@@ -104,26 +103,31 @@ export function LoginForm({ schoolSlug }: { schoolSlug?: string }) {
             control={form.control}
             name="password"
             render={({ field }) => (
-              <FormItem className="space-y-1">
-                <FormLabel className="text-xs font-bold text-slate-700">
-                  Password
-                </FormLabel>
+              <FormItem className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <FormLabel className="text-[13px] font-semibold text-slate-700">
+                    Password
+                  </FormLabel>
+                  <a href="/reset-password" className="text-[11px] font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
+                    Forgot password?
+                  </a>
+                </div>
                 <FormControl>
                   <Input 
                     type="password" 
-                    placeholder="••••••••" 
+                    placeholder="Enter your password" 
                     {...field} 
-                    className="h-10 border-slate-200 focus:border-slate-400 focus:ring-0 transition-all rounded-lg"
+                    className="h-11 rounded-xl bg-slate-50/50 border-slate-200 focus-visible:ring-1 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all text-sm px-4 shadow-sm"
                   />
                 </FormControl>
-                <FormMessage className="text-[10px]" />
+                <FormMessage className="text-[11px]" />
               </FormItem>
             )}
           />
           
           <Button
             type="submit"
-            className="w-full h-10 rounded-lg font-bold bg-slate-900 hover:bg-slate-800 text-white transition-all mt-2"
+            className="w-full h-11 rounded-xl font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-500/20 transition-all mt-6"
             disabled={form.formState.isSubmitting}
           >
             {form.formState.isSubmitting ? (

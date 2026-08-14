@@ -1,37 +1,51 @@
-import { NextRequest, NextResponse } from "next/server";
-import { discoverKiosk } from "@/lib/kiosk-auth";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
-  const kiosk = await discoverKiosk(req);
+    try {
+        const terminalId = req.headers.get('x-terminal-id');
+        const apiSecret = req.headers.get('x-api-secret');
 
-  if (!kiosk) {
-    return NextResponse.json(
-      {
-        status: "UNREGISTERED",
-        message: "Terminal not found in system.",
-      },
-      { status: 404 }
-    );
-  }
+        if (!terminalId) return NextResponse.json({ success: false, message: 'Missing Terminal ID' }, { status: 400 });
+        if (apiSecret !== (process.env.KIOSK_API_SECRET || 'supersecret123')) {
+            return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+        }
 
-  if (!kiosk.isActive) {
-    return NextResponse.json({
-      status: "PENDING",
-      message: "Terminal awaiting activation.",
-    });
-  }
+        let kiosk = await prisma.kiosk.findUnique({ where: { terminalId } });
+        if (!kiosk) {
+            kiosk = await prisma.kiosk.create({
+                data: {
+                    terminalId,
+                    name: 'New Kiosk ' + terminalId.substring(0, 4),
+                    isActive: false
+                }
+            });
+        } else {
+            await prisma.kiosk.update({
+                where: { terminalId },
+                data: { lastSeenAt: new Date() }
+            });
+        }
 
-  if (kiosk.maintenanceMode) {
-    return NextResponse.json({
-      status: "MAINTENANCE",
-      message: "System under maintenance.",
-    });
-  }
+        const system = await prisma.systemProfile.findFirst();
+        
+        let status = 'PENDING';
+        let command = 'SCAN';
+        if (kiosk.isActive) status = 'ACTIVE';
+        if (kiosk.maintenanceMode) status = 'MAINTENANCE';
+        if (kiosk.operatingMode === 'ENROLLMENT') command = 'ENROLL';
 
-  return NextResponse.json({
-    status: "ACTIVE",
-    branch_name: kiosk.branchId || "Main Campus", // Fallback for single-campus
-    operating_mode: kiosk.operatingMode || "auto",
-    server_time: new Date().toISOString(),
-  });
+        return NextResponse.json({
+            success: true,
+            status,
+            command,
+            branch_name: system?.name || 'Main Campus',
+            schoolName: system?.name || 'School Hub',
+            logo_url: system?.logoUrl || '',
+            school_address: system?.address || '',
+            time: new Date().toLocaleTimeString('en-GB')
+        });
+    } catch (error: any) {
+        return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    }
 }

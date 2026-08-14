@@ -1,37 +1,46 @@
-
 import type { Metadata } from 'next';
 import './globals.css';
 import { AppProviders } from '@/components/providers';
 import { Toaster } from '@/components/ui/toaster';
 import { Analytics } from "@vercel/analytics/react"
-
+import { prisma } from '@/lib/prisma';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
-  title: 'Proxima Hub Portal',
-  description: 'Proxima Hub is an advanced role-based portal for hybrid school management and learning.',
-  icons: {
-    icon: '/favicon.ico',
+  title: {
+    template: "%s | ProximaOne",
+    default: "ProximaOne Dashboard",
   },
+  description: "Global Oversight and School Management System",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  
+  // License check for single-tenant ownership
+  const systemProfile = await prisma.systemProfile.findFirst();
+
+  if (systemProfile) {
+    const isExpired = systemProfile.expiresAt ? new Date() > systemProfile.expiresAt : false;
+    const isSuspended = systemProfile.licenseStatus === 'SUSPENDED';
+    const isLicenseExpiredStatus = systemProfile.licenseStatus === 'EXPIRED';
+
+    if (isExpired || isSuspended || isLicenseExpiredStatus) {
+      redirect(`/license-expired?school=${encodeURIComponent(systemProfile.name)}`);
+    }
+  }
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/favicon.ico" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        
         <AppProviders>
           {children}
           <Toaster />

@@ -27,7 +27,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useEffect, useState, useCallback } from 'react';
-import { dbService } from '@/lib/dbService';
+import { getHodDashboardData } from '@/actions/hod-actions';
 import type { MockLessonNote, MockUser } from '@/lib/schema';
 import { useToast } from '@/hooks/use-toast';
 import { useRole } from '@/context/role-context';
@@ -76,58 +76,17 @@ export function HodDashboard() {
     if (!user) return;
     setIsLoading(true);
     try {
-      const hodUser = await dbService.getDoc<MockUser>('users', user.uid);
-      if (!hodUser || !hodUser.department) {
-        toast({ title: "Error", description: "Could not determine your department." });
+      const data = await getHodDashboardData(user.id || user.uid);
+      if (data.error) {
+        toast({ title: "Error", description: data.error });
         setIsLoading(false);
         return;
       }
 
-      // Get all teachers in that department
-      const departmentTeachers = await dbService.getDocs<MockUser>('users', [
-        { type: 'where', fieldPath: 'department', opStr: '==', value: hodUser.department },
-        { type: 'where', fieldPath: 'role', opStr: '==', value: 'Teacher' },
-      ]);
-      const teacherIds = departmentTeachers.map(t => t.id);
-
-      if (teacherIds.length === 0) {
-        setStats({ pending: 0, approved: 0, rejected: 0, staffCount: 0 });
-        setNotes([]);
-        setSubmissionStatusData([]);
-        setStaff([]);
-        setIsLoading(false);
-        return;
-      }
-
-      // Firestore 'in' query has a limit of 30 values. If there are more teachers, we'd need multiple queries.
-      const notesList = await dbService.getDocs<MockLessonNote>('lessonNotes', [
-        { type: 'where', fieldPath: 'teacherId', opStr: 'in', value: teacherIds }
-      ]);
-      
-      // Sort client-side to avoid composite index
-      notesList.sort((a, b) => (b.submittedOn?.seconds || 0) - (a.submittedOn?.seconds || 0));
-
-      setNotes(notesList.slice(0, 5)); // Show recent 5
-
-      const approved = notesList.filter(n => n.status === 'Approved').length;
-      const pending = notesList.filter(n => n.status.includes('Pending')).length;
-      const rejected = notesList.filter(n => n.status.includes('Rejected') || n.status.includes('Revision')).length;
-      
-      setSubmissionStatusData([
-        { name: 'Approved', value: approved, fill: 'hsl(var(--chart-2))' },
-        { name: 'Pending', value: pending, fill: 'hsl(var(--chart-4))' },
-        { name: 'Rejected', value: rejected, fill: 'hsl(var(--destructive))' },
-      ]);
-
-      setStaff(departmentTeachers);
-      
-      setStats({
-        pending,
-        approved,
-        rejected,
-        staffCount: departmentTeachers.length,
-      });
-
+      setStats(data.stats as any);
+      setNotes(data.notes as any);
+      setSubmissionStatusData(data.submissionStatusData as any);
+      setStaff(data.staff as any);
     } catch (error) {
        console.error("Error fetching HOD data:", error);
        toast({
@@ -289,6 +248,25 @@ export function HodDashboard() {
         </div>
         
         <div className="lg:col-span-1 space-y-6">
+             <Card>
+                <CardHeader>
+                    <CardTitle>Quick Actions</CardTitle>
+                    <CardDescription>Common department tasks.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-3">
+                    <Button asChild variant="outline" size="lg" className="justify-start">
+                        <Link href="/dashboard/departments">
+                            <Users className="mr-2 h-4 w-4" /> Manage Department Staff
+                        </Link>
+                    </Button>
+                    <Button asChild variant="outline" size="lg" className="justify-start">
+                        <Link href="/dashboard/lesson-notes">
+                            <BookCopy className="mr-2 h-4 w-4" /> Review Lesson Notes
+                        </Link>
+                    </Button>
+                </CardContent>
+             </Card>
+
              <Card>
                 <CardHeader>
                     <CardTitle>Department Submission Status</CardTitle>

@@ -1,31 +1,18 @@
 'use server';
 
-import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { requireSchoolId } from "@/lib/server-context";
+import { AcademicTermService } from "@/lib/services/academic-term-service";
+
+const service = new AcademicTermService();
 
 /**
- * Creates a new Academic Session (e.g., 2026/2027)
+ * Creates a new Academic Session (e.g, 2026/2027)
  */
 export async function createAcademicSession(data: { name: string, startDate: Date, endDate: Date, isActive: boolean }) {
   try {
-    const schoolId = await requireSchoolId();
-
-    // If making this active, deactivate others for the current school context
-    if (data.isActive) {
-      await prisma.academicSession.updateMany({
-        where: { schoolId },
-        data: { isActive: false }
-      });
-    }
-
-    const session = await prisma.academicSession.create({
-      data: {
-        ...data,
-        schoolId
-      },
-    });
-
+    
+    const session = await service.createSession(data, );
     revalidatePath("/admin/academic-setup");
     return { success: true, session };
   } catch (error: any) {
@@ -39,24 +26,8 @@ export async function createAcademicSession(data: { name: string, startDate: Dat
  */
 export async function createTerm(data: { name: string, sessionId: string, startDate: Date, endDate: Date, isActive: boolean }) {
   try {
-    const schoolId = await requireSchoolId();
-
-    // If making this active, deactivate other terms for the current school context
-    if (data.isActive) {
-      await prisma.term.updateMany({
-        where: { schoolId },
-        data: { isActive: false }
-      });
-    }
-
-    const term = await prisma.term.create({
-      data: {
-        ...data,
-        schoolId
-      },
-    });
-
-
+    
+    const term = await service.createTerm(data, );
     revalidatePath("/admin/academic-setup");
     return { success: true, term };
   } catch (error: any) {
@@ -70,14 +41,7 @@ export async function createTerm(data: { name: string, sessionId: string, startD
  */
 export async function getAcademicCalendar() {
   try {
-    const sessions = await prisma.academicSession.findMany({
-      include: {
-        terms: {
-          orderBy: { startDate: 'asc' }
-        }
-      },
-      orderBy: { startDate: 'desc' }
-    });
+    const sessions = await service.getAcademicCalendar();
     return { success: true, sessions };
   } catch (error: any) {
     return { success: false, sessions: [], message: error.message };
@@ -89,10 +53,7 @@ export async function getAcademicCalendar() {
  */
 export async function setSessionActive(id: string) {
   try {
-    await prisma.$transaction([
-      prisma.academicSession.updateMany({ data: { isActive: false } }),
-      prisma.academicSession.update({ where: { id }, data: { isActive: true } })
-    ]);
+    await service.setSessionActive(id);
     revalidatePath("/admin/academic-setup");
     return { success: true };
   } catch (error: any) {
@@ -105,10 +66,7 @@ export async function setSessionActive(id: string) {
  */
 export async function setTermActive(id: string) {
   try {
-    await prisma.$transaction([
-      prisma.term.updateMany({ data: { isActive: false } }),
-      prisma.term.update({ where: { id }, data: { isActive: true } })
-    ]);
+    await service.setTermActive(id);
     revalidatePath("/admin/academic-setup");
     return { success: true };
   } catch (error: any) {

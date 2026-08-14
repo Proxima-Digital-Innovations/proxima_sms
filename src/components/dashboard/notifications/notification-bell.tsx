@@ -2,8 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { collection, query, where, onSnapshot } from '@/lib/firebase-stubs';
-import { db, auth, storage } from "@/lib/firebase";
+import { getNotifications } from '@/actions/notification-actions';
 import { useRole } from '@/context/role-context';
 import { Button } from '@/components/ui/button';
 import { Bell } from 'lucide-react';
@@ -19,22 +18,18 @@ export function NotificationBell() {
             return;
         }
 
-        const q = query(
-            collection(db, 'notifications'),
-            where('toUserId', '==', user.uid),
-            where('read', '==', false)
-        );
+        const fetchNotifications = async () => {
+            const result = await getNotifications(user.id || (user as any).uid);
+            if (result.success && result.data) {
+                const unread = result.data.filter((n: any) => !n.read).length;
+                setUnreadCount(unread);
+            }
+        };
 
-        // Real-time listener for notifications. We type the callback parameters as any
-        // to comply with TypeScript strict mode while using firebase-stubs.
-        const unsubscribe = onSnapshot(q, (querySnapshot: any) => {
-            setUnreadCount(querySnapshot.size);
-        }, (error: any) => {
-            console.error("Error fetching unread notifications:", error);
-        });
+        fetchNotifications();
+        const interval = setInterval(fetchNotifications, 60000); // Poll every minute
 
-        // Cleanup subscription on component unmount
-        return () => unsubscribe();
+        return () => clearInterval(interval);
     }, [user]);
 
     if (isUserLoading) {

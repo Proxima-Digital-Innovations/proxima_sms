@@ -96,7 +96,7 @@ export function BulkScoresUploadDialog({ open, onOpenChange, students, class: cl
     }
     setIsSubmitting(true);
     try {
-        const result = await bulkUpdateScores({ scores: scoreData, class: className, subject });
+        const result = await bulkUpdateScores({ scores: scoreData, class: className, subject }) as any;
         if (result.error) {
             throw new Error(result.error);
         }

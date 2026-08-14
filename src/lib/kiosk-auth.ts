@@ -20,7 +20,7 @@ export async function discoverKiosk(req: NextRequest) {
   return await withGlobal(async () => {
     try {
       let kiosk = await prisma.kiosk.findUnique({
-        where: { terminalId },
+        where: { terminalId }
       });
 
       if (kiosk) {
@@ -34,7 +34,7 @@ export async function discoverKiosk(req: NextRequest) {
         });
       } else {
         // Find the first school to associate the auto-registered kiosk with
-        const firstSchool = await prisma.school.findFirst();
+        const firstSchool = await prisma.systemProfile.findFirst();
         if (!firstSchool) {
           throw new Error("No school found to register kiosk.");
         }
@@ -42,7 +42,6 @@ export async function discoverKiosk(req: NextRequest) {
         // Auto-register new terminal
         kiosk = await prisma.kiosk.create({
           data: {
-            schoolId: firstSchool.id,
             terminalId,
             name: `New Kiosk (${terminalId.slice(-4)})`,
             ipAddress,
@@ -50,7 +49,7 @@ export async function discoverKiosk(req: NextRequest) {
             isActive: false,
             maintenanceMode: false,
             operatingMode: "auto",
-          },
+          }
         });
         console.log(`Auto-registered new Kiosk: ${terminalId} from ${ipAddress}`);
       }
@@ -87,8 +86,24 @@ export async function withKioskAuth(
     );
   }
 
+  // Check Proxima Software License
+  const school = await prisma.systemProfile.findFirst();
+  if (!school || school.licenseStatus === 'SUSPENDED' || school.licenseStatus === 'EXPIRED') {
+    return NextResponse.json(
+      { status: "LICENSE_EXPIRED", message: "School license expired or suspended. Contact Proxima Digital Innovation." },
+      { status: 403 }
+    );
+  }
+  
+  if (school.expiresAt && new Date(school.expiresAt) < new Date()) {
+     return NextResponse.json(
+      { status: "LICENSE_EXPIRED", message: "School license expired. Contact Proxima Digital Innovation." },
+      { status: 403 }
+    );
+  }
+
   // Wrap the handler execution within the tenant context of this Kiosk
-  return await withTenant(kiosk.schoolId, async () => {
+  return await withTenant(school.id, async () => {
     return handler(req, kiosk);
   });
 }

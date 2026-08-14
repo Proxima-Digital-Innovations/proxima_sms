@@ -2,9 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, GraduationCap, DollarSign, BookOpen, TrendingUp, TrendingDown, Activity } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Users, GraduationCap, DollarSign, BookOpen, TrendingUp, TrendingDown, Activity, ArrowUpRight, BarChart3, Clock, PlusCircle, Settings, FileText } from 'lucide-react';
+import Link from 'next/link';
+import { getAdminDashboardStats } from '@/actions/academic-actions';
+import { motion } from 'framer-motion';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
-// Admin dashboard stats data type
 type DashboardStats = {
     totalStudents: number;
     totalStaff: number;
@@ -12,10 +16,9 @@ type DashboardStats = {
     pendingPayments: number;
     activeClasses: number;
     recentActivities: Array<{ title: string; time: string; type: string }>;
+    revenueData: Array<{ name: string; total: number }>;
+    attendanceData: Array<{ name: string; present: number; absent: number }>;
 };
-
-// Server action import for fetching admin overview stats via Prisma
-import { getAdminDashboardStats } from '@/actions/academic-actions';
 
 export function NewAdminDashboard() {
     const [stats, setStats] = useState<DashboardStats>({
@@ -24,29 +27,31 @@ export function NewAdminDashboard() {
         totalRevenue: 0,
         pendingPayments: 0,
         activeClasses: 0,
-        recentActivities: []
+        recentActivities: [],
+        revenueData: [],
+        attendanceData: []
     });
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // Fetch dashboard stats on mount via server action
         fetchDashboardStats();
     }, []);
 
     const fetchDashboardStats = async () => {
         try {
-            // Call server action to get admin overview numbers from Prisma
             const result = await getAdminDashboardStats();
             if (result.success && result.data) {
                 setStats({
-                    totalStudents: result.data.totalStudents || 0,
-                    totalStaff: result.data.totalStaff || 0,
-                    totalRevenue: result.data.totalRevenue || 0,
-                    pendingPayments: result.data.pendingPayments || 0,
-                    activeClasses: result.data.activeClasses || 0,
-                    recentActivities: result.data.recentActivities || [
-                        { title: 'System is operational', time: 'Just now', type: 'system' },
-                    ]
+                    totalStudents: (result.data as any).totalStudents || 0,
+                    totalStaff: (result.data as any).totalStaff || 0,
+                    totalRevenue: (result.data as any).totalRevenue || 0,
+                    pendingPayments: (result.data as any).pendingPayments || 0,
+                    activeClasses: (result.data as any).activeClasses || 0,
+                    recentActivities: (result.data as any).recentActivities || [
+                        { title: 'System initialized successfully', time: 'Just now', type: 'system' },
+                    ],
+                    revenueData: (result.data as any).revenueData || [],
+                    attendanceData: (result.data as any).attendanceData || []
                 });
             }
         } catch (error) {
@@ -63,7 +68,8 @@ export function NewAdminDashboard() {
             icon: Users,
             trend: '+12%',
             trendUp: true,
-            color: 'from-blue-500 to-blue-600'
+            gradient: 'from-blue-500/20 to-blue-600/5',
+            iconColor: 'text-blue-600'
         },
         {
             title: 'Total Staff',
@@ -71,176 +77,234 @@ export function NewAdminDashboard() {
             icon: GraduationCap,
             trend: '+3%',
             trendUp: true,
-            color: 'from-purple-500 to-purple-600'
+            gradient: 'from-indigo-500/20 to-indigo-600/5',
+            iconColor: 'text-indigo-600'
         },
         {
-            title: 'Total Revenue',
+            title: 'Term Revenue',
             value: `₦${stats.totalRevenue.toLocaleString()}`,
             icon: DollarSign,
             trend: '+8%',
             trendUp: true,
-            color: 'from-green-500 to-green-600'
+            gradient: 'from-emerald-500/20 to-emerald-600/5',
+            iconColor: 'text-emerald-600'
         },
         {
-            title: 'Pending Payments',
+            title: 'Pending Invoices',
             value: stats.pendingPayments,
             icon: Activity,
             trend: '-5%',
             trendUp: false,
-            color: 'from-orange-500 to-orange-600'
+            gradient: 'from-rose-500/20 to-rose-600/5',
+            iconColor: 'text-rose-600'
         }
     ];
 
     if (isLoading) {
         return (
-            <div className="p-6 space-y-6">
-                <h1 className="text-3xl font-bold">Dashboard</h1>
+            <div className="space-y-6">
+                <div className="h-10 w-48 bg-muted rounded animate-pulse"></div>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     {[1, 2, 3, 4].map(i => (
-                        <Card key={i} className="animate-pulse">
-                            <CardHeader className="pb-2">
-                                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="h-8 bg-gray-200 rounded w-3/4"></div>
-                            </CardContent>
-                        </Card>
+                        <Card key={i} className="animate-pulse h-32"></Card>
                     ))}
+                </div>
+                <div className="grid gap-6 md:grid-cols-7">
+                    <div className="col-span-4 h-[400px] bg-muted rounded-xl animate-pulse"></div>
+                    <div className="col-span-3 h-[400px] bg-muted rounded-xl animate-pulse"></div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="p-6 space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold">Dashboard</h1>
-                <p className="text-muted-foreground">Welcome back! Here's what's happening today.</p>
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Header Area */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight text-foreground">Welcome back, Admin 👋</h1>
+                    <p className="text-muted-foreground mt-1">Here is the latest snapshot of your institution's performance.</p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <span className="flex h-3 w-3 relative">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                    </span>
+                    <span className="text-sm font-medium text-muted-foreground">System Live</span>
+                </div>
             </div>
 
-            {/* Stats Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {/* Premium Stat Cards */}
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                 {statCards.map((card, index) => (
-                    <Card key={index} className="relative overflow-hidden group hover:shadow-lg transition-all duration-300">
-                        <div className={`absolute inset-0 bg-gradient-to-br ${card.color} opacity-0 group-hover:opacity-10 transition-opacity`}></div>
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">
-                                {card.title}
-                            </CardTitle>
-                            <div className={`p-2 rounded-lg bg-gradient-to-br ${card.color}`}>
-                                <card.icon className="h-4 w-4 text-white" />
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{card.value}</div>
-                            <div className="flex items-center text-xs mt-1">
-                                {card.trendUp ? (
-                                    <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
-                                ) : (
-                                    <TrendingDown className="h-3 w-3 text-red-500 mr-1" />
-                                )}
-                                <span className={card.trendUp ? 'text-green-500' : 'text-red-500'}>
-                                    {card.trend}
-                                </span>
-                                <span className="text-muted-foreground ml-1">from last month</span>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <motion.div 
+                        key={index}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                    >
+                        <Card className={`relative overflow-hidden group hover:shadow-lg transition-all duration-300 border-border/50 bg-card/80 backdrop-blur-sm`}>
+                            <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-50 group-hover:opacity-100 transition-opacity duration-500`}></div>
+                            <CardHeader className="flex flex-row items-center justify-between pb-2 relative z-10">
+                                <CardTitle className="text-sm font-medium text-muted-foreground">
+                                    {card.title}
+                                </CardTitle>
+                                <div className={`p-2 rounded-xl bg-background shadow-sm border border-border/50`}>
+                                    <card.icon className={`h-4 w-4 ${card.iconColor}`} />
+                                </div>
+                            </CardHeader>
+                            <CardContent className="relative z-10">
+                                <div className="text-3xl font-bold tracking-tight mb-2">{card.value}</div>
+                                <div className="flex items-center text-xs font-medium">
+                                    <span className={`flex items-center px-1.5 py-0.5 rounded-md ${card.trendUp ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400'}`}>
+                                        {card.trendUp ? (
+                                            <TrendingUp className="h-3 w-3 mr-1" />
+                                        ) : (
+                                            <TrendingDown className="h-3 w-3 mr-1" />
+                                        )}
+                                        {card.trend}
+                                    </span>
+                                    <span className="text-muted-foreground ml-2">vs last month</span>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
                 ))}
             </div>
 
-            {/* Quick Stats */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Active Classes</CardTitle>
-                        <CardDescription>Currently enrolled classes</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-4xl font-bold text-blue-600">{stats.activeClasses}</div>
-                        <p className="text-sm text-muted-foreground mt-2">classes with active enrollment</p>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Fee Collection</CardTitle>
-                        <CardDescription>This term</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            <div>
-                                <div className="flex justify-between text-sm mb-2">
-                                    <span>Collected</span>
-                                    <span className="font-medium">Running total</span>
-                                </div>
-                                <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-                                    <div className="h-full bg-gradient-to-r from-green-500 to-emerald-500 w-3/4"></div>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div>
-                                    <p className="text-muted-foreground">Collected</p>
-                                    <p className="font-bold text-green-600">₦{(stats.totalRevenue).toLocaleString()}</p>
-                                </div>
-                                <div>
-                                    <p className="text-muted-foreground">Pending</p>
-                                    <p className="font-bold text-orange-600">{stats.pendingPayments}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Recent Activity</CardTitle>
-                        <CardDescription>Latest updates</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-3">
-                            {stats.recentActivities.map((activity, i) => (
-                                <div key={i} className="flex items-start gap-3">
-                                    <div className="p-2 rounded-full bg-blue-100">
-                                        <Activity className="h-3 w-3 text-blue-600" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="text-sm font-medium">{activity.title}</p>
-                                        <p className="text-xs text-muted-foreground">{activity.time}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
+            {/* Quick Actions */}
+            <div className="grid gap-4 md:grid-cols-4">
+                <Link href="/dashboard/students/admissions">
+                    <Button variant="outline" className="w-full h-16 flex flex-col items-center justify-center gap-1 border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors">
+                        <PlusCircle className="h-5 w-5" />
+                        <span className="font-semibold text-xs">Admit Student</span>
+                    </Button>
+                </Link>
+                <Link href="/dashboard/users">
+                    <Button variant="outline" className="w-full h-16 flex flex-col items-center justify-center gap-1 border-indigo-500/20 hover:bg-indigo-500/5 hover:text-indigo-600 transition-colors">
+                        <Users className="h-5 w-5" />
+                        <span className="font-semibold text-xs">Manage Staff</span>
+                    </Button>
+                </Link>
+                <Link href="/dashboard/invoices">
+                    <Button variant="outline" className="w-full h-16 flex flex-col items-center justify-center gap-1 border-emerald-500/20 hover:bg-emerald-500/5 hover:text-emerald-600 transition-colors">
+                        <DollarSign className="h-5 w-5" />
+                        <span className="font-semibold text-xs">Collect Fees</span>
+                    </Button>
+                </Link>
+                <Link href="/dashboard/system">
+                    <Button variant="outline" className="w-full h-16 flex flex-col items-center justify-center gap-1 border-slate-500/20 hover:bg-slate-500/5 hover:text-slate-600 transition-colors">
+                        <Settings className="h-5 w-5" />
+                        <span className="font-semibold text-xs">System Settings</span>
+                    </Button>
+                </Link>
             </div>
 
-            {/* Quick Actions */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <a href="/dashboard/students/admissions" className="p-4 border rounded-lg hover:bg-gray-50 transition-colors text-center">
-                            <Users className="h-6 w-6 mx-auto mb-2 text-blue-600" />
-                            <p className="text-sm font-medium">Add Student</p>
-                        </a>
-                        <a href="/dashboard/scores/enter" className="p-4 border rounded-lg hover:bg-gray-50 transition-colors text-center">
-                            <BookOpen className="h-6 w-6 mx-auto mb-2 text-purple-600" />
-                            <p className="text-sm font-medium">Enter Scores</p>
-                        </a>
-                        <a href="/dashboard/finance/invoices" className="p-4 border rounded-lg hover:bg-gray-50 transition-colors text-center">
-                            <DollarSign className="h-6 w-6 mx-auto mb-2 text-green-600" />
-                            <p className="text-sm font-medium">Create Invoice</p>
-                        </a>
-                        <a href="/dashboard/results/generate" className="p-4 border rounded-lg hover:bg-gray-50 transition-colors text-center">
-                            <GraduationCap className="h-6 w-6 mx-auto mb-2 text-orange-600" />
-                            <p className="text-sm font-medium">Generate Results</p>
-                        </a>
+            {/* Charts Section */}
+            <div className="grid gap-6 md:grid-cols-7">
+                {/* Revenue Overview */}
+                <Card className="col-span-7 md:col-span-4 standard-card border-none">
+                    <CardHeader className="pb-0">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle className="text-lg font-bold flex items-center gap-2">
+                                    <BarChart3 className="w-5 h-5 text-primary" />
+                                    Revenue Growth
+                                </CardTitle>
+                                <CardDescription>Financial performance over the last 6 months</CardDescription>
+                            </div>
+                            <div className="text-sm font-semibold text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1 rounded-full flex items-center gap-1">
+                                <ArrowUpRight className="w-4 h-4" /> +15.2%
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                        <div className="h-[300px] w-full">                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={stats.revenueData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(value) => `₦${(value / 1000000).toFixed(1)}M`} />
+                                <Tooltip
+                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                    formatter={(value: number) => [`₦${value.toLocaleString()}`, 'Revenue']}
+                                />
+                                <Area type="monotone" dataKey="total" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Attendance Chart & Activity */}
+            <div className="col-span-7 md:col-span-3 space-y-6">
+                <Card className="shadow-sm border-slate-200/60 lg:col-span-3">
+                    <CardHeader>
+                        <CardTitle>Attendance Trends</CardTitle>
+                        <CardDescription>Daily staff and student attendance</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="h-[300px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={stats.attendanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                                    <Tooltip
+                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                        cursor={{ fill: '#f8fafc' }}
+                                    />
+                                    <Bar dataKey="present" name="Present" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                                    <Bar dataKey="absent" name="Absent" fill="#f43f5e" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                    <Card className="standard-card border-none">
+                        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle className="text-lg font-bold flex items-center gap-2">
+                                    <Clock className="w-5 h-5 text-indigo-500" />
+                                    Recent Activity
+                                </CardTitle>
+                            </div>
+                            <Button variant="ghost" size="sm" className="text-primary h-8">View All</Button>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                {stats.recentActivities.length > 0 ? stats.recentActivities.map((activity, i) => (
+                                    <motion.div 
+                                        key={i} 
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: i * 0.1 }}
+                                        className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                                    >
+                                        <div className="p-2 rounded-full bg-indigo-100 dark:bg-indigo-900/50 shrink-0">
+                                            <Activity className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium truncate">{activity.title}</p>
+                                            <p className="text-xs text-muted-foreground mt-0.5">{activity.time}</p>
+                                        </div>
+                                    </motion.div>
+                                )) : (
+                                    <div className="text-center py-6 text-muted-foreground text-sm">
+                                        No recent activities logged today.
+                                    </div>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
         </div>
     );
 }

@@ -5,7 +5,7 @@
  * Replaces the old dbService/firebase-stubs approach with Prisma LessonNote.
  *
  * Prisma model used: LessonNote
- *   Fields: id, schoolId, title, subjectId, classId, teacherId, status,
+ *   Fields: id, title, subjectId, classId, teacherId, status,
  *           fileUrl, content, termId, submissionDate
  *
  * NOTE: There is no separate ExamQuestion or TestQuestion table in Prisma.
@@ -13,9 +13,10 @@
  * includes the document type (e.g. "[Exam Question] Mathematics – JSS1").
  */
 
-import { prisma } from '@/lib/prisma';
-import { storageService } from '@/lib/storageService';
 import { requireSchoolId } from '@/lib/server-context';
+import { SubmissionService } from '@/lib/services/submission-service';
+
+const service = new SubmissionService();
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -53,114 +54,20 @@ export async function bulkUploadDocuments(formData: FormData) {
   }
 
   try {
-    // --- Resolve tenant school context -------------------------------------
-    const schoolId = await requireSchoolId();
-
-    // --- Verify that the teacher user exists -------------------------------
-    const teacher = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, firstName: true, lastName: true },
-    });
-
-    if (!teacher) {
-      return { error: 'User not found.' };
-    }
-
-    // --- Find the currently active term ------------------------------------
-    const activeTerm = await prisma.term.findFirst({
-      where: { schoolId, isActive: true },
-      select: { id: true },
-    });
-    // termId is optional on LessonNote so we proceed even if there's no active term
-
-    // --- Parse file metadata ------------------------------------------------
+    
     const metadata: FileMetadata[] = JSON.parse(metadataString);
-    let successCount = 0;
-
+    
+    // Extract files matching the metadata indices
+    const files: (File | null)[] = [];
     for (let i = 0; i < metadata.length; i++) {
-      const meta = metadata[i];
-      const file = formData.get(`file_${i}`) as File | null;
-
-      // Skip entries where no actual file was attached
-      if (!file) continue;
-
-      // Determine the storage folder and initial status based on document type
-      let folder = 'lessonNotes';
-      let status = 'Pending HOD Approval';
-
-      if (meta.type === 'Exam Question') {
-        folder = 'examQuestions';
-        status = 'Pending Review';
-      } else if (meta.type === 'Test Question') {
-        folder = 'testQuestions';
-        status = 'Pending Review';
-      }
-
-      // --- Upload to storage ----------------------------------------------
-      const { downloadURL } = await storageService.uploadFile(
-        `${folder}/${userId}/${Date.now()}-${file.name}`,
-        file
-      );
-
-      // --- Resolve Subject by display name --------------------------------
-      const subjectRecord = await prisma.subject.findFirst({
-        where: { name: meta.subject, schoolId },
-        select: { id: true },
-      });
-
-      if (!subjectRecord) {
-        // Log and continue; caller can handle partial-success response
-        console.warn(
-          `[bulkUploadDocuments] Subject "${meta.subject}" not found for school ${schoolId}. Skipping file "${file.name}".`
-        );
-        continue;
-      }
-
-      // --- Resolve Class by display name ----------------------------------
-      const classRecord = await prisma.class.findFirst({
-        where: { name: meta.class, schoolId },
-        select: { id: true },
-      });
-
-      if (!classRecord) {
-        console.warn(
-          `[bulkUploadDocuments] Class "${meta.class}" not found for school ${schoolId}. Skipping file "${file.name}".`
-        );
-        continue;
-      }
-
-      // --- Build the document title ---------------------------------------
-      // For Exam/Test Questions there's no dedicated table, so prefix the
-      // type into the title so it's distinguishable in the UI.
-      const docTitle =
-        meta.type === 'Lesson Plan'
-          ? meta.title
-          : `[${meta.type}] ${meta.title}`;
-
-      // --- Create the LessonNote row in Prisma ----------------------------
-      await prisma.lessonNote.create({
-        data: {
-          schoolId,
-          title:     docTitle,
-          subjectId: subjectRecord.id,
-          classId:   classRecord.id,
-          teacherId: userId,
-          status,
-          fileUrl:   downloadURL,
-          // Store the raw doc type as content so it can be filtered/displayed
-          content:   meta.type,
-          termId:    activeTerm?.id ?? null,
-        },
-      });
-
-      successCount++;
+        files.push(formData.get(`file_${i}`) as File | null);
     }
+
+    const successCount = await service.processBulkUpload(userId, metadata, files, );
 
     return { success: true, successCount };
   } catch (error: any) {
     console.error('Error during bulk upload:', error);
-    return {
-      error: error.message || 'An unexpected error occurred during the upload process.',
-    };
+    return { error: error.message || 'An unexpected error occurred during the upload process.' };
   }
 }

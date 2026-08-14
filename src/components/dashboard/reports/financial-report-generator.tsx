@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from '@/components/ui/button';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { useToast } from '@/hooks/use-toast';
-import { dbService } from '@/lib/dbService';
+import { getFinancialReportData } from '@/actions/finance-actions';
 import type { Payment, Expense } from '@/lib/schema';
 import { ArrowDown, ArrowUp, BarChart, FileText, Loader2, Minus, Plus, Printer, Sparkles } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -22,8 +22,8 @@ type ReportData = {
     totalRevenue: number;
     totalExpenses: number;
     netIncome: number;
-    payments: Payment[];
-    expenses: Expense[];
+    payments: any[];
+    expenses: any[];
     expenseByCategory: { name: string; total: number }[];
 }
 
@@ -56,22 +56,18 @@ export function FinancialReportGenerator() {
             const fromDate = date.from;
             const toDate = addDays(date.to, 1); // Include the whole end day
 
-            const [payments, expenses] = await Promise.all([
-                dbService.getDocs<Payment>('payments', [
-                    { type: 'where', fieldPath: 'paymentDate', opStr: '>=', value: fromDate },
-                    { type: 'where', fieldPath: 'paymentDate', opStr: '<', value: toDate },
-                ]),
-                dbService.getDocs<Expense>('expenses', [
-                    { type: 'where', fieldPath: 'date', opStr: '>=', value: fromDate },
-                    { type: 'where', fieldPath: 'date', opStr: '<', value: toDate },
-                ])
-            ]);
+            const reportRes = await getFinancialReportData(fromDate, toDate);
 
-            const totalRevenue = payments.reduce((sum, p) => sum + p.amountPaid, 0);
-            const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+            if (!reportRes.success) throw new Error(reportRes.message);
+
+            const payments = reportRes.payments || [];
+            const expenses = reportRes.expenses || [];
+
+            const totalRevenue = payments.reduce((sum: any, p: any) => sum + p.amountPaid, 0);
+            const totalExpenses = expenses.reduce((sum: any, e: any) => sum + e.amount, 0);
             
-            const expenseByCategory = expenses.reduce((acc, expense) => {
-                const category = acc.find(item => item.name === expense.category);
+            const expenseByCategory = expenses.reduce((acc: any, expense: any) => {
+                const category = acc.find((item: any) => item.name === expense.category);
                 if (category) {
                     category.total += expense.amount;
                 } else {

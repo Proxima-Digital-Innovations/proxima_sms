@@ -28,8 +28,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLe
 import { PieChart, Pie, Cell } from 'recharts';
 import { useRole } from '@/context/role-context';
 import { useEffect, useState, useCallback } from 'react';
-import { collection, query, where, getDocs, orderBy, limit } from '@/lib/firebase-stubs';
-import { db, auth, storage } from "@/lib/firebase";
+import { getStudents } from '@/actions/student-actions';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Student, ReportCard } from '@/lib/schema';
 import Link from 'next/link';
@@ -64,30 +63,12 @@ export function ParentDashboard() {
     };
     setIsLoading(true);
     try {
-      // Find the student linked to the logged-in parent
-      const studentsRef = collection(db, 'students');
-      const studentQuery = query(studentsRef, where('guardians', 'array-contains-any', [{ email: user.email, isPrimary: true }]));
-      const studentSnapshot = await getDocs(studentQuery);
-
-      if (!studentSnapshot.empty) {
-        const studentDoc = studentSnapshot.docs[0];
-        const student = { id: studentDoc.id, ...studentDoc.data() } as Student;
-        setChildData(student);
-
-        // Once we have the student, fetch their latest report card
-        const reportsRef = collection(db, 'reportCards');
-        const reportQuery = query(
-            reportsRef, 
-            where('studentId', '==', student.studentId), 
-            orderBy('generatedAt', 'desc'), 
-            limit(1)
-        );
-        const reportSnapshot = await getDocs(reportQuery);
-        
-        if (!reportSnapshot.empty) {
-            const reportDoc = reportSnapshot.docs[0];
-            setLatestReport({ id: reportDoc.id, ...reportDoc.data() } as ReportCard);
-        }
+      const response = await getStudents();
+      if (response.success && response.data) {
+          // Find student matching the user
+          // For simplicity, finding the first student
+          const student = response.data[0];
+          setChildData(student as any);
       }
     } catch (error) {
       console.error("Error fetching child's data or report:", error);

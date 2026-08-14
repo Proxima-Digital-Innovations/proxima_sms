@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword } from '@/lib/firebase-stubs';
+import { loginAction } from '@/actions/auth-actions';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -18,7 +18,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { useRole } from '@/context/role-context';
 import { useToast } from '@/hooks/use-toast';
-import { db, auth, storage } from "@/lib/firebase";
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -40,29 +39,29 @@ export function AdminLoginForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        values.email,
-        values.password
-      );
-      const user = userCredential.user;
+      const res = await loginAction(values.email, values.password);
 
-      if (user) {
-        // In a real app, you'd fetch the user's role from your database
-        // to ensure they are actually an admin.
-        // For now, we'll assume a successful login here means they are an admin.
-        setRole('Admin');
+      if (res?.error) {
         toast({
-          title: 'Admin Login Successful',
-          description: 'Welcome back!',
+          variant: 'destructive',
+          title: 'Login Failed',
+          description: 'Invalid email or password.',
         });
-        router.push('/dashboard');
+        return;
       }
+
+      toast({
+        title: 'Admin Login Successful',
+        description: 'Welcome back!',
+      });
+      router.push('/dashboard');
+      router.refresh();
+      
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Login Failed',
-        description: 'Invalid email or password.',
+        description: 'An unexpected error occurred.',
       });
     }
   }

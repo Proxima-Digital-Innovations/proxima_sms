@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  serverExternalPackages: ['argon2'],
   images: {
     unoptimized: true,
     remotePatterns: [

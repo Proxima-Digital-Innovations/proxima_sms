@@ -1,0 +1,294 @@
+﻿
+> proxima-hub@0.1.0 typecheck
+> tsc --noEmit
+
+scripts/setup-super-admin.ts(19,37): error TS2339: Property 'school' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+scripts/setup-super-admin.ts(24,35): error TS2339: Property 'school' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+scripts/setup-super-admin.ts(60,9): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type '(Without<UserCreateInput, UserUncheckedCreateInput> & UserUncheckedCreateInput) | (Without<...> & UserCreateInput)'.
+scripts/verify-isolation.ts(8,32): error TS2339: Property 'school' does not exist on type 'DynamicClientExtensionThis<TypeMap<InternalArgs & { result: {}; model: {}; query: {}; client: {}; }, PrismaClientOptions>, TypeMapCb, { result: {}; model: {}; query: {}; client: {}; }, {}>'.
+scripts/verify-isolation.ts(12,30): error TS7006: Parameter 's' implicitly has an 'any' type.
+scripts/verify-isolation.ts(13,31): error TS7006: Parameter 's' implicitly has an 'any' type.
+src/actions/academic-actions.ts(15,48): error TS2554: Expected 2 arguments, but got 1.
+src/actions/academic-actions.ts(55,50): error TS2554: Expected 2 arguments, but got 1.
+src/actions/academic-actions.ts(70,46): error TS2554: Expected 3 arguments, but got 2.
+src/actions/academic-actions.ts(85,44): error TS2554: Expected 1 arguments, but got 0.
+src/actions/academic-term-actions.ts(15,35): error TS2554: Expected 2 arguments, but got 1.
+src/actions/academic-term-actions.ts(30,32): error TS2554: Expected 2 arguments, but got 1.
+src/actions/assignment-actions.ts(11,23): error TS2554: Expected 3 arguments, but got 2.
+src/actions/assignment-actions.ts(22,23): error TS2554: Expected 3 arguments, but got 2.
+src/actions/attendance-actions.ts(29,29): error TS2554: Expected 4 arguments, but got 3.
+src/actions/auth-actions.ts(52,11): error TS2554: Expected 1 arguments, but got 0.
+src/actions/behavioural-actions.ts(17,59): error TS2345: Argument of type '{ reporterId: string; }' is not assignable to parameter of type '{ schoolId: string; studentId: string; type: string; severity: string; description: string; reporterId: string; }'.
+  Type '{ reporterId: string; }' is missing the following properties from type '{ schoolId: string; studentId: string; type: string; severity: string; description: string; reporterId: string; }': schoolId, studentId, type, severity, description
+src/actions/calendar-actions.ts(10,46): error TS2554: Expected 1 arguments, but got 0.
+src/actions/calendar-actions.ts(28,31): error TS2554: Expected 2 arguments, but got 1.
+src/actions/calendar-actions.ts(41,31): error TS2554: Expected 2 arguments, but got 1.
+src/actions/communication-actions.ts(15,35): error TS2554: Expected 1 arguments, but got 0.
+src/actions/communication-actions.ts(34,87): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/actions/db-actions.ts(17,12): error TS2554: Expected 2 arguments, but got 1.
+src/actions/db-actions.ts(22,12): error TS2554: Expected 2 arguments, but got 1.
+src/actions/db-actions.ts(27,12): error TS2554: Expected 2 arguments, but got 1.
+src/actions/db-actions.ts(32,12): error TS2554: Expected 2 arguments, but got 1.
+src/actions/db-actions.ts(37,12): error TS2554: Expected 2 arguments, but got 1.
+src/actions/db-actions.ts(42,12): error TS2554: Expected 2 arguments, but got 1.
+src/actions/db-actions.ts(47,12): error TS2554: Expected 2 arguments, but got 1.
+src/actions/discipline-actions.ts(12,66): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/actions/discipline-actions.ts(31,46): error TS2554: Expected 2 arguments, but got 1.
+src/actions/discipline-actions.ts(42,87): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/actions/expense-actions.ts(28,26): error TS2554: Expected 2 arguments, but got 1.
+src/actions/expense-actions.ts(42,26): error TS2554: Expected 2 arguments, but got 1.
+src/actions/expense-actions.ts(54,43): error TS2554: Expected 1 arguments, but got 0.
+src/actions/expense-actions.ts(64,41): error TS2554: Expected 3 arguments, but got 2.
+src/actions/export-actions.ts(8,42): error TS2554: Expected 1 arguments, but got 0.
+src/actions/fee-actions.ts(29,22): error TS2554: Expected 2 arguments, but got 1.
+src/actions/fee-actions.ts(43,22): error TS2554: Expected 2 arguments, but got 1.
+src/actions/fee-actions.ts(55,35): error TS2554: Expected 1 arguments, but got 0.
+src/actions/finance-actions.ts(16,11): error TS2554: Expected 1 arguments, but got 0.
+src/actions/finance-actions.ts(17,72): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/actions/finance-actions.ts(39,11): error TS2554: Expected 1 arguments, but got 0.
+src/actions/finance-actions.ts(42,40): error TS2554: Expected 6 arguments, but got 5.
+src/actions/finance-actions.ts(67,11): error TS2554: Expected 1 arguments, but got 0.
+src/actions/finance-actions.ts(70,120): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/actions/grading-actions.ts(9,33): error TS2554: Expected 4 arguments, but got 3.
+src/actions/grading-actions.ts(26,33): error TS2554: Expected 3 arguments, but got 2.
+src/actions/health-actions.ts(12,40): error TS2554: Expected 2 arguments, but got 1.
+src/actions/health-actions.ts(22,40): error TS2554: Expected 3 arguments, but got 2.
+src/actions/health-actions.ts(33,39): error TS2554: Expected 3 arguments, but got 2.
+src/actions/health-actions.ts(44,46): error TS2554: Expected 3 arguments, but got 2.
+src/actions/health-actions.ts(55,72): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/actions/hr-actions.ts(10,36): error TS2554: Expected 1 arguments, but got 0.
+src/actions/hr-actions.ts(20,35): error TS2554: Expected 5 arguments, but got 4.
+src/actions/hr-actions.ts(41,45): error TS2554: Expected 2 arguments, but got 1.
+src/actions/hr-actions.ts(51,38): error TS2554: Expected 1 arguments, but got 0.
+src/actions/hr-actions.ts(61,40): error TS2554: Expected 4 arguments, but got 3.
+src/actions/hr-actions.ts(81,35): error TS2554: Expected 1 arguments, but got 0.
+src/actions/invoice-actions.ts(11,44): error TS2554: Expected 6 arguments, but got 5.
+src/actions/lms-actions.ts(12,61): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/actions/lms-actions.ts(22,39): error TS2554: Expected 2 arguments, but got 1.
+src/actions/lms-actions.ts(35,39): error TS2554: Expected 2 arguments, but got 1.
+src/actions/lms-actions.ts(45,74): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/actions/lms-assignment-actions.ts(15,72): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/actions/lms-assignment-actions.ts(29,74): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/actions/lms-assignment-actions.ts(55,38): error TS2554: Expected 4 arguments, but got 3.
+src/actions/lms-content-actions.ts(16,49): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/actions/lms-content-actions.ts(29,77): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/actions/lms-content-actions.ts(50,72): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/actions/lms-content-actions.ts(64,19): error TS2554: Expected 2 arguments, but got 1.
+src/actions/log-actions.ts(9,39): error TS2554: Expected 1 arguments, but got 0.
+src/actions/messaging-actions.ts(16,34): error TS2554: Expected 7 arguments, but got 6.
+src/actions/messaging-actions.ts(18,12): error TS2339: Property 'data' does not exist on type '{}'.
+src/actions/messaging-actions.ts(19,12): error TS2339: Property 'channel' does not exist on type '{}'.
+src/actions/messaging-actions.ts(20,12): error TS2339: Property 'subject' does not exist on type '{}'.
+src/actions/messaging-actions.ts(21,12): error TS2339: Property 'body' does not exist on type '{}'.
+src/actions/messaging-actions.ts(22,12): error TS2339: Property 'targetId' does not exist on type '{}'.
+src/actions/notification-actions.ts(10,57): error TS2554: Expected 2 arguments, but got 1.
+src/actions/notification-actions.ts(22,35): error TS2554: Expected 2 arguments, but got 1.
+src/actions/parent-actions.ts(14,32): error TS2554: Expected 1 arguments, but got 0.
+src/actions/result-actions.ts(10,32): error TS2554: Expected 4 arguments, but got 3.
+src/actions/results-actions.ts(16,37): error TS2554: Expected 5 arguments, but got 4.
+src/actions/results-actions.ts(25,37): error TS2554: Expected 3 arguments, but got 2.
+src/actions/results-actions.ts(35,30): error TS2554: Expected 2 arguments, but got 1.
+src/actions/results-actions.ts(47,30): error TS2554: Expected 3 arguments, but got 2.
+src/actions/results-actions.ts(58,45): error TS2554: Expected 4 arguments, but got 3.
+src/actions/results-actions.ts(69,37): error TS2554: Expected 4 arguments, but got 3.
+src/actions/results-actions.ts(79,37): error TS2554: Expected 4 arguments, but got 3.
+src/actions/results-actions.ts(89,37): error TS2554: Expected 4 arguments, but got 3.
+src/actions/results-actions.ts(99,37): error TS2554: Expected 5 arguments, but got 4.
+src/actions/results-actions.ts(109,37): error TS2554: Expected 4 arguments, but got 3.
+src/actions/school-actions.ts(12,44): error TS2554: Expected 1 arguments, but got 0.
+src/actions/school-actions.ts(24,29): error TS2554: Expected 2 arguments, but got 1.
+src/actions/score-actions.ts(10,31): error TS2554: Expected 2 arguments, but got 1.
+src/actions/staff-actions.ts(32,37): error TS2554: Expected 2 arguments, but got 1.
+src/actions/staff-actions.ts(47,38): error TS2554: Expected 1 arguments, but got 0.
+src/actions/staff-actions.ts(57,39): error TS2554: Expected 2 arguments, but got 1.
+src/actions/staff-actions.ts(69,24): error TS2554: Expected 2 arguments, but got 1.
+src/actions/student-actions.ts(15,39): error TS2554: Expected 2 arguments, but got 1.
+src/actions/student-actions.ts(75,34): error TS2339: Property 'schoolName' does not exist on type '{ id: string; name: string; address: string | null; phone: string | null; email: string | null; logoUrl: string | null; faviconUrl: string | null; primaryColor: string; secondaryColor: string; loginBgUrl: string | null; createdAt: Date; updatedAt: Date; }'.
+src/actions/submission-actions.ts(66,40): error TS2554: Expected 4 arguments, but got 3.
+src/actions/tahfeez-actions.ts(26,26): error TS2554: Expected 2 arguments, but got 1.
+src/app/api/super-admin/schools/route.ts(13,34): error TS2339: Property 'school' does not exist on type 'DynamicClientExtensionThis<TypeMap<InternalArgs & { result: {}; model: {}; query: {}; client: {}; }, PrismaClientOptions>, TypeMapCb, { result: {}; model: {}; query: {}; client: {}; }, {}>'.
+src/app/api/v1/kiosk/activate/route.ts(32,40): error TS2339: Property 'school' does not exist on type 'DynamicClientExtensionThis<TypeMap<InternalArgs & { result: {}; model: {}; query: {}; client: {}; }, PrismaClientOptions>, TypeMapCb, { result: {}; model: {}; query: {}; client: {}; }, {}>'.
+src/app/dashboard/inventory/page.tsx(9,31): error TS2339: Property 'school' does not exist on type 'DynamicClientExtensionThis<TypeMap<InternalArgs & { result: {}; model: {}; query: {}; client: {}; }, PrismaClientOptions>, TypeMapCb, { result: {}; model: {}; query: {}; client: {}; }, {}>'.
+src/app/dashboard/inventory/page.tsx(14,14): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'InventoryItemWhereInput | { AND?: Exact<InventoryItemWhereInput | InventoryItemWhereInput[] | undefined, InventoryItemWhereInput | ... 1 more ... | undefined>; ... 14 more ...; transactions?: Exact<...>; }'.
+src/app/dashboard/inventory/page.tsx(101,55): error TS2551: Property 'category' does not exist on type '{ id: string; name: string; createdAt: Date; updatedAt: Date; description: string | null; categoryId: string; sku: string | null; quantity: number; minQuantity: number; unit: string; location: string | null; }'. Did you mean 'categoryId'?
+src/app/dashboard/messaging/compose/page.tsx(5,31): error TS2339: Property 'school' does not exist on type 'DynamicClientExtensionThis<TypeMap<InternalArgs & { result: {}; model: {}; query: {}; client: {}; }, PrismaClientOptions>, TypeMapCb, { result: {}; model: {}; query: {}; client: {}; }, {}>'.
+src/app/dashboard/messaging/page.tsx(11,31): error TS2339: Property 'school' does not exist on type 'DynamicClientExtensionThis<TypeMap<InternalArgs & { result: {}; model: {}; query: {}; client: {}; }, PrismaClientOptions>, TypeMapCb, { result: {}; model: {}; query: {}; client: {}; }, {}>'.
+src/app/dashboard/messaging/page.tsx(16,14): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'MessageBlastWhereInput | { AND?: Exact<MessageBlastWhereInput | MessageBlastWhereInput[] | undefined, MessageBlastWhereInput | ... 1 more ... | undefined>; ... 11 more ...; sender?: Exact<...>; }'.
+src/app/dashboard/messaging/page.tsx(103,46): error TS2551: Property 'sender' does not exist on type '{ id: string; subject: string; body: string; senderId: string; audienceType: string; targetId: string | null; channel: string; sentCount: number; sentAt: Date; }'. Did you mean 'senderId'?
+src/app/dashboard/messaging/page.tsx(103,71): error TS2551: Property 'sender' does not exist on type '{ id: string; subject: string; body: string; senderId: string; audienceType: string; targetId: string | null; channel: string; sentCount: number; sentAt: Date; }'. Did you mean 'senderId'?
+src/app/hub/page.tsx(84,49): error TS7006: Parameter 'school' implicitly has an 'any' type.
+src/app/hub/schools/page.tsx(55,43): error TS7006: Parameter 'school' implicitly has an 'any' type.
+src/app/license-expired/page.tsx(24,46): error TS2554: Expected 0 arguments, but got 1.
+src/app/login/page.tsx(10,31): error TS2339: Property 'school' does not exist on type 'DynamicClientExtensionThis<TypeMap<InternalArgs & { result: {}; model: {}; query: {}; client: {}; }, PrismaClientOptions>, TypeMapCb, { result: {}; model: {}; query: {}; client: {}; }, {}>'.
+src/app/super-admin/page.tsx(100,68): error TS2554: Expected 1 arguments, but got 2.
+src/auth.ts(16,13): error TS2322: Type '(credentials: Partial<Record<string, unknown>>) => Promise<{ id: string; email: string; name: string; role: any; isSuperAdmin: boolean; activeModules: string[]; } | null>' is not assignable to type '(credentials: Partial<Record<string, unknown>>, request: Request) => Awaitable<User | null>'.
+  Type 'Promise<{ id: string; email: string; name: string; role: any; isSuperAdmin: boolean; activeModules: string[]; } | null>' is not assignable to type 'Awaitable<User | null>'.
+    Type 'Promise<{ id: string; email: string; name: string; role: any; isSuperAdmin: boolean; activeModules: string[]; } | null>' is not assignable to type 'PromiseLike<User | null>'.
+      Types of property 'then' are incompatible.
+        Type '<TResult1 = { id: string; email: string; name: string; role: any; isSuperAdmin: boolean; activeModules: string[]; } | null, TResult2 = never>(onfulfilled?: ((value: { id: string; email: string; name: string; role: any; isSuperAdmin: boolean; activeModules: string[]; } | null) => TResult1 | PromiseLike<...>) | null |...' is not assignable to type '<TResult1 = User | null, TResult2 = never>(onfulfilled?: ((value: User | null) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<...>) | null | undefined) => PromiseLike<...>'.
+          Types of parameters 'onfulfilled' and 'onfulfilled' are incompatible.
+            Types of parameters 'value' and 'value' are incompatible.
+              Type '{ id: string; email: string; name: string; role: any; isSuperAdmin: boolean; activeModules: string[]; } | null' is not assignable to type 'User | null'.
+                Property 'schoolId' is missing in type '{ id: string; email: string; name: string; role: any; isSuperAdmin: boolean; activeModules: string[]; }' but required in type 'User'.
+src/lib/authService.ts(77,17): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type '(Without<UserCreateInput, UserUncheckedCreateInput> & UserUncheckedCreateInput) | (Without<...> & UserCreateInput)'.
+src/lib/dal/academic-repository.ts(17,22): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'TermWhereInput'.
+src/lib/dal/academic-repository.ts(23,50): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'LmsModuleWhereInput'.
+src/lib/dal/academic-repository.ts(43,29): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'Without<SubmissionCreateInput, SubmissionUncheckedCreateInput> & SubmissionUncheckedCreateInput'.
+src/lib/dal/academic-repository.ts(56,69): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'StudentWhereInput'.
+src/lib/dal/academic-repository.ts(57,63): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'UserWhereInput'.
+src/lib/dal/academic-repository.ts(58,70): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'InvoiceWhereInput | { AND?: Exact<InvoiceWhereInput | InvoiceWhereInput[] | undefined, InvoiceWhereInput | InvoiceWhereInput[] | undefined>; ... 15 more ...; receipts?: Exact<...>; }'.
+src/lib/dal/academic-repository.ts(59,71): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'InvoiceWhereInput'.
+src/lib/dal/academic-repository.ts(60,67): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'ClassWhereInput | { AND?: Exact<ClassWhereInput | ClassWhereInput[] | undefined, ClassWhereInput | ClassWhereInput[] | undefined>; ... 15 more ...; LmsModule?: Exact<...>; }'.
+src/lib/dal/academic-repository.ts(62,22): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'AuditLogWhereInput | { AND?: Exact<AuditLogWhereInput | AuditLogWhereInput[] | undefined, AuditLogWhereInput | AuditLogWhereInput[] | undefined>; ... 9 more ...; user?: Exact<...>; }'.
+src/lib/dal/academic-repository.ts(71,27): error TS18048: 'revenueAgg._sum' is possibly 'undefined'.
+src/lib/dal/academic-repository.ts(71,43): error TS2339: Property 'amountPaid' does not exist on type '{}'.
+src/lib/dal/academic-term-repository.ts(6,16): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'AcademicSessionWhereInput | { AND?: Exact<AcademicSessionWhereInput | AcademicSessionWhereInput[] | undefined, AcademicSessionWhereInput | ... 1 more ... | undefined>; ... 8 more ...; terms?: Exact<...>; }'.
+src/lib/dal/academic-term-repository.ts(17,16): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'TermWhereInput | { AND?: Exact<TermWhereInput | TermWhereInput[] | undefined, TermWhereInput | TermWhereInput[] | undefined>; ... 22 more ...; resultTokens?: Exact<...>; }'.
+src/lib/dal/assignment-repository.ts(6,66): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'DepartmentWhereUniqueInput'.
+src/lib/dal/assignment-repository.ts(11,40): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'DepartmentWhereUniqueInput'.
+src/lib/dal/assignment-repository.ts(19,44): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'DepartmentWhereUniqueInput'.
+src/lib/dal/assignment-repository.ts(23,40): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'UserWhereUniqueInput'.
+src/lib/dal/assignment-repository.ts(29,21): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'Without<NotificationCreateInput, NotificationUncheckedCreateInput> & NotificationUncheckedCreateInput'.
+src/lib/dal/assignment-repository.ts(41,41): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'UserWhereUniqueInput'.
+src/lib/dal/assignment-repository.ts(47,21): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'Without<NotificationCreateInput, NotificationUncheckedCreateInput> & NotificationUncheckedCreateInput'.
+src/lib/dal/attendance-repository.ts(5,65): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'TermWhereInput'.
+src/lib/dal/attendance-repository.ts(11,17): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'AttendanceWhereInput'.
+src/lib/dal/auth-repository.ts(8,19): error TS2339: Property 'school' does not exist on type 'DynamicClientExtensionThis<TypeMap<InternalArgs & { result: {}; model: {}; query: {}; client: {}; }, PrismaClientOptions>, TypeMapCb, { result: {}; model: {}; query: {}; client: {}; }, {}>'.
+src/lib/dal/behavioural-repository.ts(26,13): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type '(Without<IncidentActionCreateWithoutIncidentInput, IncidentActionUncheckedCreateWithoutIncidentInput> & IncidentActionUncheckedCreateWithoutIncidentInput) | (Without<...> & IncidentActionCreateWithoutIncidentInput) | IncidentActionCreateWithoutIncidentInput[] | IncidentActionUncheckedCreateWithoutIncidentInput[]'.
+src/lib/dal/calendar-repository.ts(6,22): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'CalendarEventWhereInput | { AND?: Exact<CalendarEventWhereInput | CalendarEventWhereInput[] | undefined, CalendarEventWhereInput | ... 1 more ... | undefined>; ... 9 more ...; updatedAt?: Exact<...>; }'.
+src/lib/dal/calendar-repository.ts(19,26): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'CalendarEventWhereUniqueInput'.
+src/lib/dal/communication-repository.ts(6,16): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'MessageBlastWhereInput | { AND?: Exact<MessageBlastWhereInput | MessageBlastWhereInput[] | undefined, MessageBlastWhereInput | ... 1 more ... | undefined>; ... 11 more ...; sender?: Exact<...>; }'.
+src/lib/dal/communication-repository.ts(15,60): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'UserWhereInput'.
+src/lib/dal/communication-repository.ts(19,45): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'GuardianWhereInput | { AND?: Exact<GuardianWhereInput | GuardianWhereInput[] | undefined, GuardianWhereInput | GuardianWhereInput[] | undefined>; ... 12 more ...; student?: Exact<...>; }'.
+src/lib/dal/communication-repository.ts(23,58): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'UserWhereInput'.
+src/lib/dal/communication-repository.ts(27,53): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'StudentWhereInput'.
+src/lib/dal/discipline-repository.ts(6,16): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'BehavioralIncidentWhereInput | { AND?: Exact<BehavioralIncidentWhereInput | BehavioralIncidentWhereInput[] | undefined, BehavioralIncidentWhereInput | ... 1 more ... | undefined>; ... 14 more ...; actions?: Exact<...>; }'.
+src/lib/dal/discipline-repository.ts(29,66): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'UserWhereInput'.
+src/lib/dal/discipline-repository.ts(46,9): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'Without<IncidentActionCreateInput, IncidentActionUncheckedCreateInput> & IncidentActionUncheckedCreateInput'.
+src/lib/dal/expense-repository.ts(6,20): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'ExpenseWhereUniqueInput'.
+src/lib/dal/expense-repository.ts(18,49): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'ExpenseWhereUniqueInput'.
+src/lib/dal/expense-repository.ts(23,16): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'ExpenseWhereInput | { AND?: Exact<ExpenseWhereInput | ExpenseWhereInput[] | undefined, ExpenseWhereInput | ExpenseWhereInput[] | undefined>; ... 10 more ...; recordedByU?: Exact<...>; }'.
+src/lib/dal/export-repository.ts(6,22): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'StudentWhereInput | { AND?: Exact<StudentWhereInput | StudentWhereInput[] | undefined, StudentWhereInput | StudentWhereInput[] | undefined>; ... 29 more ...; resultTokens?: Exact<...>; }'.
+src/lib/dal/export-repository.ts(13,22): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'UserWhereInput | { AND?: Exact<UserWhereInput | UserWhereInput[] | undefined, UserWhereInput | UserWhereInput[] | undefined>; ... 46 more ...; recordedInventory?: Exact<...>; }'.
+src/lib/dal/fee-repository.ts(8,22): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'FeeStructureWhereUniqueInput'.
+src/lib/dal/fee-repository.ts(34,49): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'FeeStructureWhereUniqueInput'.
+src/lib/dal/fee-repository.ts(40,16): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'FeeStructureWhereInput | { AND?: Exact<FeeStructureWhereInput | FeeStructureWhereInput[] | undefined, FeeStructureWhereInput | ... 1 more ... | undefined>; ... 8 more ...; items?: Exact<...>; }'.
+src/lib/dal/finance-repository.ts(77,11): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'Without<PaymentReceiptCreateInput, PaymentReceiptUncheckedCreateInput> & PaymentReceiptUncheckedCreateInput'.
+src/lib/dal/grading-repository.ts(5,43): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'StudentWhereInput'.
+src/lib/dal/grading-repository.ts(12,35): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'TermGradeWhereInput'.
+src/lib/dal/grading-repository.ts(25,64): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'StudentWhereUniqueInput'.
+src/lib/dal/grading-repository.ts(28,68): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'TermGradeWhereInput'.
+src/lib/dal/grading-repository.ts(31,58): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'AttendanceWhereInput'.
+src/lib/dal/grading-repository.ts(34,58): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'TermWhereUniqueInput'.
+src/lib/dal/health-repository.ts(20,26): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'Without<HealthRecordCreateInput, HealthRecordUncheckedCreateInput> & HealthRecordUncheckedCreateInput'.
+src/lib/dal/health-repository.ts(59,9): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'StudentWhereInput'.
+src/lib/dal/hr-repository.ts(6,22): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'LeaveRequestWhereInput | { AND?: Exact<LeaveRequestWhereInput | LeaveRequestWhereInput[] | undefined, LeaveRequestWhereInput | ... 1 more ... | undefined>; ... 9 more ...; user?: Exact<...>; }'.
+src/lib/dal/hr-repository.ts(28,17): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'LeaveRequestWhereInput'.
+src/lib/dal/hr-repository.ts(37,65): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'TermWhereInput'.
+src/lib/dal/hr-repository.ts(63,17): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'UserWhereInput'.
+src/lib/dal/hr-repository.ts(77,22): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'UserWhereInput'.
+src/lib/dal/hub-repository.ts(5,19): error TS2339: Property 'school' does not exist on type 'DynamicClientExtensionThis<TypeMap<InternalArgs & { result: {}; model: {}; query: {}; client: {}; }, PrismaClientOptions>, TypeMapCb, { result: {}; model: {}; query: {}; client: {}; }, {}>'.
+src/lib/dal/hub-repository.ts(21,19): error TS2339: Property 'school' does not exist on type 'DynamicClientExtensionThis<TypeMap<InternalArgs & { result: {}; model: {}; query: {}; client: {}; }, PrismaClientOptions>, TypeMapCb, { result: {}; model: {}; query: {}; client: {}; }, {}>'.
+src/lib/dal/hub-repository.ts(28,19): error TS2339: Property 'school' does not exist on type 'DynamicClientExtensionThis<TypeMap<InternalArgs & { result: {}; model: {}; query: {}; client: {}; }, PrismaClientOptions>, TypeMapCb, { result: {}; model: {}; query: {}; client: {}; }, {}>'.
+src/lib/dal/hub-repository.ts(39,19): error TS2339: Property 'school' does not exist on type 'DynamicClientExtensionThis<TypeMap<InternalArgs & { result: {}; model: {}; query: {}; client: {}; }, PrismaClientOptions>, TypeMapCb, { result: {}; model: {}; query: {}; client: {}; }, {}>'.
+src/lib/dal/invoice-repository.ts(6,16): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'TermWhereInput'.
+src/lib/dal/invoice-repository.ts(15,9): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'StudentWhereInput'.
+src/lib/dal/lms-assignment-repository.ts(39,67): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'TermWhereInput'.
+src/lib/dal/lms-assignment-repository.ts(58,9): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'Without<TermGradeCreateInput, TermGradeUncheckedCreateInput> & TermGradeUncheckedCreateInput'.
+src/lib/dal/lms-content-repository.ts(7,9): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'LmsModuleWhereInput'.
+src/lib/dal/lms-content-repository.ts(31,68): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'LmsContentWhereInput'.
+src/lib/dal/lms-content-repository.ts(35,67): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'LmsModuleWhereUniqueInput'.
+src/lib/dal/lms-quiz-repository.ts(35,67): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'TermWhereInput'.
+src/lib/dal/lms-quiz-repository.ts(49,9): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'Without<TermGradeCreateInput, TermGradeUncheckedCreateInput> & TermGradeUncheckedCreateInput'.
+src/lib/dal/lms-repository.ts(22,58): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'SubjectWhereInput'.
+src/lib/dal/lms-repository.ts(26,56): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'ClassWhereInput'.
+src/lib/dal/lms-repository.ts(37,26): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'LessonNoteWhereUniqueInput'.
+src/lib/dal/lms-repository.ts(48,26): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'LessonNoteWhereUniqueInput'.
+src/lib/dal/log-repository.ts(6,22): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'AuditLogWhereInput | { AND?: Exact<AuditLogWhereInput | AuditLogWhereInput[] | undefined, AuditLogWhereInput | AuditLogWhereInput[] | undefined>; ... 9 more ...; user?: Exact<...>; }'.
+src/lib/dal/messaging-repository.ts(5,19): error TS2339: Property 'school' does not exist on type 'DynamicClientExtensionThis<TypeMap<InternalArgs & { result: {}; model: {}; query: {}; client: {}; }, PrismaClientOptions>, TypeMapCb, { result: {}; model: {}; query: {}; client: {}; }, {}>'.
+src/lib/dal/messaging-repository.ts(9,45): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'GuardianWhereInput | { AND?: Exact<GuardianWhereInput | GuardianWhereInput[] | undefined, GuardianWhereInput | GuardianWhereInput[] | undefined>; ... 12 more ...; student?: Exact<...>; }'.
+src/lib/dal/messaging-repository.ts(13,41): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'UserWhereInput'.
+src/lib/dal/messaging-repository.ts(17,44): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'StudentWhereInput'.
+src/lib/dal/midterm-repository.ts(28,129): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'SubjectWhereInput'.
+src/lib/dal/midterm-repository.ts(29,67): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type '(Without<SubjectCreateInput, SubjectUncheckedCreateInput> & SubjectUncheckedCreateInput) | (Without<...> & SubjectCreateInput)'.
+src/lib/dal/notification-repository.ts(6,22): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'NotificationWhereInput'.
+src/lib/dal/notification-repository.ts(13,26): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'NotificationWhereUniqueInput'.
+src/lib/dal/parent-repository.ts(7,32): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'UserWhereInput'.
+src/lib/dal/parent-repository.ts(35,32): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'TermWhereInput'.
+src/lib/dal/parent-repository.ts(49,54): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'AttendanceWhereInput'.
+src/lib/dal/payroll-repository.ts(6,22): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'PayrollWhereInput'.
+src/lib/dal/payroll-repository.ts(12,22): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'ContractWhereInput'.
+src/lib/dal/payroll-repository.ts(24,17): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'StaffAttendanceWhereInput'.
+src/lib/dal/payroll-repository.ts(41,22): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'PayrollWhereInput | { AND?: Exact<PayrollWhereInput | PayrollWhereInput[] | undefined, PayrollWhereInput | PayrollWhereInput[] | undefined>; ... 9 more ...; user?: Exact<...>; }'.
+src/lib/dal/result-repository.ts(5,16): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'StudentWhereInput'.
+src/lib/dal/result-repository.ts(10,47): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'SubjectWhereInput | { AND?: Exact<SubjectWhereInput | SubjectWhereInput[] | undefined, SubjectWhereInput | SubjectWhereInput[] | undefined>; ... 12 more ...; midtermResults?: Exact<...>; }'.
+src/lib/dal/result-repository.ts(13,45): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'TermWhereInput'.
+src/lib/dal/result-repository.ts(17,16): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'TermGradeWhereInput'.
+src/lib/dal/results-repository.ts(5,45): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'TermWhereInput'.
+src/lib/dal/results-repository.ts(9,16): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'StudentWhereInput'.
+src/lib/dal/results-repository.ts(14,49): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'TermGradeWhereInput'.
+src/lib/dal/results-repository.ts(18,25): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'StudentWhereInput'.
+src/lib/dal/results-repository.ts(26,64): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'TermGradeWhereUniqueInput'.
+src/lib/dal/results-repository.ts(30,16): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'TermGradeWhereInput'.
+src/lib/dal/results-repository.ts(36,16): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'TermGradeWhereInput'.
+src/lib/dal/results-repository.ts(41,61): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'BehaviouralAssessmentWhereInput'.
+src/lib/dal/results-repository.ts(44,64): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'StudentWhereUniqueInput'.
+src/lib/dal/results-repository.ts(54,31): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'StudentWhereUniqueInput'.
+src/lib/dal/results-repository.ts(60,16): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'MidtermResultWhereInput'.
+src/lib/dal/results-repository.ts(65,52): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'TahfeezScoreWhereInput'.
+src/lib/dal/school-repository.ts(5,19): error TS2339: Property 'school' does not exist on type 'DynamicClientExtensionThis<TypeMap<InternalArgs & { result: {}; model: {}; query: {}; client: {}; }, PrismaClientOptions>, TypeMapCb, { result: {}; model: {}; query: {}; client: {}; }, {}>'.
+src/lib/dal/school-repository.ts(12,19): error TS2339: Property 'school' does not exist on type 'DynamicClientExtensionThis<TypeMap<InternalArgs & { result: {}; model: {}; query: {}; client: {}; }, PrismaClientOptions>, TypeMapCb, { result: {}; model: {}; query: {}; client: {}; }, {}>'.
+src/lib/dal/score-repository.ts(6,16): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'StudentWhereInput'.
+src/lib/dal/score-repository.ts(12,22): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'SubjectWhereInput'.
+src/lib/dal/score-repository.ts(18,16): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'TermWhereInput'.
+src/lib/dal/staff-repository.ts(6,51): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'UserWhereInput'.
+src/lib/dal/staff-repository.ts(13,22): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'UserWhereInput'.
+src/lib/dal/staff-repository.ts(20,34): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'UserWhereUniqueInput'.
+src/lib/dal/student-repository.ts(9,31): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'StudentWhereUniqueInput'.
+src/lib/dal/student-repository.ts(18,58): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'AttendanceWhereInput'.
+src/lib/dal/student-repository.ts(25,77): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'AttendanceWhereInput'.
+src/lib/dal/student-repository.ts(32,58): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'InvoiceWhereInput'.
+src/lib/dal/student-repository.ts(40,25): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'LmsModuleWhereInput'.
+src/lib/dal/submission-repository.ts(13,22): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'TermWhereInput'.
+src/lib/dal/submission-repository.ts(20,28): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'SubjectWhereInput'.
+src/lib/dal/submission-repository.ts(27,28): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'ClassWhereInput'.
+src/lib/dal/super-admin-repository.ts(5,25): error TS2339: Property 'school' does not exist on type 'DynamicClientExtensionThis<TypeMap<InternalArgs & { result: {}; model: {}; query: {}; client: {}; }, PrismaClientOptions>, TypeMapCb, { result: {}; model: {}; query: {}; client: {}; }, {}>'.
+src/lib/dal/super-admin-repository.ts(16,25): error TS2339: Property 'school' does not exist on type 'DynamicClientExtensionThis<TypeMap<InternalArgs & { result: {}; model: {}; query: {}; client: {}; }, PrismaClientOptions>, TypeMapCb, { result: {}; model: {}; query: {}; client: {}; }, {}>'.
+src/lib/dal/super-admin-repository.ts(32,25): error TS2339: Property 'school' does not exist on type 'DynamicClientExtensionThis<TypeMap<InternalArgs & { result: {}; model: {}; query: {}; client: {}; }, PrismaClientOptions>, TypeMapCb, { result: {}; model: {}; query: {}; client: {}; }, {}>'.
+src/lib/dal/tahfeez-repository.ts(9,13): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type '(Without<TahfeezScoreCreateInput, TahfeezScoreUncheckedCreateInput> & TahfeezScoreUncheckedCreateInput) | (Without<...> & TahfeezScoreCreateInput)'.
+src/lib/dal/token-repository.ts(28,17): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'Without<ResultTokenCreateInput, ResultTokenUncheckedCreateInput> & ResultTokenUncheckedCreateInput'.
+src/lib/dal/upload-repository.ts(16,29): error TS2339: Property 'school' does not exist on type 'DynamicClientExtensionThis<TypeMap<InternalArgs & { result: {}; model: {}; query: {}; client: {}; }, PrismaClientOptions>, TypeMapCb, { result: {}; model: {}; query: {}; client: {}; }, {}>'.
+src/lib/dal/upload-repository.ts(22,17): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type '(Without<SubjectCreateInput, SubjectUncheckedCreateInput> & SubjectUncheckedCreateInput) | (Without<...> & SubjectCreateInput)'.
+src/lib/dal/upload-repository.ts(68,17): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'Without<TermGradeCreateInput, TermGradeUncheckedCreateInput> & TermGradeUncheckedCreateInput'.
+src/lib/dal/upload-repository.ts(95,17): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'Without<MidtermResultCreateInput, MidtermResultUncheckedCreateInput> & MidtermResultUncheckedCreateInput'.
+src/lib/server-context.ts(13,31): error TS2339: Property 'school' does not exist on type 'DynamicClientExtensionThis<TypeMap<InternalArgs & { result: {}; model: {}; query: {}; client: {}; }, PrismaClientOptions>, TypeMapCb, { result: {}; model: {}; query: {}; client: {}; }, {}>'.
+src/lib/services/announcement-service.ts(15,41): error TS2339: Property 'schoolId' does not exist on type '{ id: string; createdAt: Date; title: string; content: string; authorId: string; }'.
+src/lib/services/announcement-service.ts(36,39): error TS2339: Property 'schoolId' does not exist on type '{ id: string; createdAt: Date; title: string; content: string; authorId: string; }'.
+src/lib/services/auth-service.ts(28,7): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/lib/services/behavioural-service.ts(28,25): error TS2339: Property 'schoolId' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; status: string; title: string; studentId: string; description: string; date: Date; reporterId: string; severity: string; }'.
+src/lib/services/finance-service.ts(11,43): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'StudentWhereInput'.
+src/lib/services/finance-service.ts(48,78): error TS2353: Object literal may only specify known properties, and 'schoolId' does not exist in type 'UserWhereInput'.
+src/lib/services/finance-service.ts(56,17): error TS2339: Property 'schoolId' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; status: string; termId: string; studentId: string; description: string; balance: number; amount: number; amountPaid: number; dueDate: Date; }'.
+src/lib/services/lms-quiz-service.ts(10,100): error TS2339: Property 'schoolId' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; termId: string | null; title: string; order: number; subjectId: string; classId: string; }'.
+src/lib/services/lms-quiz-service.ts(18,78): error TS2339: Property 'schoolId' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; title: string; description: string | null; moduleId: string; points: number; timeLimit: number | null; }'.
+src/lib/services/lms-quiz-service.ts(25,27): error TS2339: Property 'schoolId' does not exist on type '{ module: { subject: { id: string; name: string; createdAt: Date; }; } & { id: string; createdAt: Date; updatedAt: Date; termId: string | null; title: string; order: number; subjectId: string; classId: string; }; questions: { ...; }[]; } & { ...; }'.
+src/lib/services/midterm-service.ts(18,73): error TS2339: Property 'schoolId' does not exist on type '{ class: { id: string; name: string; createdAt: Date; teacherId: string | null; termId: string | null; } | null; } & { id: string; createdAt: Date; updatedAt: Date; firstName: string; ... 9 more ...; admissionDate: Date; }'.
+src/lib/services/midterm-service.ts(24,37): error TS2339: Property 'schoolId' does not exist on type '{ class: { id: string; name: string; createdAt: Date; teacherId: string | null; termId: string | null; } | null; } & { id: string; createdAt: Date; updatedAt: Date; firstName: string; ... 9 more ...; admissionDate: Date; }'.
+src/lib/services/payment-service.ts(28,27): error TS2339: Property 'schoolId' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; status: string; termId: string; studentId: string; description: string; balance: number; amount: number; amountPaid: number; dueDate: Date; }'.
+src/lib/services/token-service.ts(12,68): error TS2339: Property 'schoolId' does not exist on type '{ class: { id: string; name: string; createdAt: Date; teacherId: string | null; termId: string | null; } | null; } & { id: string; createdAt: Date; updatedAt: Date; firstName: string; ... 9 more ...; admissionDate: Date; }'.
+src/lib/services/upload-service.ts(39,94): error TS2339: Property 'schoolId' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; firstName: string; lastName: string; status: string; biometricId: string | null; classId: string | null; studentId: string; middleName: string | null; gender: string; dateOfBirth: Date; sessionYear: string; admissionDate: Date; }'.
+src/lib/services/upload-service.ts(46,98): error TS2339: Property 'schoolId' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; firstName: string; lastName: string; status: string; biometricId: string | null; classId: string | null; studentId: string; middleName: string | null; gender: string; dateOfBirth: Date; sessionYear: string; admissionDate: Date; }'.
+src/lib/tenant.ts(5,31): error TS2339: Property 'school' does not exist on type 'DynamicClientExtensionThis<TypeMap<InternalArgs & { result: {}; model: {}; query: {}; client: {}; }, PrismaClientOptions>, TypeMapCb, { result: {}; model: {}; query: {}; client: {}; }, {}>'.
+test-login.ts(17,16): error TS2353: Object literal may only specify known properties, and 'school' does not exist in type 'UserInclude<DefaultArgs>'.
+test-login.ts(26,43): error TS2339: Property 'school' does not exist on type '{ id: string; phone: string | null; email: string; createdAt: Date; updatedAt: Date; staffId: string | null; firstName: string; lastName: string; username: string | null; passwordHash: string; ... 14 more ...; shiftId: string | null; }'.

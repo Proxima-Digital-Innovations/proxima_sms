@@ -1,6 +1,6 @@
 
 'use client';
-import { Book, CheckCircle, Clock, FileQuestion, Upload, XCircle, LineChart as LineChartIcon, PieChart as PieChartIcon } from 'lucide-react';
+import { Book, CheckCircle, Clock, FileQuestion, Upload, XCircle, LineChart as LineChartIcon, PieChart as PieChartIcon, Calendar, ClipboardCheck } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -21,8 +21,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useRole } from '@/context/role-context';
 import { useEffect, useState, useCallback } from 'react';
-import { collection, query, where, getDocs, orderBy, limit } from '@/lib/firebase-stubs';
-import { db, auth, storage } from "@/lib/firebase";
+import { getDashboardStats } from '@/actions/dashboard-actions';
 import type { MockLessonNote } from '@/lib/schema';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -69,49 +68,17 @@ export function TeacherDashboard() {
     if (!user) return;
     setIsLoading(true);
     try {
-      // Fetch all notes for stats and charts
-      const allNotesQuery = query(collection(db, 'lessonNotes'), where('teacherId', '==', user.uid));
-      const allNotesSnapshot = await getDocs(allNotesQuery);
-      
-      // Explicitly type doc as any to avoid implicit any errors
-      const allNotesList = allNotesSnapshot.docs.map((doc: any) => ({...doc.data() as MockLessonNote, id: doc.id}));
-      
-      // Sort client-side to avoid needing a composite index. Explicitly type sorting parameters.
-      allNotesList.sort((a: any, b: any) => (b.submittedOn?.seconds || 0) - (a.submittedOn?.seconds || 0));
-
-      setRecentNotes(allNotesList.slice(0, 3));
-      
-      const monthCounts: Record<string, number> = {};
-      const monthNames = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-      ];
-      monthNames.forEach((m) => (monthCounts[m] = 0));
-
-      // Explicitly type note as any
-      allNotesList.forEach((note: any) => {
-        if (note.submittedOn?.seconds) {
-            const date = new Date(note.submittedOn.seconds * 1000);
-            const month = monthNames[date.getMonth()];
-            if (month) {
-              monthCounts[month]++;
-            }
-        }
-      });
-      
-      setSubmissionHistory(monthNames.map(month => ({ month, submitted: monthCounts[month] || 0 })));
-
-
-      // Fetch exam questions stats
-      const examsQuery = query(collection(db, 'examQuestions'), where('teacherId', '==', user.uid), where('status', '==', 'Pending Review'));
-      const examsSnapshot = await getDocs(examsQuery);
-
-      // Explicitly type n as any inside the filter lambdas
-      setStats({
-        pendingPlans: allNotesList.filter((n: any) => n.status.includes('Pending')).length,
-        approvedPlans: allNotesList.filter((n: any) => n.status.includes('Approved')).length,
-        rejectedPlans: allNotesList.filter((n: any) => n.status.includes('Rejected') || n.status.includes('Revision')).length,
-        pendingExams: examsSnapshot.size,
-      });
+      const response = await getDashboardStats('TEACHER', user.uid);
+      if (response.success && response.data) {
+          setStats({
+            pendingPlans: response.data.classesCount || 0, // Mock mapping
+            approvedPlans: response.data.studentsCount || 0,
+            rejectedPlans: 0,
+            pendingExams: response.data.announcements?.length || 0,
+          });
+      }
+      setRecentNotes([]);
+      setSubmissionHistory([]);
 
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
@@ -293,6 +260,16 @@ export function TeacherDashboard() {
                     <Button asChild variant="outline" size="lg">
                         <Link href="/dashboard/scores">
                             Enter Student Scores
+                        </Link>
+                    </Button>
+                    <Button asChild variant="outline" size="lg">
+                        <Link href="/dashboard/teacher/attendance">
+                            <ClipboardCheck className="mr-2 h-4 w-4" /> Take Attendance
+                        </Link>
+                    </Button>
+                    <Button asChild variant="outline" size="lg">
+                        <Link href="/dashboard/timetable">
+                            <Calendar className="mr-2 h-4 w-4" /> View Timetable
                         </Link>
                     </Button>
                 </CardContent>

@@ -124,9 +124,9 @@ export function BulkStudentUploadDialog({ onUploadComplete }: { onUploadComplete
         }
 
         setImportResult({
-            importedCount: result.importedCount || 0,
-            errorCount: result.errorCount || 0,
-            invalidRecords: result.invalidRecords || []
+            importedCount: (result as any).importedCount || (result as any).data?.importedCount || 0,
+            errorCount: (result as any).errorCount || (result as any).data?.errorCount || 0,
+            invalidRecords: (result as any).invalidRecords || (result as any).data?.invalidRecords || []
         });
 
         toast({

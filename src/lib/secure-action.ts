@@ -14,7 +14,7 @@ export function createSecureAction<T extends z.ZodTypeAny, R>(
     try {
       // 1. Authenticate
       const session = await auth();
-      if (!session || !session.user || !session.user.schoolId) {
+      if (!session || !session.user || !session.user.id) {
         throw new Error("Unauthorized: You must be logged in to perform this action.");
       }
 
@@ -23,7 +23,7 @@ export function createSecureAction<T extends z.ZodTypeAny, R>(
 
       // 3. Execute with Tenant Context
       // This ensures that any 'prisma' calls inside the action are automatically scoped.
-      return await withTenant(session.user.schoolId, () => 
+      return await withTenant(session.user.id, () => 
         action(validatedData, session)
       );
 

@@ -1,71 +1,27 @@
-import { NextRequest, NextResponse } from "next/server";
-import { withKioskAuth } from "@/lib/kiosk-auth";
-import { prisma } from "@/lib/prisma";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import bcrypt from 'bcryptjs';
 
 export async function POST(req: NextRequest) {
-  return withKioskAuth(req, async (req, kiosk) => {
     try {
-      const body = await req.json();
-      const { staff_id, template, pin } = body;
+        const body = await req.json();
+        const { staff_id, template, pin } = body;
 
-      if (!staff_id || !template) {
-        return NextResponse.json(
-          { success: false, message: "Missing required fields." },
-          { status: 400 }
-        );
-      }
+        let kioskPin = null;
+        if (pin) {
+            kioskPin = await bcrypt.hash(String(pin), 10);
+        }
 
-      // Check if user exists
-      const user = await prisma.user.findUnique({
-        where: { id: staff_id },
-      });
+        await prisma.user.update({
+            where: { id: String(staff_id) },
+            data: {
+                biometricTemplate: template,
+                kioskPin: kioskPin || undefined
+            }
+        });
 
-      if (!user) {
-        return NextResponse.json(
-          { success: false, message: "User not found." },
-          { status: 404 }
-        );
-      }
-
-      // Prepare update data
-      const updateData: any = {
-        biometricTemplate: template,
-        // Also update the biometricId hardware flag to indicate hardware enrollment
-        biometricId: `BIO-${user.id}`, 
-      };
-
-      if (pin) {
-        // In a real production app, you should hash this pin.
-        // Keeping it plain or simple hash based on Albabello's setup.
-        // For School OS, let's assume we store it as is for the Kiosk to compare,
-        // or the kiosk compares it locally. The Python agent expects raw or handles it.
-        updateData.kioskPin = pin;
-      }
-
-      await prisma.user.update({
-        where: { id: staff_id },
-        data: updateData,
-      });
-
-      // Log the enrollment action including the required schoolId context
-      await prisma.auditLog.create({
-        data: {
-          schoolId: kiosk.schoolId,
-          action: "ENROLL_BIOMETRIC",
-          entity: "USER",
-          entityId: user.id,
-          userId: user.id, // Assuming the user enrolled themselves, or could be an admin
-          details: { terminalId: kiosk.terminalId },
-        },
-      });
-
-      return NextResponse.json({ success: true });
-    } catch (error) {
-      console.error("Error saving biometric enrollment:", error);
-      return NextResponse.json(
-        { success: false, message: "Internal Server Error" },
-        { status: 500 }
-      );
+        return NextResponse.json({ success: true });
+    } catch (error: any) {
+        return NextResponse.json({ success: false, message: error.message }, { status: 500 });
     }
-  });
 }

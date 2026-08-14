@@ -6,12 +6,12 @@ import { prisma } from './prisma';
  */
 export async function getSchoolId() {
   const headerList = await headers();
-  const subdomain = headerList.get('x-tenant-subdomain');
+  const slug = headerList.get('x-tenant-slug');
   
-  if (!subdomain) return null;
+  if (!slug) return null;
 
-  const school = await prisma.school.findUnique({
-    where: { subdomain },
+  const school = await prisma.systemProfile.findFirst({
+    where: { name: slug },
     select: { id: true }
   });
 
@@ -25,7 +25,7 @@ export async function getSchoolId() {
 export async function requireSchoolId() {
   const id = await getSchoolId();
   if (!id) {
-    throw new Error('Tenant context missing. Please ensure you are accessing via a school subdomain.');
+    throw new Error('Tenant context missing. Please ensure you are accessing via a school slug.');
   }
   return id;
 }

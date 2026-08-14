@@ -9,6 +9,8 @@ import { useSession, signOut } from 'next-auth/react';
 type RoleContextType = {
   user: any;
   role: string | null;
+  activeModules: string[];
+  rbacPermissions: string[];
   setRole: (role: string) => void;
   logout: () => void;
   isLoading: boolean;
@@ -23,6 +25,7 @@ export const RoleProvider = ({ children }: { children: React.ReactNode }) => {
   const { toast } = useToast();
 
   const isLoading = status === 'loading';
+  const currentRole = (session?.user as any)?.role || role;
 
   const logout = useCallback(async (options?: { silent?: boolean }) => {
     try {
@@ -58,8 +61,34 @@ export const RoleProvider = ({ children }: { children: React.ReactNode }) => {
     setRoleState(newRole);
   }, []);
 
+  const parseModules = (modules: any): string[] => {
+    if (!modules) return ["CORE"];
+    if (Array.isArray(modules)) return modules;
+    if (typeof modules === 'string') {
+      try {
+        if (modules.trim().startsWith('[')) {
+          return JSON.parse(modules);
+        }
+        return modules.split(',').map(m => m.trim()).filter(Boolean);
+      } catch {
+        return ["CORE"];
+      }
+    }
+    return ["CORE"];
+  };
+
   return (
-    <RoleContext.Provider value={{ user: session?.user || null, role, setRole, logout, isLoading }}>
+    <RoleContext.Provider
+      value={{
+        user: session?.user || null,
+        role: currentRole,
+        activeModules: (session?.user as any)?.activeModules || [],
+        rbacPermissions: (session?.user as any)?.rbacPermissions || [],
+        setRole,
+        logout,
+        isLoading,
+      }}
+    >
       {children}
     </RoleContext.Provider>
   );

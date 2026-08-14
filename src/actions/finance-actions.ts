@@ -1,139 +1,154 @@
 'use server';
 
-import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { requireSchoolId } from "@/lib/server-context";
+import { FinanceRepository } from "@/lib/dal/finance-repository";
+import { FinanceService } from "@/lib/services/finance-service";
+import { requireFinanceAccess } from "@/lib/guards";
+import { z } from "zod";
 
 /**
  * Fetch all invoices for an active term, sorted by status (UNPAID first)
  */
 export async function getTermInvoices(termId: string, classId?: string) {
   try {
-    const schoolId = await requireSchoolId();
-    const whereClause: any = { termId, schoolId };
-    if (classId) {
-      whereClause.student = { classId };
+    await requireFinanceAccess();
+    let actualTermId = termId;
+
+    if (termId === 'current_term_placeholder') {
+      const { prisma } = await import('@/lib/prisma');
+      const currentTerm = await prisma.term.findFirst({
+        where: { isActive: true },
+        select: { id: true }
+      });
+      if (!currentTerm) {
+         return { success: true, invoices: [] };
+      }
+      actualTermId = currentTerm.id;
     }
 
-    const invoices = await prisma.invoice.findMany({
-      where: whereClause,
-      include: {
-        student: { select: { studentId: true, firstName: true, lastName: true, class: { select: { name: true } } } },
-        receipts: { orderBy: { date: 'desc' } }
-      },
-      orderBy: [
-        { status: 'desc' }, // UNPAID will bubble up since U > P
-        { student: { lastName: 'asc' } }
-      ]
-    });
+    const invoices = await FinanceRepository.getInvoicesByTerm(actualTermId, classId);
     
-    return { success: true, invoices };
+    // Map data to match the UI expectations (student.user.name instead of student.firstName)
+    const mappedInvoices = invoices.map((inv: any) => ({
+      ...inv,
+      student: {
+        ...inv.student,
+        user: { name: `${inv.student.firstName} ${inv.student.lastName}` }
+      }
+    }));
+    
+    return { success: true, invoices: mappedInvoices };
   } catch (error: any) {
     return { success: false, invoices: [], message: error.message };
   }
 }
+
+const generateInvoicesSchema = z.object({
+  termId: z.string().min(1),
+  classId: z.string().min(1),
+  amount: z.number().positive("Amount must be positive"),
+  description: z.string().min(1, "Description is required"),
+  dueDate: z.coerce.date(),
+});
 
 /**
  * Bulk generate tuition invoices for a specific class
  */
 export async function generateClassInvoices(termId: string, classId: string, amount: number, description: string, dueDate: Date) {
   try {
-    // 1. Get all students in the class
-    const students = await prisma.student.findMany({
-      where: { classId, status: "Active" }
-    });
+    
+    await requireFinanceAccess();
 
-    if (students.length === 0) return { success: false, message: "No active students in this class." };
+    const validated = generateInvoicesSchema.parse({ termId, classId, amount, description, dueDate });
+    const count = await FinanceService.generateClassTuition(validated.termId, validated.classId, validated.amount, validated.description, validated.dueDate, );
 
-    // 2. Check who already has an invoice with this exact description for this term (prevent duplicates)
-    const existingInvoices = await prisma.invoice.findMany({
-      where: { termId, description, studentId: { in: students.map(s => s.id) } }
-    });
-
-    const existingStudentIds = existingInvoices.map(i => i.studentId);
-    const studentsToInvoice = students.filter(s => !existingStudentIds.includes(s.id));
-
-    if (studentsToInvoice.length === 0) return { success: false, message: "All students already have this invoice." };
-
-    const schoolId = await requireSchoolId();
-    // 3. Create the invoices
-    await prisma.invoice.createMany({
-      data: studentsToInvoice.map(s => ({
-        studentId: s.id,
-        termId,
-        schoolId,
-        amount,
-        balance: amount,
-        description,
-        dueDate,
-      }))
-    });
-
-    revalidatePath("/admin/bursary");
-    return { success: true, count: studentsToInvoice.length };
+    revalidatePath("/dashboard/finance/invoices");
+    return { success: true, count };
   } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return { success: false, message: error.errors[0].message };
+    }
     return { success: false, message: error.message };
   }
 }
+
+const logPaymentSchema = z.object({
+  invoiceId: z.string().min(1),
+  paymentAmount: z.number().positive("Payment amount must be positive"),
+  method: z.enum(["CASH", "TRANSFER", "CARD", "CHEQUE"]),
+  reference: z.string().optional(),
+});
 
 /**
  * Log a partial or full payment against an invoice
  */
 export async function logPayment(invoiceId: string, paymentAmount: number, method: string, reference?: string) {
   try {
-    const schoolId = await requireSchoolId();
-    // Determine the logged in accountant (Scoped to school)
-    const accountant = await prisma.user.findFirst({ where: { role: 'ADMIN', schoolId } });
-    if (!accountant) throw new Error("No authorized accountant found.");
+    
+    await requireFinanceAccess();
 
-    return await prisma.$transaction(async (tx) => {
-      // 1. Get invoice and lock it
-      const invoice = await tx.invoice.findUnique({ where: { id: invoiceId } });
-      if (!invoice) throw new Error("Invoice not found.");
-      if (invoice.schoolId !== schoolId) throw new Error("Unauthorized access to invoice.");
-
-      if (invoice.balance <= 0) throw new Error("Invoice is already fully paid.");
-      if (paymentAmount <= 0) throw new Error("Payment must be greater than zero.");
-      if (paymentAmount > invoice.balance) throw new Error("Payment cannot exceed outstanding balance.");
-
-      // 2. Calculate new values
-      const newAmountPaid = invoice.amountPaid + paymentAmount;
-      const newBalance = invoice.amount - newAmountPaid;
-      let newStatus = invoice.status;
-      
-      if (newBalance <= 0) {
-        newStatus = "PAID";
-      } else if (newAmountPaid > 0) {
-        newStatus = "PARTIAL";
-      }
-
-      // 3. Update the invoice
-      const updatedInvoice = await tx.invoice.update({
-        where: { id: invoiceId },
-        data: {
-          amountPaid: newAmountPaid,
-          balance: newBalance,
-          status: newStatus
-        }
-      });
-
-      // 4. Create the Receipt
-      const receipt = await tx.paymentReceipt.create({
-        data: {
-          invoiceId,
-          schoolId,
-          amount: paymentAmount,
-          method,
-          reference,
-          loggedById: accountant.id
-        }
-      });
-
-      return { success: true, invoice: updatedInvoice, receipt };
-    });
+    const validated = logPaymentSchema.parse({ invoiceId, paymentAmount, method, reference });
+    const result = await FinanceService.processPayment(validated.invoiceId, validated.paymentAmount, validated.method, validated.reference);
+    return { success: true, invoice: result.invoice, receipt: result.receipt };
   } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return { success: false, message: error.errors[0].message };
+    }
     return { success: false, message: error.message };
   } finally {
-    revalidatePath("/admin/bursary");
+    revalidatePath("/dashboard/finance/payments");
+    revalidatePath("/dashboard/finance/invoices");
+  }
+}
+
+/**
+ * Fetch financial report data by date range
+ */
+export async function getFinancialReportData(fromDate: Date, toDate: Date) {
+  try {
+    await requireFinanceAccess();
+    const { prisma } = await import("@/lib/prisma");
+
+    const [receipts, expenses] = await Promise.all([
+      prisma.paymentReceipt.findMany({
+        where: {
+          date: { gte: fromDate, lt: toDate },
+        },
+        include: {
+          invoice: {
+            include: {
+              student: true
+            }
+          }
+        },
+        orderBy: { date: 'desc' }
+      }),
+      prisma.expense.findMany({
+        where: {
+          date: { gte: fromDate, lt: toDate },
+        },
+        orderBy: { date: 'desc' }
+      })
+    ]);
+
+    const mappedPayments = receipts.map(r => ({
+      id: r.id,
+      amountPaid: r.amount,
+      paymentDate: { seconds: Math.floor(r.date.getTime() / 1000) }, // Mock Firebase timestamp
+      studentName: r.invoice?.student ? `${r.invoice.student.firstName} ${r.invoice.student.lastName}` : 'Unknown'
+    }));
+
+    const mappedExpenses = expenses.map(e => ({
+      id: e.id,
+      amount: e.amount,
+      category: e.category,
+      description: e.description,
+      date: { seconds: Math.floor(e.date.getTime() / 1000) } // Mock Firebase timestamp
+    }));
+
+    return { success: true, payments: mappedPayments, expenses: mappedExpenses };
+  } catch (error: any) {
+    return { success: false, message: error.message };
   }
 }

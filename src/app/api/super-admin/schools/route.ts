@@ -10,7 +10,7 @@ export async function GET(request: Request) {
       return new NextResponse('Unauthorized', { status: 403 });
     }
 
-    const schools = await prisma.school.findMany({
+    const schools = await prisma.systemProfile.findMany({
       orderBy: { createdAt: 'desc' }
     });
 

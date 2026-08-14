@@ -25,6 +25,7 @@ type ImportResult = {
     importedCount: number;
     errorCount: number;
     invalidRecords: any[];
+    error?: any;
 } | null;
 
 export function BulkStaffUploadDialog({ onUploadComplete }: { onUploadComplete: () => void }) {
@@ -95,7 +96,7 @@ export function BulkStaffUploadDialog({ onUploadComplete }: { onUploadComplete: 
     setIsSubmitting(true);
     setImportResult(null);
     try {
-        const result = await bulkCreateStaff(staffData);
+        const result = await bulkCreateStaff(staffData) as any;
         if (result.error) {
             throw new Error(result.error);
         }

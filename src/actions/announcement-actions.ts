@@ -1,10 +1,12 @@
 'use server';
 
 import { z } from 'zod';
-import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { createSecureAction } from '@/lib/secure-action';
-import { Role } from '@prisma/client';
+import { AnnouncementService } from '@/lib/services/announcement-service';
+import { prisma } from '@/lib/prisma';
+
+const service = new AnnouncementService();
 
 const announcementSchema = z.object({
   id: z.string().optional(),
@@ -12,46 +14,57 @@ const announcementSchema = z.object({
   content: z.string().min(10, 'Content must be at least 10 characters long.'),
 });
 
+export async function getAnnouncements() {
+  try {
+    const announcements = await prisma.announcement.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+         author: { select: { firstName: true, lastName: true } }
+      }
+    });
+    
+    // Map it to match the UI expectations which expect authorName and createdAt (though UI uses .seconds from firebase)
+    const mapped = announcements.map(a => ({
+        id: a.id,
+        title: a.title,
+        content: a.content,
+        authorName: a.author ? `${a.author.firstName} ${a.author.lastName}` : 'System',
+        createdAt: { seconds: Math.floor(new Date(a.createdAt).getTime() / 1000) } // Mock Firebase timestamp for UI compatibility, or we can just change the UI
+    }));
+    
+    return { success: true, announcements: mapped };
+  } catch (error: any) {
+    return { success: false, message: error.message };
+  }
+}
+
+export async function getAnnouncementDetails(id: string) {
+  try {
+    const a = await prisma.announcement.findUnique({
+      where: { id },
+      include: { author: { select: { firstName: true, lastName: true } } }
+    });
+    if (!a) return { success: false, message: 'Not found' };
+    
+    return { success: true, announcement: {
+        id: a.id,
+        title: a.title,
+        content: a.content,
+        authorName: a.author ? `${a.author.firstName} ${a.author.lastName}` : 'System',
+        createdAt: { seconds: Math.floor(new Date(a.createdAt).getTime() / 1000) }
+    }};
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
 /**
  * Saves or updates an announcement.
- * This action is fully secured:
- * 1. Auth checked automatically.
- * 2. SchoolId injected into database queries automatically.
- * 3. Input validated against Zod schema.
  */
 export const saveAnnouncement = createSecureAction(
   announcementSchema,
   async (data, session) => {
-    // 4. Role Authorization (Custom check)
-    if (![Role.ADMIN, Role.SLT].includes(session.user.role)) {
-      throw new Error("Access Denied: You do not have permission to manage announcements.");
-    }
-
-    const { id, title, content } = data;
-
-    if (id) {
-      // Fetch announcement to verify it belongs to the user's school
-      const announcement = await prisma.announcement.findUnique({ where: { id } });
-      if (!announcement || announcement.schoolId !== session.user.schoolId) {
-        throw new Error("Access Denied: Announcement not found or belongs to another school.");
-      }
-
-      await prisma.announcement.update({
-        where: { id },
-        data: { title, content }
-      });
-    } else {
-      // Create new announcement under the session's schoolId
-      await prisma.announcement.create({
-        data: {
-          title,
-          content,
-          schoolId: session.user.schoolId,
-          authorId: session.user.id
-        }
-      });
-    }
-
+    await service.saveAnnouncement(session, data);
     revalidatePath('/dashboard/announcements');
     return { success: true };
   }
@@ -59,23 +72,11 @@ export const saveAnnouncement = createSecureAction(
 
 /**
  * Deletes an announcement.
- * Secured via automatic tenant isolation.
  */
 export const deleteAnnouncement = createSecureAction(
   z.string(),
   async (id, session) => {
-    if (session.user.role !== Role.ADMIN) {
-      throw new Error("Access Denied: Only admins can delete announcements.");
-    }
-
-    // Verify tenant boundary before deletion
-    const announcement = await prisma.announcement.findUnique({ where: { id } });
-    if (!announcement || announcement.schoolId !== session.user.schoolId) {
-      throw new Error("Access Denied: Announcement not found or belongs to another school.");
-    }
-
-    await prisma.announcement.delete({ where: { id } });
-    
+    await service.deleteAnnouncement(session, id);
     revalidatePath('/dashboard/announcements');
     return { success: true };
   }

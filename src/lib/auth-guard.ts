@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import {
@@ -9,7 +7,7 @@ import {
 } from 'lucide-react';
 import type { ElementType } from 'react';
 
-const iconMap: { [key: string]: ElementType } = {
+export const iconMap: { [key: string]: ElementType } = {
   LayoutDashboard, User, Users, UsersRound, Building, Server, Activity, Book, FileText, BarChart2, BookOpen, Edit3, DollarSign, Calendar, Bell, MessageSquare,
   FileQuestion, BookCopy, CheckSquare, Award, Shield, Settings, LogOut, TrendingUp, Landmark, Wallet, Briefcase, Receipt, CreditCard, Ticket, Grid,
   BookMarked, Wrench, GraduationCap, Sparkles, UploadCloud, CalendarCheck, Heart, ClipboardCheck, BookText
@@ -30,6 +28,7 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
       { label: 'AI Settings', path: '/dashboard/system/ai-settings' },
       { label: 'Roles', path: '/dashboard/system/roles' },
       { label: 'Classes & Subjects', path: '/dashboard/system/classes-subjects' },
+      { label: 'Subscription', path: '/dashboard/system/license' },
       { label: 'Maintenance', path: '/dashboard/system/maintenance' },
     ]
   },
@@ -151,7 +150,7 @@ commonPages.forEach(path => {
     routePermissions[path] = Object.keys(navConfig);
 });
 
-export function isPathAuthorized(pathname: string, role: string): boolean {
+export function isPathAuthorized(pathname: string, role: string, rbacPermissions?: string[]): boolean {
     if (!role) {
         return false;
     }
@@ -160,6 +159,10 @@ export function isPathAuthorized(pathname: string, role: string): boolean {
         return true;
     }
     
+    if (pathname.startsWith('/dashboard/system/roles') && rbacPermissions?.some(p => p.startsWith('manage:roles'))) {
+        return true;
+    }
+
     // Allow access to settings for all roles
     if (pathname === '/dashboard/settings') {
         return true;

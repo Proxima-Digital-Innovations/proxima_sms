@@ -1,49 +1,45 @@
-import { NextRequest, NextResponse } from "next/server";
-import { withKioskAuth } from "@/lib/kiosk-auth";
-import { prisma } from "@/lib/prisma";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
-  return withKioskAuth(req, async (req, kiosk) => {
     try {
-      // In a multi-campus setup, we would filter by kiosk.branchId here.
-      // For now, we fetch all active staff members.
-      const users = await prisma.user.findMany({
-        where: {
-          status: "active",
-          role: {
-            not: "PARENT", // Exclude parents
-          },
-        },
-        include: {
-          shift: true,
-        },
-      });
+        const terminalId = req.headers.get('x-terminal-id');
+        const kiosk = await prisma.kiosk.findUnique({ where: { terminalId: terminalId || '' } });
+        if (!kiosk || !kiosk.isActive) return NextResponse.json({ success: false, message: 'Terminal not activated' }, { status: 403 });
 
-      const data = users.map((u) => ({
-        id: u.id,
-        name: `${u.firstName} ${u.lastName}`.trim(),
-        personnel_number: u.staffId || "", // Maps to personnel_number in Python agent
-        photo_url: u.avatarUrl || "",
-        template: u.biometricTemplate || null,
-        kiosk_pin: u.kioskPin || null,
-        shift: {
-          start: u.shift?.startTime || "08:00:00",
-          end: u.shift?.endTime || "17:00:00",
-          grace: u.shift?.gracePeriod || 15,
-        },
-      }));
+        const staff = await prisma.user.findMany({
+            where: { status: 'ACTIVE' },
+            select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                staffId: true,
+                biometricTemplate: true,
+                kioskPin: true
+            }
+        });
 
-      return NextResponse.json({
-        success: true,
-        count: data.length,
-        data,
-      });
-    } catch (error) {
-      console.error("Error fetching staff for kiosk:", error);
-      return NextResponse.json(
-        { success: false, message: "Internal Server Error" },
-        { status: 500 }
-      );
+        const system = await prisma.systemProfile.findFirst();
+
+        const formattedStaff = staff.map(s => ({
+            id: s.id,
+            name: `${s.firstName} ${s.lastName}`,
+            personnel_number: s.staffId || s.id,
+            photo_url: '', 
+            template: s.biometricTemplate,
+            is_enrolled: !!s.biometricTemplate,
+            kiosk_pin: s.kioskPin,
+            shift_start: '07:30:00',
+            shift_end: '16:00:00',
+            grace_period: 15
+        }));
+
+        return NextResponse.json({
+            success: true,
+            branch: system?.name || 'Main Campus',
+            data: formattedStaff
+        });
+    } catch (error: any) {
+        return NextResponse.json({ success: false, message: error.message }, { status: 500 });
     }
-  });
 }

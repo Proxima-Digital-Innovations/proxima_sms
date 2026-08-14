@@ -15,13 +15,8 @@ export function AnnouncementTemplate({ announcement, schoolInfo }: AnnouncementT
     ? format(new Date(announcement.createdAt.seconds * 1000), 'PPP') 
     : 'N/A';
   
-  const formatContent = (content: string) => {
-    return content
-      .split('\n')
-      .filter(line => line.trim() !== '')
-      .map((line, index) => `<p key=${index}>${line}</p>`)
-      .join('');
-  };
+
+
 
   return (
       <div className="bg-white text-black font-serif">
@@ -71,10 +66,14 @@ export function AnnouncementTemplate({ announcement, schoolInfo }: AnnouncementT
           <div className="space-y-4 text-base leading-relaxed">
             <h3 className="text-xl font-bold text-center mb-4">{announcement.title}</h3>
             
-            <div 
-              className="whitespace-pre-wrap text-justify space-y-4"
-              dangerouslySetInnerHTML={{ __html: formatContent(announcement.content) }}
-            />
+            <div className="whitespace-pre-wrap text-justify space-y-4">
+              {announcement.content
+                .split('\n')
+                .filter((line: string) => line.trim() !== '')
+                .map((line: string, index: number) => (
+                  <p key={index}>{line}</p>
+                ))}
+            </div>
           </div>
 
           <div className="mt-16 text-right">

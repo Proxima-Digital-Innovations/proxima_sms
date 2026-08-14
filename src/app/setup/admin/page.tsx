@@ -4,8 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { useRouter } from 'next/navigation';
-import { createUserWithEmailAndPassword } from '@/lib/firebase-stubs';
-import { collection, doc, getDocs, query, setDoc, where } from '@/lib/firebase-stubs';
+import { setupSuperAdmin } from '@/actions/setup-actions';
+
 import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { db, auth, storage } from "@/lib/firebase";
+
 import {
   Card,
   CardContent,
@@ -61,54 +61,30 @@ export default function SetupAdminPage() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      // Check if an admin account already exists
-      const usersRef = collection(db, 'users');
-      const adminQuery = query(usersRef, where('role', '==', 'Admin'));
-      const adminSnapshot = await getDocs(adminQuery);
+      const [firstName, ...lastNameArr] = values.name.split(' ');
+      const lastName = lastNameArr.join(' ') || 'Admin';
 
-      if (!adminSnapshot.empty) {
-        toast({
-          variant: 'destructive',
-          title: 'Admin Account Exists',
-          description:
-            'An administrator account has already been created. Please log in.',
-        });
-        router.push('/admin/login');
-        return;
-      }
-
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        values.email,
-        values.password
-      );
-      const user = userCredential.user;
-
-      await setDoc(doc(db, 'users', user.uid), {
-        uid: user.uid,
-        staffId: 'ADMIN001',
-        name: values.name,
+      const result = await setupSuperAdmin({
+        firstName,
+        lastName,
         email: values.email,
-        role: 'Admin',
-        status: 'active',
-        createdAt: new Date(),
-        department: 'Administration',
-        stateOfOrigin: 'N/A',
+        password: values.password
       });
+
+      if (!result.success) {
+        throw new Error(result.error);
+      }
 
       toast({
         title: 'Admin Account Created!',
         description: `You can now log in as ${values.email}. This setup page should now be removed.`,
       });
-      router.push('/admin/login');
+      router.push('/login');
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Account Creation Failed',
-        description:
-          error.code === 'auth/email-already-in-use'
-            ? 'This email is already in use by another account.'
-            : error.message,
+        description: error.message || 'An unexpected error occurred.',
       });
     }
   }

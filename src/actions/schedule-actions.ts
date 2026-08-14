@@ -9,9 +9,9 @@ import { requireSchoolId } from "@/lib/server-context";
  */
 export async function getMasterSchedule(termId: string) {
   try {
-    const schoolId = await requireSchoolId();
+    
     const timetable = await prisma.timetable.findMany({
-      where: { termId, schoolId },
+      where: { termId, },
       include: {
         class: true,
         subject: true,
@@ -30,13 +30,13 @@ export async function getMasterSchedule(termId: string) {
  */
 export async function getScheduleResources() {
   try {
-    const schoolId = await requireSchoolId();
+    
     const [classes, subjects, rooms, teachers, terms] = await Promise.all([
-      prisma.class.findMany({ where: { schoolId }, orderBy: { name: 'asc' } }),
-      prisma.subject.findMany({ where: { schoolId }, orderBy: { name: 'asc' } }),
-      prisma.room.findMany({ where: { schoolId }, orderBy: { name: 'asc' } }),
-      prisma.user.findMany({ where: { role: 'TEACHER', schoolId }, orderBy: { lastName: 'asc' } }),
-      prisma.term.findMany({ where: { isActive: true, schoolId }, include: { session: true } })
+      prisma.class.findMany({ orderBy: { name: 'asc' } }),
+      prisma.subject.findMany({ orderBy: { name: 'asc' } }),
+      prisma.room.findMany({ orderBy: { name: 'asc' } }),
+      prisma.user.findMany({ where: { role: 'TEACHER', }, orderBy: { lastName: 'asc' } }),
+      prisma.term.findMany({ where: { isActive: true, }, include: { session: true } })
     ]);
     
     return { success: true, resources: { classes, subjects, rooms, teachers, activeTerms: terms } };
@@ -59,11 +59,10 @@ export async function assignClassBlock(data: {
   endTime: string;
 }) {
   try {
-    const schoolId = await requireSchoolId();
+    
     // CLASH DETECTION 1: Is the teacher already booked at this exact time?
     const teacherClash = await prisma.timetable.findFirst({
       where: {
-        schoolId,
         termId: data.termId,
         teacherId: data.teacherId,
         dayOfWeek: data.dayOfWeek,
@@ -83,7 +82,6 @@ export async function assignClassBlock(data: {
     if (data.roomId) {
       const roomClash = await prisma.timetable.findFirst({
         where: {
-          schoolId,
           termId: data.termId,
           roomId: data.roomId,
           dayOfWeek: data.dayOfWeek,
@@ -103,7 +101,6 @@ export async function assignClassBlock(data: {
     // CLASH DETECTION 3: Is the class already taking another subject at this time?
     const classClash = await prisma.timetable.findFirst({
       where: {
-        schoolId,
         termId: data.termId,
         classId: data.classId,
         dayOfWeek: data.dayOfWeek,
@@ -123,8 +120,7 @@ export async function assignClassBlock(data: {
     const block = await prisma.timetable.create({
       data: {
         ...data,
-        schoolId
-      }
+        }
     });
 
     revalidatePath("/admin/schedule");

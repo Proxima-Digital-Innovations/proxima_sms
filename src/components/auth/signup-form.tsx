@@ -4,10 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { useRouter } from 'next/navigation';
-import { createUserWithEmailAndPassword } from '@/lib/firebase-stubs';
-import { doc, setDoc } from '@/lib/firebase-stubs';
-
-
+import { signupAction } from '@/actions/auth-actions';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -26,7 +23,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { db, auth, storage } from "@/lib/firebase";
+
 
 const formSchema = z.object({
   name: z.string().min(1, { message: 'Name is required.' }),
@@ -51,16 +48,16 @@ export function SignUpForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-       const user = userCredential.user;
+      const res = await signupAction(values);
 
-       await setDoc(doc(db, 'users', user.uid), {
-         uid: user.uid,
-         name: values.name,
-         email: values.email,
-         role: values.role,
-         createdAt: new Date(),
-       });
+      if (res?.error) {
+        toast({
+          variant: 'destructive',
+          title: 'Account Creation Failed',
+          description: res.error,
+        });
+        return;
+      }
 
       toast({
         title: 'Account Created!',
@@ -71,7 +68,7 @@ export function SignUpForm() {
         toast({
         variant: 'destructive',
         title: 'Account Creation Failed',
-        description: error.message,
+        description: 'An unexpected error occurred.',
       });
     }
   }

@@ -1,10 +1,6 @@
-
-
 'use client';
-import { Bell, ChevronDown, User as UserIcon, LogOut, Moon, Sun } from 'lucide-react';
-import {
-  SidebarTrigger,
-} from '@/components/ui/sidebar';
+
+import { Bell, ChevronDown, User as UserIcon, LogOut, Moon, Sun, Search, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -18,41 +14,45 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRole } from '@/context/role-context';
 import { usePathname } from 'next/navigation';
 import { useTheme } from '@/context/theme-context';
+import { useSidebar } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { NotificationBell } from './notifications/notification-bell';
+import { Input } from '@/components/ui/input';
+import { GlobalSearch } from './global-search';
 
 const PAGE_TITLES: { [key: string]: string } = {
-    '/dashboard': 'Dashboard',
-    '/dashboard/users': 'Manage Staff',
-    '/dashboard/students': 'Manage Students',
-    '/dashboard/departments': 'Manage Departments',
+    '/dashboard': 'Dashboard Overview',
+    '/dashboard/staff': 'Staff Management',
+    '/dashboard/students': 'Student Directory',
+    '/dashboard/system/departments': 'Departments',
+    '/dashboard/system/subjects': 'Subjects',
+    '/dashboard/system/classes': 'Classes',
+    '/dashboard/system/academic-years': 'Academic Years',
     '/dashboard/system': 'System Configuration',
-    '/dashboard/db': 'Database Management',
-    '/dashboard/logs': 'Logs & Security',
-    '/dashboard/reports': 'Reports & Analytics',
-    '/dashboard/lesson-notes': 'Lesson Plans',
-    '/dashboard/exam-questions': 'Question Bank',
-    '/dashboard/scores': 'Enter Scores',
-    '/dashboard/performance': 'Student Performance',
-    '/dashboard/accountant/fees': 'Fee Structures',
-    '/dashboard/accountant/invoices': 'Invoices',
-    '/dashboard/accountant/payments': 'Payments',
-    '/dashboard/accountant/expenses': 'Expenses & Budgeting',
-    '/dashboard/accountant/payroll': 'Payroll',
-    '/dashboard/accountant/reconciliation': 'Bank Reconciliation',
-    '/dashboard/accountant/reports': 'Financial Reports',
-    '/dashboard/exam-officer': 'Exam Officer Dashboard',
-    '/dashboard/timetable': 'Exam Timetable',
-    '/dashboard/exam-registration': 'Exam Registration',
-    '/dashboard/seating-plan': 'Seating Plan Generator',
-    '/dashboard/system/roles': 'Roles & Permissions',
-    '/dashboard/system/school-info': 'School Information',
-    '/dashboard/system/grading': 'Grading System',
-    '/dashboard/system/academic-year': 'Academic Year',
-    '/dashboard/system/fees': 'System Fee Structure',
-    '/dashboard/system/classes-subjects': 'Classes & Subjects',
+    '/dashboard/analytics': 'Analytics & Reports',
+    '/dashboard/lesson-notes': 'Lesson Notes',
+    '/dashboard/behavioural': 'Behavioural Tracking',
+    '/dashboard/messaging': 'Communications Hub',
+    '/dashboard/inventory': 'Asset & Inventory',
+    '/dashboard/finance/fee-structures': 'Fee Structures',
+    '/dashboard/finance/invoices': 'Invoices',
+    '/dashboard/finance/payments': 'Payments',
+    '/dashboard/finance/payroll': 'Payroll',
+    '/dashboard/finance/expenses': 'Expenses',
+    '/dashboard/finance/loans': 'Staff Loans',
+    '/dashboard/finance/ledger': 'General Ledger',
+    '/dashboard/finance': 'Finance',
+    '/dashboard/bas/dashboard': 'Attendance Dashboard',
+    '/dashboard/bas/attendance': 'My Attendance',
+    '/dashboard/bas/staff': 'Biometric Enrollment',
+    '/dashboard/bas/kiosks': 'Kiosks',
+    '/dashboard/bas/reports': 'Attendance Reports',
+    '/dashboard/bas/holidays': 'Holidays',
+    '/dashboard/transport': 'Transport',
+    '/dashboard/hostels': 'Hostels',
+    '/dashboard/results': 'Results Management',
+    '/dashboard/exam-questions': 'Exam Questions',
     '/profile': 'My Profile',
-    '/dashboard/notifications': 'Notifications',
     '/dashboard/settings': 'Settings',
 };
 
@@ -60,6 +60,16 @@ export function DashboardHeader() {
   const { user, role, logout } = useRole();
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();
+  const { setOpenMobile } = useSidebar();
+
+  const formatSegment = (s: string) => {
+    // If it looks like a CUID (25 chars), UUID (36 chars), or MongoID (24 chars), replace with "Details"
+    if ((s.length >= 24 && s.length <= 36 && !s.includes('-') && !s.includes(' ')) || 
+        (s.length === 36 && s.split('-').length === 5)) {
+        return 'Details';
+    }
+    return s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, ' ');
+  };
 
   const getPageTitle = () => {
     if (PAGE_TITLES[pathname]) {
@@ -67,15 +77,14 @@ export function DashboardHeader() {
     }
     const segments = pathname.split('/').filter(Boolean);
     if (segments.length > 2) {
-        // For dynamic routes like /dashboard/users/[id]
         const base = segments.slice(0, 2).join('/');
         const pageKey = `/${base}`;
         if (PAGE_TITLES[pageKey]) {
-            return PAGE_TITLES[pageKey].replace('Manage', 'View');
+            return PAGE_TITLES[pageKey];
         }
     }
-    const title = segments[segments.length - 1]?.replace(/-/g, ' ') || 'Dashboard';
-    return title.charAt(0).toUpperCase() + title.slice(1);
+    const title = segments[segments.length - 1] || 'Dashboard';
+    return formatSegment(title);
   };
 
   const userInitials = user?.name
@@ -83,47 +92,66 @@ export function DashboardHeader() {
     : role?.substring(0, 2).toUpperCase() || '..';
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
-      <SidebarTrigger />
-      <h1 className="hidden font-headline text-xl font-semibold md:block">{getPageTitle()}</h1>
-      <div className="ml-auto flex items-center gap-2">
+    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-slate-200/60 bg-white/80 backdrop-blur-md px-4 md:px-8">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="lg:hidden shrink-0"
+        onClick={() => setOpenMobile(true)}
+      >
+        <Menu className="h-5 w-5" />
+      </Button>
+      <div className="flex flex-col">
+        <h1 className="hidden font-headline text-xl font-bold tracking-tight md:block text-slate-800">
+          {getPageTitle()}
+        </h1>
+        {/* Simple breadcrumb */}
+        <span className="hidden md:block text-xs text-muted-foreground font-medium">
+          {pathname.split('/').filter(Boolean).map(formatSegment).join(' / ')}
+        </span>
+      </div>
+
+      {/* Global Search Bar - Premium Look */}
+      <div className="ml-auto hidden md:flex items-center relative max-w-md w-full mx-4">
+        <GlobalSearch />
+      </div>
+
+      <div className="ml-auto md:ml-0 flex items-center gap-3">
         <NotificationBell />
-         <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-full"
-          onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-        >
-          <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-          <span className="sr-only">Toggle theme</span>
-        </Button>
+
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="flex items-center gap-2 rounded-full px-2 py-1"
+              className="flex items-center gap-2 rounded-full pl-2 pr-3 py-1 bg-slate-50 hover:bg-slate-100 border border-slate-200/60 h-9 transition-colors"
             >
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={user?.personalInfo?.profilePicture || undefined} alt={user?.name || role || ''} data-ai-hint="person portrait" />
-                <AvatarFallback>{userInitials}</AvatarFallback>
+              <Avatar className="h-6 w-6 border border-gray-200">
+                <AvatarImage src={user?.personalInfo?.profilePicture || undefined} alt={user?.name || role || ''} />
+                <AvatarFallback className="text-[10px] font-bold bg-blue-600 text-white">{userInitials}</AvatarFallback>
               </Avatar>
-              <span className="hidden md:inline">{user?.name || role}</span>
-              <ChevronDown className="hidden h-4 w-4 md:inline" />
+              <span className="hidden lg:inline text-sm font-medium text-slate-700">{user?.name || role}</span>
+              <ChevronDown className="hidden h-3 w-3 lg:inline text-slate-400" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+          <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-lg border-gray-200 bg-white">
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">{user?.name || role}</p>
+                <p className="text-xs leading-none text-muted-foreground">{user?.email || 'admin@proximahub.com'}</p>
+              </div>
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
              <Link href="/profile" passHref>
-                <DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer">
                     <UserIcon className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
+                    <span>Account Settings</span>
                 </DropdownMenuItem>
              </Link>
-            <DropdownMenuItem onClick={logout}>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={logout} className="cursor-pointer text-rose-500 focus:bg-rose-50 focus:text-rose-600 dark:focus:bg-rose-950/50">
               <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
+              <span>Sign out</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

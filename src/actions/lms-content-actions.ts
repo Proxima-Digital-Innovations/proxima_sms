@@ -1,9 +1,10 @@
 'use server';
 
-import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-
 import { requireSchoolId } from "@/lib/server-context";
+import { LmsContentService } from "@/lib/services/lms-content-service";
+
+const service = new LmsContentService();
 
 /**
  * Fetch all courses (Subject-Class pairs) for a teacher
@@ -11,22 +12,8 @@ import { requireSchoolId } from "@/lib/server-context";
  */
 export async function getLmsCourses(subjectId?: string, classId?: string) {
   try {
-    const schoolId = await requireSchoolId();
-    const modules = await prisma.lmsModule.findMany({
-      where: {
-        schoolId,
-        ...(subjectId && { subjectId }),
-        ...(classId && { classId })
-      },
-      include: {
-        subject: true,
-        class: true,
-        content: {
-          orderBy: { order: 'asc' }
-        }
-      },
-      orderBy: { order: 'asc' }
-    });
+    
+    const modules = await service.getLmsCourses(subjectId, classId);
     return { success: true, modules };
   } catch (error: any) {
     return { success: false, modules: [], message: error.message };
@@ -38,10 +25,8 @@ export async function getLmsCourses(subjectId?: string, classId?: string) {
  */
 export async function createLmsModule(title: string, subjectId: string, classId: string, order: number = 0) {
   try {
-    const schoolId = await requireSchoolId();
-    const module = await prisma.lmsModule.create({
-      data: { title, subjectId, classId, order, schoolId }
-    });
+    
+    const module = await service.createLmsModule(title, subjectId, classId, order);
     revalidatePath("/admin/lms");
     return { success: true, module };
   } catch (error: any) {
@@ -61,10 +46,8 @@ export async function addLmsContent(
   order: number = 0
 ) {
   try {
-    const schoolId = await requireSchoolId();
-    const content = await prisma.lmsContent.create({
-      data: { moduleId, title, type, url, body, order, schoolId }
-    });
+    
+    const content = await service.addLmsContent(moduleId, title, type, url, body, order);
     revalidatePath("/admin/lms");
     return { success: true, content };
   } catch (error: any) {
@@ -77,10 +60,8 @@ export async function addLmsContent(
  */
 export async function deleteLmsModule(moduleId: string) {
   try {
-    const schoolId = await requireSchoolId();
-    // Delete content first due to relations (or use Cascade if defined)
-    await prisma.lmsContent.deleteMany({ where: { moduleId, schoolId } });
-    await prisma.lmsModule.delete({ where: { id: moduleId, schoolId } });
+    
+    await service.deleteLmsModule(moduleId);
     revalidatePath("/admin/lms");
     return { success: true };
   } catch (error: any) {

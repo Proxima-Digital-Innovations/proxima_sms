@@ -1,18 +1,18 @@
 'use server';
 
-import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { requireSchoolId } from "@/lib/server-context";
+import { LmsAssignmentService } from "@/lib/services/lms-assignment-service";
+
+const service = new LmsAssignmentService();
 
 /**
  * Create a new assignment within a module
  */
 export async function createAssignment(moduleId: string, title: string, points: number, description?: string, dueDate?: Date) {
   try {
-    const schoolId = await requireSchoolId();
-    const assignment = await prisma.assignment.create({
-      data: { moduleId, title, points, description, dueDate, schoolId }
-    });
+    
+    const assignment = await service.createAssignment(moduleId, title, points, description, dueDate);
     revalidatePath("/admin/lms");
     return { success: true, assignment };
   } catch (error: any) {
@@ -25,10 +25,8 @@ export async function createAssignment(moduleId: string, title: string, points: 
  */
 export async function submitWork(assignmentId: string, studentId: string, fileUrl?: string, body?: string) {
   try {
-    const schoolId = await requireSchoolId();
-    const submission = await prisma.submission.create({
-      data: { assignmentId, studentId, fileUrl, body, schoolId }
-    });
+    
+    const submission = await service.submitWork(assignmentId, studentId, fileUrl, body);
     revalidatePath("/student/lms");
     return { success: true, submission };
   } catch (error: any) {
@@ -41,12 +39,7 @@ export async function submitWork(assignmentId: string, studentId: string, fileUr
  */
 export async function getSubmissions(assignmentId: string) {
   try {
-    const submissions = await prisma.submission.findMany({
-      where: { assignmentId },
-      include: {
-        student: true
-      }
-    });
+    const submissions = await service.getSubmissions(assignmentId);
     return { success: true, submissions };
   } catch (error: any) {
     return { success: false, submissions: [], message: error.message };
@@ -58,52 +51,8 @@ export async function getSubmissions(assignmentId: string) {
  */
 export async function gradeSubmission(submissionId: string, score: number, feedback: string) {
   try {
-    const submission = await prisma.submission.update({
-      where: { id: submissionId },
-      data: { score, feedback, gradedAt: new Date() },
-      include: {
-        assignment: {
-          include: {
-            module: {
-              include: { subject: true }
-            }
-          }
-        },
-        student: true
-      }
-    });
-
-    // --- GRADE PASSBACK LOGIC ---
-    // In our SIS, we have TermGrade [studentId, subjectId, termId]
-    // We'll find the current term and update the CA score
     
-    const schoolId = await requireSchoolId();
-    const currentTerm = await prisma.term.findFirst({ where: { isActive: true, schoolId } });
-    if (currentTerm) {
-      const subjectId = submission.assignment.module.subjectId;
-      const studentId = submission.studentId;
-
-      const termGrade = await prisma.termGrade.upsert({
-        where: {
-          studentId_subjectId_termId: {
-            studentId,
-            subjectId,
-            termId: currentTerm.id
-          }
-        },
-        update: {
-          ca1: score 
-        },
-        create: {
-          studentId,
-          subjectId,
-          termId: currentTerm.id,
-          schoolId,
-          ca1: score
-        }
-      });
-    }
-
+    const submission = await service.gradeSubmission(submissionId, score, feedback);
     revalidatePath("/admin/lms/grading");
     return { success: true, submission };
   } catch (error: any) {
