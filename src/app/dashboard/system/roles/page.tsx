@@ -123,8 +123,8 @@ export default function RolesPage() {
       
       <div className="space-y-2 mt-4">
         <Label>System Permissions</Label>
-        <p className="text-xs text-slate-500 mb-2">Check the permissions to grant this role access to specific system features.</p>
-        <div className="border rounded-md p-4 bg-slate-50 max-h-[400px] overflow-y-auto space-y-6">
+        <p className="text-xs text-muted-foreground mb-2">Check the permissions to grant this role access to specific system features.</p>
+        <div className="border rounded-md p-4 bg-background max-h-[400px] overflow-y-auto space-y-6">
           {Object.entries(groupedPermissions).map(([resource, perms]) => (
             <div key={resource} className="space-y-2">
               <h4 className="font-semibold text-slate-700 capitalize border-b pb-1">{resource.replace(/_/g, ' ')}</h4>
@@ -141,7 +141,7 @@ export default function RolesPage() {
                       <Label htmlFor={perm.id} className="font-medium cursor-pointer capitalize">
                         {perm.action}
                       </Label>
-                      <p className="text-xs text-slate-500">{perm.description}</p>
+                      <p className="text-xs text-muted-foreground">{perm.description}</p>
                     </div>
                   </div>
                 ))}
@@ -163,7 +163,7 @@ export default function RolesPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Access Roles & Permissions</h1>
-          <p className="text-slate-500 mt-1">
+          <p className="text-muted-foreground mt-1">
             Create custom roles by grouping predefined system permissions, then assign these roles to staff.
           </p>
         </div>
@@ -195,8 +195,8 @@ export default function RolesPage() {
         </Dialog>
       </div>
 
-      <Card className="border-slate-200 shadow-sm">
-        <CardHeader className="bg-slate-50/50 border-b border-slate-100 pb-4">
+      <Card className="border-border shadow-sm">
+        <CardHeader className="bg-background border-b border-slate-100 pb-4">
           <CardTitle className="text-lg font-medium flex items-center gap-2">
             <Shield className="h-5 w-5 text-indigo-500" />
             Configured Roles
@@ -205,7 +205,7 @@ export default function RolesPage() {
         </CardHeader>
         <CardContent className="p-0">
           <Table>
-            <TableHeader className="bg-slate-50">
+            <TableHeader className="bg-background">
               <TableRow>
                 <TableHead>Role Name</TableHead>
                 <TableHead>Description</TableHead>
@@ -223,7 +223,7 @@ export default function RolesPage() {
                       {role.name}
                     </div>
                   </TableCell>
-                  <TableCell className="text-slate-500">{role.description}</TableCell>
+                  <TableCell className="text-muted-foreground">{role.description}</TableCell>
                   <TableCell>
                     <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
                       {role.permissions.length} Permissions
@@ -242,7 +242,7 @@ export default function RolesPage() {
               ))}
               {roles.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-slate-500">
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                     No custom roles defined.
                   </TableCell>
                 </TableRow>

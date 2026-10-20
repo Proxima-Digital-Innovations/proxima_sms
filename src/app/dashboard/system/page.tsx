@@ -2,11 +2,17 @@
 'use client';
 
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, Calendar, DollarSign, GraduationCap, School, ShieldCheck, BookMarked, Wrench, Sparkles } from "lucide-react";
+import { ArrowRight, Calendar, Wallet, GraduationCap, School, ShieldCheck, BookMarked, Wrench, Sparkles, MailCheck } from "lucide-react";
 import Link from "next/link";
 
 
 const settingsCards = [
+    {
+        title: 'Communications & SMTP',
+        description: 'Configure email gateways (Gmail, cPanel, Postal SMTP), Resend, and WhatsApp Gateway.',
+        icon: MailCheck,
+        href: '/dashboard/system/communications'
+    },
     {
         title: 'School Information',
         description: 'Manage school name, address, and contact details.',

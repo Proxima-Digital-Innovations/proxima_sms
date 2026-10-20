@@ -61,7 +61,13 @@ export default function AdmissionsPage() {
                 gender: studentData.gender,
                 dateOfBirth: studentData.dateOfBirth,
                 classId: studentData.classLevel, // Using classLevel as classId placeholder
-                studentId
+                studentId,
+                guardianFullName: guardianData.fullName,
+                guardianRelationship: guardianData.relationship,
+                guardianPhone: guardianData.phone,
+                guardianEmail: guardianData.email,
+                guardianAddress: guardianData.address,
+                sessionYear: studentData.sessionYear
             };
 
             const response = await admitStudent(payload);

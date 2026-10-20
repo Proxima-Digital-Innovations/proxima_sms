@@ -1,8 +1,12 @@
 import { prisma } from '@/lib/prisma';
 
 
+export const STAFF_FILTER = {
+    role: { notIn: ['PARENT', 'STUDENT'] }
+};
+
 export class StaffRepository {
-    async countStaffByRole(role: string, ) {
+    async countStaffByRole(role: string) {
         return prisma.user.count({ where: { role } });
     }
     async createStaffUser(data: any) {
@@ -10,7 +14,7 @@ export class StaffRepository {
     }
     async getStaffList() {
         return prisma.user.findMany({
-            where: { role: { not: 'PARENT' } },
+            where: STAFF_FILTER,
             include: { 
                 department: true,
                 accessRoles: { select: { id: true, name: true } } 
@@ -18,7 +22,7 @@ export class StaffRepository {
             orderBy: { lastName: 'asc' }
         });
     }
-    async deleteStaffUser(userId: string, ) {
+    async deleteStaffUser(userId: string) {
         return prisma.user.delete({
             where: { id: userId }
         });

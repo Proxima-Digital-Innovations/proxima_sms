@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { getLmsCourses } from '@/actions/lms-content-actions';
 import { submitQuizAttempt } from '@/actions/lms-quiz-actions';
 import { 
@@ -9,6 +10,7 @@ import {
 } from 'lucide-react';
 
 export default function StudentAssessmentPlayer() {
+  const { data: session } = useSession();
   const [loading, setLoading] = useState(true);
   const [courses, setCourses] = useState<any[]>([]);
   const [selectedQuiz, setSelectedQuiz] = useState<any>(null);
@@ -39,8 +41,8 @@ export default function StudentAssessmentPlayer() {
     if (!selectedQuiz) return;
     setSubmitting(true);
     
-    // MOCK studentId
-    const res = await submitQuizAttempt(selectedQuiz.id, "mock-student-id", answers);
+    const studentId = (session?.user as any)?.id || '';
+    const res = await submitQuizAttempt(selectedQuiz.id, studentId, answers);
     
     if (res.success) {
       setResult(res);

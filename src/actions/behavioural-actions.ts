@@ -3,6 +3,14 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
+function safeRevalidatePath(path: string) {
+  try {
+    revalidatePath(path);
+  } catch {}
+}
+
+import { auth } from '@/auth';
+
 export async function getBehavioralIncidents(studentId?: string) {
     try {
         const whereClause = studentId ? { studentId } : {};
@@ -18,6 +26,30 @@ export async function getBehavioralIncidents(studentId?: string) {
 
 export async function saveBehavioralIncident(data: any) {
     try {
+        let reporterId = data.reporterId;
+        if (!reporterId || reporterId === 'system') {
+            try {
+                const session = await auth();
+                reporterId = (session?.user as any)?.id;
+            } catch {
+                reporterId = undefined;
+            }
+        }
+        if (reporterId) {
+            const exists = await prisma.user.findUnique({ where: { id: reporterId }, select: { id: true } });
+            if (!exists) reporterId = undefined;
+        }
+        if (!reporterId) {
+            const fallback = await prisma.user.findFirst({
+                where: { role: { in: ['TEACHER', 'ADMIN', 'SLT', 'HOD'] } },
+                select: { id: true }
+            }) || await prisma.user.findFirst({ select: { id: true } });
+            reporterId = fallback?.id;
+        }
+        if (!reporterId) {
+            return { success: false, error: "A valid staff user is required to record behavioral incidents." };
+        }
+
         const incident = await prisma.behavioralIncident.create({
             data: {
                 studentId: data.studentId,
@@ -25,85 +57,126 @@ export async function saveBehavioralIncident(data: any) {
                 description: data.description,
                 severity: data.severity || 'MINOR',
                 status: 'ACTIVE',
-                reporterId: data.reporterId || 'system',
+                reporterId: reporterId,
                 date: new Date(data.date || new Date())
             }
         });
-        revalidatePath('/dashboard/behavioural');
+        safeRevalidatePath('/dashboard/behavioural');
         return { success: true, data: incident };
     } catch (error: any) {
         return { success: false, error: error.message };
     }
 }
 
-// --- Behavioural Traits & Scores (for Report Cards) ---
+// --- Behavioural Assessment (Legacy/Core) ---
 
-export async function getBehaviouralTraits() {
-  try {
-    const traits = await prisma.behaviouralTrait.findMany({
-      orderBy: [{ category: 'asc' }, { sortOrder: 'asc' }],
-    });
-    return { success: true, traits };
-  } catch (error: any) {
-    return { success: false, traits: [], message: error.message };
-  }
-}
-
-export async function saveBehaviouralScores(
-  scores: Array<{
+export async function saveBehaviouralAssessments(
+  termId: string,
+  session: string,
+  assessments: Array<{
     studentId: string;
-    traitId: string;
-    termId: string;
-    score: number;
+    conduct?: number | null;
+    punctuality?: number | null;
+    dedication?: number | null;
+    participation?: number | null;
+    hospitality?: number | null;
+    neatness?: number | null;
+    creativity?: number | null;
+    physical?: number | null;
+    comment?: string | null;
   }>
 ) {
   try {
-    for (const entry of scores) {
-      await prisma.behaviouralScore.upsert({
+    let resolvedTermId = termId;
+    const termObj = await prisma.term.findFirst({
+      where: {
+        OR: [{ id: termId }, { name: termId }],
+      },
+    });
+    if (termObj) resolvedTermId = termObj.id;
+
+    for (const entry of assessments) {
+      await prisma.behaviouralAssessment.upsert({
         where: {
-          studentId_traitId_termId: {
+          studentId_termId: {
             studentId: entry.studentId,
-            traitId: entry.traitId,
-            termId: entry.termId,
+            termId: resolvedTermId,
           },
         },
-        update: { score: entry.score },
+        update: {
+          conduct: entry.conduct ?? 3,
+          punctuality: entry.punctuality ?? 3,
+          dedication: entry.dedication ?? 3,
+          participation: entry.participation ?? 3,
+          hospitality: entry.hospitality ?? 3,
+          neatness: entry.neatness ?? 3,
+          creativity: entry.creativity ?? 3,
+          physical: entry.physical ?? 3,
+          comment: entry.comment ?? null,
+        },
         create: {
           studentId: entry.studentId,
-          traitId: entry.traitId,
-          termId: entry.termId,
-          score: entry.score,
+          termId: resolvedTermId,
+          session,
+          conduct: entry.conduct ?? 3,
+          punctuality: entry.punctuality ?? 3,
+          dedication: entry.dedication ?? 3,
+          participation: entry.participation ?? 3,
+          hospitality: entry.hospitality ?? 3,
+          neatness: entry.neatness ?? 3,
+          creativity: entry.creativity ?? 3,
+          physical: entry.physical ?? 3,
+          comment: entry.comment ?? null,
         },
       });
     }
-    revalidatePath('/dashboard/behavioural');
+    safeRevalidatePath('/dashboard/behavioural');
     return { success: true };
   } catch (error: any) {
     return { success: false, message: error.message };
   }
 }
 
-export async function getBehaviouralScores(classId: string, termId: string) {
+export async function getBehaviouralAssessments(classId: string, termId: string, session: string) {
   try {
+    let resolvedTermId = termId;
+    const termObj = await prisma.term.findFirst({
+      where: {
+        OR: [{ id: termId }, { name: termId }],
+      },
+    });
+    if (termObj) resolvedTermId = termObj.id;
+
+    let resolvedClassId = classId;
+    const classObj = await prisma.class.findFirst({
+      where: {
+        OR: [{ id: classId }, { name: classId }],
+      },
+    });
+    if (classObj) resolvedClassId = classObj.id;
+
     const students = await prisma.student.findMany({
-      where: { classId, status: 'Active' },
+      where: {
+        OR: [
+          { classId: resolvedClassId },
+          { class: { name: classId } }
+        ],
+        status: { in: ['Active', 'ACTIVE'] },
+      },
       select: { id: true, studentId: true, firstName: true, lastName: true },
       orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
     });
 
-    const traits = await prisma.behaviouralTrait.findMany({
-      orderBy: [{ category: 'asc' }, { sortOrder: 'asc' }],
-    });
-
-    const scores = await prisma.behaviouralScore.findMany({
+    const assessments = await prisma.behaviouralAssessment.findMany({
       where: {
-        termId,
+        termId: resolvedTermId,
+        session,
         studentId: { in: students.map(s => s.id) },
       },
     });
 
-    return { success: true, students, traits, scores };
+    return { success: true, students, assessments };
   } catch (error: any) {
-    return { success: false, students: [], traits: [], scores: [], message: error.message };
+    return { success: false, students: [], assessments: [], message: error.message };
   }
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { getLmsCourses } from '@/actions/lms-content-actions';
 import { submitWork } from '@/actions/lms-assignment-actions';
 import { 
@@ -9,6 +10,7 @@ import {
 } from 'lucide-react';
 
 export default function StudentLmsPortal() {
+  const { data: session } = useSession();
   const [loading, setLoading] = useState(true);
   const [courses, setCourses] = useState<any[]>([]);
   const [selectedAssignment, setSelectedAssignment] = useState<any>(null);
@@ -39,8 +41,8 @@ export default function StudentLmsPortal() {
     if (!selectedAssignment) return;
     setSubmitting(true);
     
-    // MOCK studentId (In real app, get from session)
-    const res = await submitWork(selectedAssignment.id, "mock-student-id", fileUrl, body);
+    const studentId = (session?.user as any)?.id || '';
+    const res = await submitWork(selectedAssignment.id, studentId, fileUrl, body);
     
     if (res.success) {
       setSuccess(true);

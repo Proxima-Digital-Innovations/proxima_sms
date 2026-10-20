@@ -195,7 +195,7 @@ export default function ShiftsPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Academic Shifts</h1>
-          <p className="text-slate-500 mt-1">
+          <p className="text-muted-foreground mt-1">
             Manage Morning and Afternoon sessions for staff.
           </p>
         </div>
@@ -233,8 +233,8 @@ export default function ShiftsPage() {
         </Dialog>
       </div>
 
-      <Card className="border-slate-200 shadow-sm">
-        <CardHeader className="bg-slate-50/50 border-b border-slate-100 pb-4">
+      <Card className="border-border shadow-sm">
+        <CardHeader className="bg-background border-b border-slate-100 pb-4">
           <CardTitle className="text-lg font-medium flex items-center gap-2">
             <Clock className="h-5 w-5 text-indigo-500" />
             Active Shifts
@@ -243,7 +243,7 @@ export default function ShiftsPage() {
         </CardHeader>
         <CardContent className="p-0">
           <Table>
-            <TableHeader className="bg-slate-50">
+            <TableHeader className="bg-background">
               <TableRow>
                 <TableHead>Shift Name</TableHead>
                 <TableHead>Expected Clock-In</TableHead>
@@ -267,7 +267,7 @@ export default function ShiftsPage() {
                 ))
               ) : shifts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     No shifts configured. Create one to get started.
                   </TableCell>
                 </TableRow>

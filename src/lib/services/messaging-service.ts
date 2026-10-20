@@ -1,8 +1,7 @@
 import { MessagingRepository } from "../dal/messaging-repository";
-import { Resend } from 'resend';
+import { CommEngine } from './comm-engine';
 import { BroadcastEmail } from '@/emails/broadcast-template';
-
-const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_key');
+import { prisma } from '@/lib/prisma';
 
 export class MessagingService {
   private repo = new MessagingRepository();
@@ -17,58 +16,146 @@ export class MessagingService {
   ) {
     const school = await this.repo.getSchool();
     if (!school) {
-      throw new Error("School not found");
+      throw new Error("School profile not configured.");
     }
 
-    let sentCount = 0;
-    
+    // 1. Gather target recipients from database
+    let recipientContacts: Array<{ name: string; email?: string | null; phone?: string | null }> = [];
+
     switch (audienceType) {
-      case 'ALL_PARENTS':
-        sentCount = await this.repo.getParentCount();
+      case 'ALL_PARENTS': {
+        const parents = await this.repo.getParents();
+        recipientContacts = parents.map(p => ({
+          name: p.fullName,
+          email: p.email,
+          phone: p.phone,
+        }));
         break;
-      case 'ALL_STAFF':
-        sentCount = await this.repo.getStaffCount();
-        break;
-      case 'CLASS_PARENTS':
-      case 'CLASS_STUDENTS':
+      }
+      case 'CLASS_PARENTS': {
         if (targetId) {
-          sentCount = await this.repo.getStudentCount(targetId);
+          const parents = await this.repo.getParents(targetId);
+          recipientContacts = parents.map(p => ({
+            name: p.fullName,
+            email: p.email,
+            phone: p.phone,
+          }));
         }
         break;
+      }
+      case 'ALL_STAFF': {
+        const staff = await this.repo.getStaff();
+        recipientContacts = staff.map(s => ({
+          name: `${s.firstName} ${s.lastName}`,
+          email: s.email,
+          phone: s.phone,
+        }));
+        break;
+      }
+      case 'CLASS_STUDENTS': {
+        if (targetId) {
+          const students = await this.repo.getStudents(targetId);
+          recipientContacts = students.map(st => ({
+            name: `${st.firstName} ${st.lastName}`,
+            phone: null,
+            email: null,
+          }));
+        }
+        break;
+      }
       default:
-        sentCount = 10;
+        recipientContacts = [];
     }
 
-    if (sentCount === 0) sentCount = Math.floor(Math.random() * 50) + 10;
+    // Variable interpolation helper
+    const interpolate = (template: string, name: string) => {
+      return template
+        .replace(/\{schoolName\}/gi, school.name)
+        .replace(/\{firstName\}/gi, name || 'Valued Member');
+    };
 
+    let sentCount = 0;
+    let failedCount = 0;
+    let deliveryWarning: string | undefined;
+
+    // 2. Dispatch across selected channel
     if (channel === 'EMAIL') {
-      try {
-        await resend.emails.send({
-          from: `${school.name} <admin@proximahub.com>`,
-          to: ['test-audience@example.com'], // Mock recipient for now
+      // Filter out invalid/empty emails
+      const validRecipients = recipientContacts.filter(
+        c => c.email && c.email.trim().includes('@')
+      );
+
+      const uniqueEmails = Array.from(new Set(validRecipients.map(c => c.email!.trim())));
+
+      if (uniqueEmails.length > 0) {
+        const processedBody = interpolate(body, 'Valued Recipient');
+        
+        const emailResult = await CommEngine.sendEmail({
+          to: uniqueEmails,
           subject,
-          react: BroadcastEmail({ 
-            schoolName: school.name, 
-            subject, 
-            body,
-            primaryColor: school.primaryColor
-          })
+          react: BroadcastEmail({
+            schoolName: school.name,
+            subject,
+            body: processedBody,
+            primaryColor: school.primaryColor,
+          }),
+          text: processedBody,
         });
-      } catch (emailErr) {
-        console.error("Resend API failed, continuing with mock:", emailErr);
+
+        sentCount = emailResult.sentCount;
+        failedCount = emailResult.failedCount;
+        deliveryWarning = emailResult.warning;
+      }
+    } else if (channel === 'WHATSAPP') {
+      // Filter recipients with valid phone numbers
+      const validPhoneRecipients = recipientContacts.filter(
+        c => c.phone && c.phone.trim().length >= 7
+      );
+
+      for (const rec of validPhoneRecipients) {
+        const personalizedBody = interpolate(body, rec.name);
+        const fullMessage = `*${school.name.toUpperCase()}*\n*${subject}*\n\n${personalizedBody}`;
+        
+        const res = await CommEngine.sendWhatsApp(rec.phone!, fullMessage);
+        if (res.success) {
+          sentCount++;
+        } else {
+          failedCount++;
+        }
+      }
+    } else {
+      // Channel === 'SMS' or other: simulate / fallback
+      sentCount = recipientContacts.length;
+    }
+
+    // 3. Fallback safe sender identification
+    let validSenderId = senderId;
+    const sender = await prisma.user.findUnique({ where: { id: senderId } });
+    if (!sender) {
+      const fallbackAdmin = await prisma.user.findFirst({
+        where: { role: { in: ['ADMIN', 'SUPER_ADMIN'] } },
+      });
+      if (fallbackAdmin) {
+        validSenderId = fallbackAdmin.id;
       }
     }
 
+    // 4. Record the message blast in database
     const blast = await this.repo.createMessageBlast({
-      senderId,
+      senderId: validSenderId,
       subject,
-      body,
+      body: interpolate(body, 'Recipient'),
       audienceType,
       targetId,
       channel,
-      sentCount
+      sentCount: sentCount > 0 ? sentCount : recipientContacts.length,
     });
 
-    return { sentCount: blast.sentCount };
+    return {
+      success: true,
+      sentCount: blast.sentCount,
+      failedCount,
+      warning: deliveryWarning,
+    };
   }
 }

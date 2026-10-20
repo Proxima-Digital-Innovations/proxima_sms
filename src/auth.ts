@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import argon2 from "argon2";
 import { z } from "zod";
 import { authConfig } from "./auth.config";
+import { validateSystemLicense } from "./lib/license-utils";
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MINUTES = 15;
@@ -15,12 +16,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Credentials({
       async authorize(credentials) {
         const parsedCredentials = z
-          .object({ identifier: z.string(), password: z.string().min(6) })
+          .object({ identifier: z.string(), password: z.string().min(6), rememberMe: z.string().optional() })
           .safeParse(credentials);
 
         if (!parsedCredentials.success) return null;
 
-        const { identifier, password } = parsedCredentials.data;
+        const { identifier, password, rememberMe } = parsedCredentials.data;
         
         // Find user in DB with Roles and Permissions
         const user = await prisma.user.findFirst({
@@ -61,23 +62,44 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             updateData.lockoutUntil = lockoutUntil;
           }
 
-          await prisma.user.update({
-            where: { id: user.id },
-            data: updateData,
-          });
+          try {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: updateData,
+            });
+          } catch (e) {
+            // Ignore DB update errors during login
+            console.warn("Failed to record failed login attempt due to DB restriction.");
+          }
 
           return null;
         }
 
         // Successful login: reset failed attempts and record login metadata
-        await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            failedLoginAttempts: 0,
-            lockoutUntil: null,
-            lastLoginAt: new Date(),
-          },
-        });
+        try {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              failedLoginAttempts: 0,
+              lockoutUntil: null,
+              lastLoginAt: new Date(),
+            },
+          });
+        } catch (e) {
+          // Ignore DB update errors during login
+          console.warn("Failed to record successful login metadata due to DB restriction.");
+        }
+
+        // Validate License and extract Modules
+        const licenseResult = await validateSystemLicense();
+        let activeModules = licenseResult.status === 'ACTIVE' && licenseResult.payload?.features 
+            ? licenseResult.payload.features 
+            : ['CORE'];
+            
+        // If enterprise, grant everything
+        if (licenseResult.payload?.tier === 'ENTERPRISE') {
+           activeModules = ['CORE', 'FINANCE', 'HR', 'CBT', 'LMS'];
+        }
 
         // Flatten all permissions (direct + role-based) into string array
         const userPerms = new Set<string>();
@@ -96,8 +118,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           name: `${user.firstName} ${user.lastName}`,
           role: user.role as any,
           isSuperAdmin: user.isSuperAdmin,
-          activeModules: ['CORE', 'FINANCE'],
+          activeModules: activeModules,
           rbacPermissions: Array.from(userPerms),
+          rememberMe: rememberMe === 'true',
+          requiresPasswordChange: (user as any).requiresPasswordChange || false,
         };
       },
     }),

@@ -52,7 +52,7 @@ const PAGE_TITLES: { [key: string]: string } = {
     '/dashboard/hostels': 'Hostels',
     '/dashboard/results': 'Results Management',
     '/dashboard/exam-questions': 'Exam Questions',
-    '/profile': 'My Profile',
+    '/dashboard/profile': 'My Profile',
     '/dashboard/settings': 'Settings',
 };
 
@@ -92,31 +92,37 @@ export function DashboardHeader() {
     : role?.substring(0, 2).toUpperCase() || '..';
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-slate-200/60 bg-white/80 backdrop-blur-md px-4 md:px-8">
+    <header className="sticky top-0 z-10 flex h-16 items-center gap-2 sm:gap-4 border-b border-border bg-background/80 backdrop-blur-md px-3 sm:px-4 md:px-8">
       <Button
         variant="ghost"
         size="icon"
-        className="lg:hidden shrink-0"
+        className="lg:hidden shrink-0 h-9 w-9"
         onClick={() => setOpenMobile(true)}
+        aria-label="Open Navigation Menu"
       >
         <Menu className="h-5 w-5" />
       </Button>
-      <div className="flex flex-col">
-        <h1 className="hidden font-headline text-xl font-bold tracking-tight md:block text-slate-800">
+      <div className="flex flex-col min-w-0 flex-1 md:flex-initial">
+        <h1 className="font-headline text-sm sm:text-base md:text-xl font-bold tracking-tight text-foreground truncate">
           {getPageTitle()}
         </h1>
         {/* Simple breadcrumb */}
-        <span className="hidden md:block text-xs text-muted-foreground font-medium">
+        <span className="hidden md:block text-xs text-muted-foreground font-medium truncate">
           {pathname.split('/').filter(Boolean).map(formatSegment).join(' / ')}
         </span>
       </div>
 
-      {/* Global Search Bar - Premium Look */}
+      {/* Global Search Bar - Desktop */}
       <div className="ml-auto hidden md:flex items-center relative max-w-md w-full mx-4">
         <GlobalSearch />
       </div>
 
-      <div className="ml-auto md:ml-0 flex items-center gap-3">
+      <div className="ml-auto md:ml-0 flex items-center gap-2 sm:gap-3 shrink-0">
+        {/* Mobile Search Button */}
+        <div className="md:hidden">
+          <GlobalSearch compact />
+        </div>
+
         <NotificationBell />
 
 
@@ -124,17 +130,17 @@ export function DashboardHeader() {
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="flex items-center gap-2 rounded-full pl-2 pr-3 py-1 bg-slate-50 hover:bg-slate-100 border border-slate-200/60 h-9 transition-colors"
+              className="flex items-center gap-2 rounded-full pl-2 pr-3 py-1 bg-background hover:bg-accent border border-border h-9 transition-colors"
             >
-              <Avatar className="h-6 w-6 border border-gray-200">
+              <Avatar className="h-6 w-6 border border-border">
                 <AvatarImage src={user?.personalInfo?.profilePicture || undefined} alt={user?.name || role || ''} />
-                <AvatarFallback className="text-[10px] font-bold bg-blue-600 text-white">{userInitials}</AvatarFallback>
+                <AvatarFallback className="text-[10px] font-bold bg-primary text-primary-foreground">{userInitials}</AvatarFallback>
               </Avatar>
-              <span className="hidden lg:inline text-sm font-medium text-slate-700">{user?.name || role}</span>
-              <ChevronDown className="hidden h-3 w-3 lg:inline text-slate-400" />
+              <span className="hidden lg:inline text-sm font-medium text-foreground">{user?.name || role}</span>
+              <ChevronDown className="hidden h-3 w-3 lg:inline text-muted-foreground" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-lg border-gray-200 bg-white">
+          <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-lg border-border bg-popover text-popover-foreground">
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">{user?.name || role}</p>
@@ -142,7 +148,7 @@ export function DashboardHeader() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-             <Link href="/profile" passHref>
+             <Link href="/dashboard/profile" passHref>
                 <DropdownMenuItem className="cursor-pointer">
                     <UserIcon className="mr-2 h-4 w-4" />
                     <span>Account Settings</span>

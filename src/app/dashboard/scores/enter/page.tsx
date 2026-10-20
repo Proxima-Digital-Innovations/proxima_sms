@@ -1,19 +1,32 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { DynamicTitle } from '@/components/dashboard/dynamic-title';
 import { getAcademicData } from '@/actions/academic-data';
-import { getScoresByClassSubjectAndTerm, saveScores } from '@/actions/results-actions';
+import { getScoresByClassSubjectAndTerm, saveScores, submitScoresForReview } from '@/actions/results-actions';
 import { getStudents } from '@/actions/student-actions';
-import { Save, Loader2, ArrowRight, BookOpen, AlertCircle } from 'lucide-react';
+import {
+  Save,
+  Send,
+  Loader2,
+  ArrowRight,
+  BookOpen,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  RotateCcw,
+  Sparkles,
+  Lock,
+} from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -22,10 +35,14 @@ interface ScoreEntry {
   ca1: string;
   ca2: string;
   exam: string;
+  status?: string;
+  rejectionNote?: string;
 }
 
 export default function BasicScoreEntryPage() {
   const { data: session } = useSession();
+  const userRole = ((session?.user as any)?.role || '').toUpperCase();
+  const isAdminOrOfficer = ['ADMIN', 'SUPER_ADMIN', 'EXAM_OFFICER', 'SLT', 'HOD'].includes(userRole);
   const { toast } = useToast();
 
   const [subjects, setSubjects] = useState<any[]>([]);
@@ -42,9 +59,16 @@ export default function BasicScoreEntryPage() {
   const [scores, setScores] = useState<Record<string, ScoreEntry>>({});
   const [dirty, setDirty] = useState<Set<string>>(new Set());
 
+  const [sheetStatus, setSheetStatus] = useState<'Draft' | 'Pending' | 'Approved' | 'Rejected'>('Draft');
+  const [rejectionNote, setRejectionNote] = useState<string | null>(null);
+
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+
+  // References for fast arrow/enter key navigation
+  const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   useEffect(() => {
     (async () => {
@@ -53,34 +77,64 @@ export default function BasicScoreEntryPage() {
       setClasses(acadRes.classes || []);
       setTerms(acadRes.terms || []);
       setSessions(acadRes.sessions || []);
+
+      const activeTerm = acadRes.terms?.find((t: any) => t.isActive) || acadRes.terms?.[0];
+      const activeSession = acadRes.sessions?.find((s: any) => s.isActive) || acadRes.sessions?.[0];
+      if (activeTerm) setSelectedTerm(activeTerm.id);
+      if (activeSession) setSelectedSession(activeSession.id);
     })();
   }, []);
 
   const loadStudents = async () => {
-    if (!selectedClass || !selectedSubject || !selectedTerm || !selectedSession) {
-      toast({ variant: 'destructive', title: 'Missing Filters', description: 'Please select class, subject, term, and session.' });
+    if (!selectedClass || !selectedSubject || !selectedTerm) {
+      toast({
+        variant: 'destructive',
+        title: 'Missing Selection',
+        description: 'Please select class, subject, and term to load the mark sheet.',
+      });
       return;
     }
     setIsLoading(true);
     try {
-      const termObj = terms.find(t => t.id === selectedTerm);
-      const sessionObj = sessions.find(s => s.id === selectedSession);
-      
       const [stuRes, scoreRes] = await Promise.all([
         getStudents(selectedClass),
-        getScoresByClassSubjectAndTerm(selectedClass, selectedSubject, termObj?.name, sessionObj?.name)
+        getScoresByClassSubjectAndTerm(selectedClass, selectedSubject, selectedTerm),
       ]);
 
       if (stuRes.success && stuRes.data) {
         setStudents(stuRes.data);
         const scoreMap: Record<string, ScoreEntry> = {};
+        const existingScores = scoreRes.scores || [];
+
+        let computedStatus: 'Draft' | 'Pending' | 'Approved' | 'Rejected' = 'Draft';
+        let foundRejectionNote: string | null = null;
+
+        if (existingScores.length > 0) {
+          const hasApproved = existingScores.some((sc: any) => sc.status === 'Approved');
+          const hasPending = existingScores.some((sc: any) => sc.status === 'Pending');
+          const hasRejected = existingScores.some((sc: any) => sc.status === 'Rejected');
+
+          if (hasApproved && !hasPending && !hasRejected) computedStatus = 'Approved';
+          else if (hasPending) computedStatus = 'Pending';
+          else if (hasRejected) {
+            computedStatus = 'Rejected';
+            const rejectedRecord = existingScores.find((sc: any) => sc.status === 'Rejected' && sc.teacherRemark);
+            foundRejectionNote = rejectedRecord?.teacherRemark || null;
+          }
+        }
+
+        setSheetStatus(computedStatus);
+        setRejectionNote(foundRejectionNote);
+
         for (const s of stuRes.data) {
-          const existing = scoreRes.scores?.find((sc: any) => sc.studentId === s.id);
+          const existing = existingScores.find((sc: any) => sc.studentId === s.id);
           scoreMap[s.id] = {
             studentId: s.id,
             ca1: existing?.ca1 != null ? String(existing.ca1) : '',
             ca2: existing?.ca2 != null ? String(existing.ca2) : '',
             exam: existing?.exam != null ? String(existing.exam) : '',
+            status: existing?.status || 'Draft',
+            rejectionNote: existing?.teacherRemark || '',
           };
         }
         setScores(scoreMap);
@@ -94,212 +148,593 @@ export default function BasicScoreEntryPage() {
     }
   };
 
-  const updateScore = (studentId: string, field: keyof ScoreEntry, value: string) => {
+  const isLocked = useMemo(() => {
+    if (isAdminOrOfficer) return false;
+    return sheetStatus === 'Pending' || sheetStatus === 'Approved';
+  }, [sheetStatus, isAdminOrOfficer]);
+
+  const updateScore = (studentId: string, field: 'ca1' | 'ca2' | 'exam', value: string) => {
+    if (isLocked) return;
+
+    if (value !== '') {
+      const num = parseFloat(value);
+      if (isNaN(num)) return;
+      if (field === 'ca1' && (num < 0 || num > 20)) return;
+      if (field === 'ca2' && (num < 0 || num > 20)) return;
+      if (field === 'exam' && (num < 0 || num > 60)) return;
+    }
+
     setScores(prev => ({
       ...prev,
-      [studentId]: { ...prev[studentId], [field]: value }
+      [studentId]: { ...prev[studentId], [field]: value },
     }));
     setDirty(prev => new Set(prev).add(studentId));
   };
 
-  const handleSave = async () => {
-    if (dirty.size === 0) return;
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    studentIndex: number,
+    field: 'ca1' | 'ca2' | 'exam'
+  ) => {
+    const fields: ('ca1' | 'ca2' | 'exam')[] = ['ca1', 'ca2', 'exam'];
+    const currentFieldIndex = fields.indexOf(field);
+
+    if (e.key === 'ArrowDown' || e.key === 'Enter') {
+      e.preventDefault();
+      const nextStudent = students[studentIndex + 1];
+      if (nextStudent) {
+        inputRefs.current[`${nextStudent.id}-${field}`]?.focus();
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prevStudent = students[studentIndex - 1];
+      if (prevStudent) {
+        inputRefs.current[`${prevStudent.id}-${field}`]?.focus();
+      }
+    } else if (e.key === 'ArrowRight' && (e.currentTarget.selectionStart === e.currentTarget.value.length || e.currentTarget.value === '')) {
+      if (currentFieldIndex < fields.length - 1) {
+        e.preventDefault();
+        const nextField = fields[currentFieldIndex + 1];
+        inputRefs.current[`${students[studentIndex].id}-${nextField}`]?.focus();
+      }
+    } else if (e.key === 'ArrowLeft' && e.currentTarget.selectionStart === 0) {
+      if (currentFieldIndex > 0) {
+        e.preventDefault();
+        const prevField = fields[currentFieldIndex - 1];
+        inputRefs.current[`${students[studentIndex].id}-${prevField}`]?.focus();
+      }
+    }
+  };
+
+  const handleSave = async (statusOverride?: string) => {
+    if (dirty.size === 0 && !statusOverride) return;
     setIsSaving(true);
     try {
-      const toSave = Array.from(dirty).map(studentId => ({
+      const studentIdsToSave = dirty.size > 0 ? Array.from(dirty) : students.map(s => s.id);
+      const toSave = studentIdsToSave.map(studentId => ({
         studentId,
         subjectId: selectedSubject,
         termId: selectedTerm,
-        ca1: scores[studentId].ca1 === '' ? undefined : parseFloat(scores[studentId].ca1),
-        ca2: scores[studentId].ca2 === '' ? undefined : parseFloat(scores[studentId].ca2),
-        exam: scores[studentId].exam === '' ? undefined : parseFloat(scores[studentId].exam),
+        ca1: scores[studentId]?.ca1 === '' || scores[studentId]?.ca1 == null ? undefined : parseFloat(scores[studentId].ca1),
+        ca2: scores[studentId]?.ca2 === '' || scores[studentId]?.ca2 == null ? undefined : parseFloat(scores[studentId].ca2),
+        exam: scores[studentId]?.exam === '' || scores[studentId]?.exam == null ? undefined : parseFloat(scores[studentId].exam),
+        status: statusOverride || scores[studentId]?.status || 'Draft',
       }));
 
       const res = await saveScores(toSave);
       if (res.success) {
-        toast({ title: 'Saved', description: 'Scores successfully saved.' });
+        toast({
+          title: 'Draft Saved',
+          description: `Successfully saved marks for ${toSave.length} candidate(s).`,
+        });
         setDirty(new Set());
+        if (statusOverride) {
+          setSheetStatus(statusOverride as any);
+        }
+      } else {
+        throw new Error(res.error || 'Failed to save scores');
       }
     } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Error', description: err.message });
+      toast({ variant: 'destructive', title: 'Save Failed', description: err.message });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSubmitForReview = async () => {
+    if (!selectedClass || !selectedSubject || !selectedTerm) return;
+    setIsSubmitting(true);
+    try {
+      // 1. Save any pending dirty scores first
+      if (dirty.size > 0) {
+        await handleSave('Pending');
+      }
+      // 2. Submit the score sheet
+      const res = await submitScoresForReview(selectedClass, selectedSubject, selectedTerm);
+      if (res.success) {
+        setSheetStatus('Pending');
+        toast({
+          title: 'Submitted for Moderation',
+          description: 'The score sheet has been submitted to the Exam Officer / HOD for review.',
+        });
+        setDirty(new Set());
+      } else {
+        throw new Error(res.error || 'Submission failed');
+      }
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: 'Submission Failed', description: err.message });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const calculateTotal = (studentId: string) => {
     const s = scores[studentId];
     if (!s) return 0;
-    return (parseFloat(s.ca1) || 0) + (parseFloat(s.ca2) || 0) + (parseFloat(s.exam) || 0);
+    const ca1 = parseFloat(s.ca1) || 0;
+    const ca2 = parseFloat(s.ca2) || 0;
+    const exam = parseFloat(s.exam) || 0;
+    return Math.round((ca1 + ca2 + exam) * 10) / 10;
   };
 
   const getGrade = (total: number) => {
-    if (total >= 75) return 'A1';
-    if (total >= 70) return 'B2';
-    if (total >= 65) return 'B3';
-    if (total >= 60) return 'C4';
-    if (total >= 55) return 'C5';
-    if (total >= 50) return 'C6';
-    if (total >= 45) return 'D7';
-    if (total >= 40) return 'E8';
-    return 'F9';
+    if (total >= 75) return { grade: 'A1', label: 'Excellent', color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' };
+    if (total >= 70) return { grade: 'B2', label: 'Very Good', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' };
+    if (total >= 65) return { grade: 'B3', label: 'Good', color: 'text-blue-500 bg-blue-500/10 border-blue-500/20' };
+    if (total >= 60) return { grade: 'C4', label: 'Credit', color: 'text-sky-500 bg-sky-500/10 border-sky-500/20' };
+    if (total >= 55) return { grade: 'C5', label: 'Credit', color: 'text-cyan-500 bg-cyan-500/10 border-cyan-500/20' };
+    if (total >= 50) return { grade: 'C6', label: 'Credit', color: 'text-amber-500 bg-amber-500/10 border-amber-500/20' };
+    if (total >= 45) return { grade: 'D7', label: 'Pass', color: 'text-orange-500 bg-orange-500/10 border-orange-500/20' };
+    if (total >= 40) return { grade: 'E8', label: 'Pass', color: 'text-orange-400 bg-orange-500/10 border-orange-500/20' };
+    return { grade: 'F9', label: 'Fail', color: 'text-rose-500 bg-rose-500/10 border-rose-500/20' };
   };
 
+  // Performance metrics computed from active scores
+  const metrics = useMemo(() => {
+    if (!students || students.length === 0) {
+      return { totalStudents: 0, scoredCount: 0, average: 0, highest: 0, lowest: 0, passRate: 0 };
+    }
+
+    let totalPoints = 0;
+    let scoredCount = 0;
+    let highest = 0;
+    let lowest = 100;
+    let passedCount = 0;
+
+    for (const student of students) {
+      const s = scores[student.id];
+      const hasAnyScore = s && (s.ca1 !== '' || s.ca2 !== '' || s.exam !== '');
+      if (hasAnyScore) {
+        scoredCount++;
+        const total = (parseFloat(s.ca1) || 0) + (parseFloat(s.ca2) || 0) + (parseFloat(s.exam) || 0);
+        totalPoints += total;
+        if (total > highest) highest = total;
+        if (total < lowest) lowest = total;
+        if (total >= 50) passedCount++;
+      }
+    }
+
+    return {
+      totalStudents: students.length,
+      scoredCount,
+      average: scoredCount > 0 ? Math.round((totalPoints / scoredCount) * 10) / 10 : 0,
+      highest: scoredCount > 0 ? highest : 0,
+      lowest: scoredCount > 0 ? lowest : 0,
+      passRate: scoredCount > 0 ? Math.round((passedCount / scoredCount) * 100) : 0,
+    };
+  }, [students, scores]);
+
   return (
-    <div className="space-y-8 p-4 md:p-8 max-w-7xl mx-auto">
-      {/* Header */}
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
+    <div className="space-y-6 p-4 md:p-8 max-w-7xl mx-auto">
+      {/* Page Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900/50 p-6 rounded-3xl border border-slate-800 backdrop-blur-sm shadow-xl shadow-black/10"
+        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card p-6 rounded-2xl border border-border shadow-sm"
       >
-        <div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">Basic Score Entry</h1>
-          <p className="text-slate-400 mt-1">
-            Quick entry for CA1 (20), CA2 (20), and Exam (60).
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Score Entry</h1>
+            <Badge
+              variant="outline"
+              className={
+                sheetStatus === 'Approved'
+                  ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                  : sheetStatus === 'Pending'
+                  ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+                  : sheetStatus === 'Rejected'
+                  ? 'bg-rose-500/10 text-rose-600 border-rose-500/20'
+                  : 'bg-muted text-muted-foreground border-border'
+              }
+            >
+              {sheetStatus === 'Approved' && <CheckCircle2 className="w-3 h-3 mr-1" />}
+              {sheetStatus === 'Pending' && <Clock className="w-3 h-3 mr-1" />}
+              {sheetStatus === 'Rejected' && <AlertCircle className="w-3 h-3 mr-1" />}
+              {sheetStatus} Sheet
+            </Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            WAEC 20/20/60 Continuous Assessment Matrix • CA1 (20) • CA2 (20) • Exam (60) • Total (100)
           </p>
         </div>
+
         <div className="flex flex-wrap items-center gap-3">
           <Link href="/dashboard/scores/gradebook">
-            <Button variant="outline" className="border-slate-700 text-slate-300 bg-slate-800 hover:bg-slate-700 hover:text-white rounded-xl h-10">
-              Use Advanced Gradebook <ArrowRight className="ml-2 h-4 w-4" />
+            <Button variant="outline" size="sm" className="rounded-xl border-border">
+              Advanced Gradebook <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </Link>
-          <AnimatePresence>
-            {isLoaded && dirty.size > 0 && (
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                >
-                    <Button onClick={handleSave} disabled={isSaving} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/20 transition-all rounded-xl h-10">
-                    {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-                    Save {dirty.size} Changes
-                    </Button>
-                </motion.div>
-            )}
-          </AnimatePresence>
+
+          {isLoaded && !isLocked && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleSave()}
+                disabled={isSaving || dirty.size === 0}
+                className="rounded-xl border-border"
+              >
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                Save Draft {dirty.size > 0 ? `(${dirty.size})` : ''}
+              </Button>
+
+              <Button
+                size="sm"
+                onClick={handleSubmitForReview}
+                disabled={isSubmitting || metrics.scoredCount === 0}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
+              >
+                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
+                Submit for Moderation
+              </Button>
+            </>
+          )}
+
+          {isLoaded && isLocked && isAdminOrOfficer && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleSave('Draft')}
+              className="rounded-xl border-amber-500/30 text-amber-600"
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Re-open as Draft (Admin)
+            </Button>
+          )}
         </div>
       </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-        <Card className="bg-slate-900/40 border-slate-800 shadow-none rounded-3xl overflow-hidden backdrop-blur-sm">
-            <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-                <div className="space-y-2">
-                <Label className="text-slate-400">Session</Label>
-                <Select value={selectedSession} onValueChange={setSelectedSession}>
-                    <SelectTrigger className="bg-slate-950/50 border-slate-700 text-slate-200 rounded-xl h-10"><SelectValue placeholder="Select session" /></SelectTrigger>
-                    <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">{sessions.map(s => <SelectItem key={s.id} value={s.id} className="hover:bg-slate-800 focus:bg-slate-800">{s.name}</SelectItem>)}</SelectContent>
-                </Select>
-                </div>
-                <div className="space-y-2">
-                <Label className="text-slate-400">Term</Label>
-                <Select value={selectedTerm} onValueChange={setSelectedTerm}>
-                    <SelectTrigger className="bg-slate-950/50 border-slate-700 text-slate-200 rounded-xl h-10"><SelectValue placeholder="Select term" /></SelectTrigger>
-                    <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">{terms.map(t => <SelectItem key={t.id} value={t.id} className="hover:bg-slate-800 focus:bg-slate-800">{t.name}</SelectItem>)}</SelectContent>
-                </Select>
-                </div>
-                <div className="space-y-2">
-                <Label className="text-slate-400">Class</Label>
-                <Select value={selectedClass} onValueChange={setSelectedClass}>
-                    <SelectTrigger className="bg-slate-950/50 border-slate-700 text-slate-200 rounded-xl h-10"><SelectValue placeholder="Select class" /></SelectTrigger>
-                    <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">{classes.map(c => <SelectItem key={c.id} value={c.id} className="hover:bg-slate-800 focus:bg-slate-800">{c.name}</SelectItem>)}</SelectContent>
-                </Select>
-                </div>
-                <div className="space-y-2">
-                <Label className="text-slate-400">Subject</Label>
-                <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                    <SelectTrigger className="bg-slate-950/50 border-slate-700 text-slate-200 rounded-xl h-10"><SelectValue placeholder="Select subject" /></SelectTrigger>
-                    <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">{subjects.map(s => <SelectItem key={s.id} value={s.id} className="hover:bg-slate-800 focus:bg-slate-800">{s.name}</SelectItem>)}</SelectContent>
-                </Select>
-                </div>
-                <Button onClick={loadStudents} disabled={isLoading} className="w-full bg-violet-600 hover:bg-violet-700 text-white rounded-xl h-10">
-                {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <BookOpen className="h-4 w-4 mr-2" />}
-                Load Students
-                </Button>
-            </div>
-            </CardContent>
-        </Card>
-      </motion.div>
-
+      {/* Sheet Status Banner */}
       <AnimatePresence>
-      {isLoaded && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} exit={{ opacity: 0, y: -20 }}>
-            <Card className="bg-slate-900/40 border-slate-800 shadow-none rounded-3xl overflow-hidden backdrop-blur-sm">
-            <CardHeader className="bg-slate-900/50 border-b border-slate-800 p-6">
-                <CardTitle className="text-xl font-bold text-white">Student Scores</CardTitle>
-                <CardDescription className="text-slate-400">{students.length} students found.</CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                <Table>
-                <TableHeader className="bg-slate-950/50">
-                    <TableRow className="border-slate-800 hover:bg-transparent">
-                    <TableHead className="font-bold text-slate-400 py-4 px-6 w-32">Student ID</TableHead>
-                    <TableHead className="font-bold text-slate-400 py-4">Student Name</TableHead>
-                    <TableHead className="w-24 text-center font-bold text-slate-400 py-4">CA1 (20)</TableHead>
-                    <TableHead className="w-24 text-center font-bold text-slate-400 py-4">CA2 (20)</TableHead>
-                    <TableHead className="w-24 text-center font-bold text-slate-400 py-4">Exam (60)</TableHead>
-                    <TableHead className="w-24 text-center font-bold text-slate-400 py-4">Total</TableHead>
-                    <TableHead className="w-24 text-center pr-6 font-bold text-slate-400 py-4">Grade</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {students.length === 0 ? (
-                        <TableRow>
-                            <TableCell colSpan={7} className="h-48 text-center text-slate-500">
-                                <div className="flex flex-col items-center justify-center">
-                                    <AlertCircle className="w-12 h-12 text-slate-700 mb-4" />
-                                    <p className="text-lg font-medium text-slate-400">No students found.</p>
-                                    <p className="text-sm">Verify the selected class has enrolled students.</p>
-                                </div>
-                            </TableCell>
-                        </TableRow>
-                    ) : (
-                        students.map((student, idx) => {
-                        const total = calculateTotal(student.id);
-                        const s = scores[student.id];
-                        const isEdited = dirty.has(student.id);
-                        return (
-                            <TableRow key={student.id} className="border-slate-800/50 hover:bg-slate-800/30 transition-colors">
-                            <TableCell className="px-6 py-4 font-mono text-xs text-slate-500 tracking-widest">{student.studentId || '-'}</TableCell>
-                            <TableCell className="py-4">
-                                <div className="font-bold text-slate-200">{student.lastName}, {student.firstName}</div>
-                                {isEdited && <div className="text-[10px] text-emerald-400 font-medium uppercase mt-1 tracking-wider">Unsaved Changes</div>}
-                            </TableCell>
-                            <TableCell className="py-4">
-                                <Input type="number" min="0" max="20" value={s?.ca1 || ''} onChange={e => updateScore(student.id, 'ca1', e.target.value)} className={`h-10 text-center rounded-xl bg-slate-950/50 border-slate-700 text-white focus-visible:ring-violet-500 ${isEdited ? 'border-emerald-500/50 ring-1 ring-emerald-500/20' : ''}`} />
-                            </TableCell>
-                            <TableCell className="py-4">
-                                <Input type="number" min="0" max="20" value={s?.ca2 || ''} onChange={e => updateScore(student.id, 'ca2', e.target.value)} className={`h-10 text-center rounded-xl bg-slate-950/50 border-slate-700 text-white focus-visible:ring-violet-500 ${isEdited ? 'border-emerald-500/50 ring-1 ring-emerald-500/20' : ''}`} />
-                            </TableCell>
-                            <TableCell className="py-4">
-                                <Input type="number" min="0" max="60" value={s?.exam || ''} onChange={e => updateScore(student.id, 'exam', e.target.value)} className={`h-10 text-center rounded-xl bg-slate-950/50 border-slate-700 text-white focus-visible:ring-violet-500 ${isEdited ? 'border-emerald-500/50 ring-1 ring-emerald-500/20' : ''}`} />
-                            </TableCell>
-                            <TableCell className="text-center font-bold text-lg text-white py-4">{total}</TableCell>
-                            <TableCell className="text-center pr-6 py-4">
-                                {total > 0 ? (
-                                    <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider ${
-                                        total >= 70 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                                        total >= 50 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                                        'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                                    }`}>
-                                        {getGrade(total)}
-                                    </span>
-                                ) : <span className="text-slate-600">-</span>}
-                            </TableCell>
-                            </TableRow>
-                        );
-                        })
-                    )}
-                </TableBody>
-                </Table>
-                </div>
-            </CardContent>
-            </Card>
-        </motion.div>
+        {isLoaded && sheetStatus === 'Pending' && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="flex items-center gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-sm"
+          >
+            <Clock className="h-5 w-5 shrink-0" />
+            <div className="flex-1">
+              <span className="font-semibold">Under Moderation:</span> This score sheet is submitted and locked for review by the Exam Officer / HOD.
+            </div>
+            {isLocked && <Lock className="h-4 w-4 text-amber-500" />}
+          </motion.div>
+        )}
+
+        {isLoaded && sheetStatus === 'Approved' && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="flex items-center gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-sm"
+          >
+            <CheckCircle2 className="h-5 w-5 shrink-0" />
+            <div className="flex-1">
+              <span className="font-semibold">Approved & Published:</span> These marks have been officially moderated and published to student broadsheets and report cards.
+            </div>
+            {isLocked && <Lock className="h-4 w-4 text-emerald-500" />}
+          </motion.div>
+        )}
+
+        {isLoaded && sheetStatus === 'Rejected' && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="flex items-start gap-3 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-400 text-sm"
+          >
+            <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <div className="font-semibold">Returned for Revision</div>
+              <p className="mt-1 text-xs opacity-90">
+                {rejectionNote || 'The Exam Officer requested revisions on this score sheet. Please update the affected student marks and re-submit.'}
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Filter Selection Card */}
+      <Card className="bg-card border-border shadow-sm rounded-2xl">
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 items-end">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground">Academic Session</Label>
+              <Select value={selectedSession} onValueChange={setSelectedSession}>
+                <SelectTrigger className="rounded-xl border-border bg-background h-10">
+                  <SelectValue placeholder="Session" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border-border">
+                  {sessions.map(s => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground">Academic Term</Label>
+              <Select value={selectedTerm} onValueChange={setSelectedTerm}>
+                <SelectTrigger className="rounded-xl border-border bg-background h-10">
+                  <SelectValue placeholder="Term" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border-border">
+                  {terms.map(t => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground">Class</Label>
+              <Select value={selectedClass} onValueChange={setSelectedClass}>
+                <SelectTrigger className="rounded-xl border-border bg-background h-10">
+                  <SelectValue placeholder="Select Class" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border-border">
+                  {classes.map(c => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground">Subject</Label>
+              <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                <SelectTrigger className="rounded-xl border-border bg-background h-10">
+                  <SelectValue placeholder="Select Subject" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border-border">
+                  {subjects.map(s => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button
+              onClick={loadStudents}
+              disabled={isLoading || !selectedClass || !selectedSubject || !selectedTerm}
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-10"
+            >
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <BookOpen className="h-4 w-4 mr-2" />}
+              Load Mark Sheet
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Real-Time Metrics Deck */}
+      {isLoaded && students.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div className="bg-card p-4 rounded-xl border border-border">
+            <div className="text-xs text-muted-foreground font-medium">Candidates</div>
+            <div className="text-2xl font-bold mt-1 text-foreground">{metrics.totalStudents}</div>
+            <div className="text-[11px] text-muted-foreground mt-0.5">Enrolled in class</div>
+          </div>
+          <div className="bg-card p-4 rounded-xl border border-border">
+            <div className="text-xs text-muted-foreground font-medium">Scored</div>
+            <div className="text-2xl font-bold mt-1 text-primary">
+              {metrics.scoredCount} / {metrics.totalStudents}
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-0.5">
+              {metrics.totalStudents > 0 ? Math.round((metrics.scoredCount / metrics.totalStudents) * 100) : 0}% completion
+            </div>
+          </div>
+          <div className="bg-card p-4 rounded-xl border border-border">
+            <div className="text-xs text-muted-foreground font-medium">Class Average</div>
+            <div className="text-2xl font-bold mt-1 text-foreground">{metrics.average}%</div>
+            <div className="text-[11px] text-muted-foreground mt-0.5">Mean total mark</div>
+          </div>
+          <div className="bg-card p-4 rounded-xl border border-border">
+            <div className="text-xs text-muted-foreground font-medium">Pass Rate</div>
+            <div className={`text-2xl font-bold mt-1 ${metrics.passRate >= 70 ? 'text-emerald-500' : metrics.passRate >= 50 ? 'text-amber-500' : 'text-rose-500'}`}>
+              {metrics.passRate}%
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-0.5">Score &ge; 50/100</div>
+          </div>
+          <div className="bg-card p-4 rounded-xl border border-border col-span-2 md:col-span-1">
+            <div className="text-xs text-muted-foreground font-medium">High / Low</div>
+            <div className="text-2xl font-bold mt-1 text-foreground">
+              {metrics.highest} <span className="text-sm font-normal text-muted-foreground">/ {metrics.lowest}</span>
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-0.5">Range across sheet</div>
+          </div>
+        </div>
       )}
+
+      {/* Score Entry Table */}
+      <AnimatePresence>
+        {isLoaded && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <Card className="bg-card border-border shadow-sm rounded-2xl overflow-hidden">
+              <CardHeader className="p-4 md:p-6 border-b border-border bg-card flex flex-col md:flex-row justify-between md:items-center gap-2">
+                <div>
+                  <CardTitle className="text-lg font-bold text-foreground">Candidate Mark Sheet</CardTitle>
+                  <CardDescription className="text-xs text-muted-foreground mt-0.5">
+                    Use arrow keys or Enter/Tab to navigate swiftly between assessment cells.
+                  </CardDescription>
+                </div>
+                {dirty.size > 0 && (
+                  <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-xs w-fit">
+                    <Sparkles className="w-3 h-3 mr-1" /> {dirty.size} unsaved mark(s)
+                  </Badge>
+                )}
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table className="min-w-[550px] md:min-w-full">
+                    <TableHeader>
+                      <TableRow className="border-border bg-muted/40 hover:bg-muted/40">
+                        <TableHead className="w-10 sm:w-12 text-center text-xs font-bold text-muted-foreground">#</TableHead>
+                        <TableHead className="hidden sm:table-cell w-32 text-xs font-bold text-muted-foreground">Candidate ID</TableHead>
+                        <TableHead className="text-xs font-bold text-muted-foreground min-w-[130px]">Full Name</TableHead>
+                        <TableHead className="w-20 sm:w-28 text-center text-xs font-bold text-muted-foreground">
+                          CA 1 <span className="text-[10px] font-normal block text-muted-foreground">Max 20</span>
+                        </TableHead>
+                        <TableHead className="w-20 sm:w-28 text-center text-xs font-bold text-muted-foreground">
+                          CA 2 <span className="text-[10px] font-normal block text-muted-foreground">Max 20</span>
+                        </TableHead>
+                        <TableHead className="w-20 sm:w-28 text-center text-xs font-bold text-muted-foreground">
+                          Exam <span className="text-[10px] font-normal block text-muted-foreground">Max 60</span>
+                        </TableHead>
+                        <TableHead className="w-16 sm:w-24 text-center text-xs font-bold text-muted-foreground">
+                          Total <span className="text-[10px] font-normal block text-muted-foreground">100</span>
+                        </TableHead>
+                        <TableHead className="w-16 sm:w-28 text-center text-xs font-bold text-muted-foreground pr-4 sm:pr-6">
+                          Grade
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {students.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={8} className="h-48 text-center text-muted-foreground">
+                            <div className="flex flex-col items-center justify-center">
+                              <AlertCircle className="w-10 h-10 text-muted-foreground mb-3" />
+                              <p className="font-semibold text-foreground">No students enrolled in this class.</p>
+                              <p className="text-xs text-muted-foreground mt-1">Please confirm candidate enrollments in student directory.</p>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        students.map((student, idx) => {
+                          const total = calculateTotal(student.id);
+                          const s = scores[student.id];
+                          const isEdited = dirty.has(student.id);
+                          const gradeInfo = getGrade(total);
+
+                          return (
+                            <TableRow
+                              key={student.id}
+                              className={`border-border hover:bg-muted/30 transition-colors ${
+                                isEdited ? 'bg-primary/5' : ''
+                              }`}
+                            >
+                              <TableCell className="text-center font-mono text-xs text-muted-foreground p-2 sm:p-4">
+                                {idx + 1}
+                              </TableCell>
+                              <TableCell className="hidden sm:table-cell font-mono text-xs font-medium text-muted-foreground">
+                                {student.studentId || '-'}
+                              </TableCell>
+                              <TableCell className="p-2 sm:p-4">
+                                <div className="font-semibold text-xs sm:text-sm text-foreground">
+                                  {student.lastName}, {student.firstName}
+                                </div>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="sm:hidden font-mono text-[10px] text-muted-foreground uppercase">{student.studentId || '-'}</span>
+                                  {student.middleName && (
+                                    <span className="text-[11px] text-muted-foreground">{student.middleName}</span>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="p-1 sm:p-2">
+                                <Input
+                                  ref={el => { inputRefs.current[`${student.id}-ca1`] = el; }}
+                                  type="number"
+                                  min="0"
+                                  max="20"
+                                  step="0.5"
+                                  disabled={isLocked}
+                                  placeholder="-"
+                                  value={s?.ca1 || ''}
+                                  onChange={e => updateScore(student.id, 'ca1', e.target.value)}
+                                  onKeyDown={e => handleKeyDown(e, idx, 'ca1')}
+                                  className={`h-8 sm:h-9 text-xs sm:text-sm text-center font-semibold rounded-lg bg-background border-border text-foreground focus-visible:ring-primary ${
+                                    isEdited ? 'border-primary/40 ring-1 ring-primary/20' : ''
+                                  } ${isLocked ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}`}
+                                />
+                              </TableCell>
+                              <TableCell className="p-1 sm:p-2">
+                                <Input
+                                  ref={el => { inputRefs.current[`${student.id}-ca2`] = el; }}
+                                  type="number"
+                                  min="0"
+                                  max="20"
+                                  step="0.5"
+                                  disabled={isLocked}
+                                  placeholder="-"
+                                  value={s?.ca2 || ''}
+                                  onChange={e => updateScore(student.id, 'ca2', e.target.value)}
+                                  onKeyDown={e => handleKeyDown(e, idx, 'ca2')}
+                                  className={`h-8 sm:h-9 text-xs sm:text-sm text-center font-semibold rounded-lg bg-background border-border text-foreground focus-visible:ring-primary ${
+                                    isEdited ? 'border-primary/40 ring-1 ring-primary/20' : ''
+                                  } ${isLocked ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}`}
+                                />
+                              </TableCell>
+                              <TableCell className="p-1 sm:p-2">
+                                <Input
+                                  ref={el => { inputRefs.current[`${student.id}-exam`] = el; }}
+                                  type="number"
+                                  min="0"
+                                  max="60"
+                                  step="0.5"
+                                  disabled={isLocked}
+                                  placeholder="-"
+                                  value={s?.exam || ''}
+                                  onChange={e => updateScore(student.id, 'exam', e.target.value)}
+                                  onKeyDown={e => handleKeyDown(e, idx, 'exam')}
+                                  className={`h-8 sm:h-9 text-xs sm:text-sm text-center font-semibold rounded-lg bg-background border-border text-foreground focus-visible:ring-primary ${
+                                    isEdited ? 'border-primary/40 ring-1 ring-primary/20' : ''
+                                  } ${isLocked ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}`}
+                                />
+                              </TableCell>
+                              <TableCell className="text-center font-bold text-xs sm:text-sm text-foreground p-2">
+                                {total > 0 ? total : '-'}
+                              </TableCell>
+                              <TableCell className="text-center pr-3 sm:pr-6 p-2">
+                                {total > 0 ? (
+                                  <span
+                                    className={`inline-flex items-center justify-center px-1.5 sm:px-2.5 py-0.5 rounded-md text-[11px] sm:text-xs font-bold uppercase tracking-wider border ${gradeInfo.color}`}
+                                    title={gradeInfo.label}
+                                  >
+                                    {gradeInfo.grade}
+                                  </span>
+                                ) : (
+                                  <span className="text-muted-foreground text-xs">-</span>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
   );

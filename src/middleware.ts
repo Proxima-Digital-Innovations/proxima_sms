@@ -10,6 +10,8 @@ const PUBLIC_ROUTES = [
   '/api/auth',
   '/_next',
   '/favicon.ico',
+  '/verify',
+  '/result-checker',
 ];
 
 export default auth(async (req) => {

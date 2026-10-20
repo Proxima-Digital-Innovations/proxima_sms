@@ -67,9 +67,10 @@ export function ExamOfficerDashboard() {
     try {
       const response = await getDashboardStats('EXAM_OFFICER', user.uid);
       if (response.success && response.data) {
+          const d: any = response.data;
           setStats({
-              subjects: response.data.classesCount || 0,
-              teachers: response.data.teachersCount || 0,
+              subjects: d.classesCount || 0,
+              teachers: d.teachersCount || 0,
               pendingScores: 0,
               pendingQuestions: 0
           });

@@ -162,7 +162,7 @@ export function HodDashboard() {
     <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
        <div className="space-y-2 relative">
         <h1 className="font-headline text-3xl md:text-4xl font-bold bg-gradient-to-r from-slate-900 via-indigo-800 to-slate-900 bg-clip-text text-transparent">HOD Dashboard</h1>
-        <p className="text-slate-500 font-medium">
+        <p className="text-muted-foreground font-medium">
           Department Overview & Approval Queue
         </p>
       </div>
@@ -178,7 +178,7 @@ export function HodDashboard() {
           </CardHeader>
           <CardContent className="relative z-10">
             <div className="text-3xl font-bold text-slate-900">{isLoading ? <Skeleton className='w-12 h-10'/> : stats.pending}</div>
-            <p className="text-xs text-slate-500 font-medium mt-1">notes awaiting approval</p>
+            <p className="text-xs text-muted-foreground font-medium mt-1">notes awaiting approval</p>
           </CardContent>
         </Card>
         
@@ -192,7 +192,7 @@ export function HodDashboard() {
           </CardHeader>
           <CardContent className="relative z-10">
             <div className="text-3xl font-bold text-slate-900">{isLoading ? <Skeleton className='w-12 h-10'/> : stats.approved}</div>
-             <p className="text-xs text-slate-500 font-medium mt-1">total notes approved</p>
+             <p className="text-xs text-muted-foreground font-medium mt-1">total notes approved</p>
           </CardContent>
         </Card>
         
@@ -206,7 +206,7 @@ export function HodDashboard() {
           </CardHeader>
           <CardContent className="relative z-10">
             <div className="text-3xl font-bold text-slate-900">{isLoading ? <Skeleton className='w-12 h-10'/> : stats.rejected}</div>
-            <p className="text-xs text-slate-500 font-medium mt-1">needs revision</p>
+            <p className="text-xs text-muted-foreground font-medium mt-1">needs revision</p>
           </CardContent>
         </Card>
         
@@ -220,21 +220,21 @@ export function HodDashboard() {
           </CardHeader>
           <CardContent className="relative z-10">
             <div className="text-3xl font-bold text-slate-900">{isLoading ? <Skeleton className='w-12 h-10'/> : stats.staffCount}</div>
-            <p className="text-xs text-slate-500 font-medium mt-1">active teachers</p>
+            <p className="text-xs text-muted-foreground font-medium mt-1">active teachers</p>
           </CardContent>
         </Card>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-            <Card className="shadow-sm border-slate-200/60 overflow-hidden">
-                <CardHeader className="bg-slate-50/50 border-b border-slate-100 pb-4">
-                    <CardTitle className="text-lg font-bold text-slate-800">Lesson Plan Approval Queue</CardTitle>
-                    <CardDescription className="font-medium text-slate-500">Review and approve lesson plans from your department.</CardDescription>
+            <Card className="shadow-sm border-border overflow-hidden">
+                <CardHeader className="bg-background border-b border-slate-100 pb-4">
+                    <CardTitle className="text-lg font-bold text-foreground">Lesson Plan Approval Queue</CardTitle>
+                    <CardDescription className="font-medium text-muted-foreground">Review and approve lesson plans from your department.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                     <Table>
-                    <TableHeader className="bg-slate-50/50">
+                    <TableHeader className="bg-background">
                         <TableRow>
                         <TableHead className="font-semibold text-slate-600">Teacher</TableHead>
                         <TableHead className="hidden sm:table-cell font-semibold text-slate-600">Subject</TableHead>
@@ -251,24 +251,24 @@ export function HodDashboard() {
                                 <TableCell className="text-right pr-6"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
                            </TableRow>
                         )) : notes.length > 0 ? notes.map((note) => (
-                        <TableRow key={note.id} className="hover:bg-slate-50/50 transition-colors">
+                        <TableRow key={note.id} className="hover:bg-background transition-colors">
                             <TableCell className="pl-6">
                               <div className="font-semibold text-slate-900">{note.teacherName}</div>
-                              <div className="text-xs text-slate-500 hidden md:table-cell mt-0.5">{note.title}</div>
+                              <div className="text-xs text-muted-foreground hidden md:table-cell mt-0.5">{note.title}</div>
                             </TableCell>
                             <TableCell className="hidden sm:table-cell font-medium text-slate-600">{note.subject}</TableCell>
                             <TableCell>
                               <Badge variant={statusVariant(note.status)} className="capitalize font-semibold">{note.status}</Badge>
                             </TableCell>
                             <TableCell className="text-right pr-6">
-                              <Button asChild variant="outline" size="sm" className="font-semibold border-slate-200 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 transition-all">
+                              <Button asChild variant="outline" size="sm" className="font-semibold border-border hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 transition-all">
                                   <Link href={`/dashboard/lesson-notes/${note.id}`}>Review</Link>
                               </Button>
                             </TableCell>
                         </TableRow>
                         )) : (
                             <TableRow>
-                                <TableCell colSpan={4} className="h-32 text-center text-slate-500 font-medium">No lesson plans in the queue.</TableCell>
+                                <TableCell colSpan={4} className="h-32 text-center text-muted-foreground font-medium">No lesson plans in the queue.</TableCell>
                             </TableRow>
                         )}
                     </TableBody>
@@ -276,10 +276,10 @@ export function HodDashboard() {
                 </CardContent>
             </Card>
             
-            <Card className="shadow-sm border-slate-200/60">
+            <Card className="shadow-sm border-border">
                 <CardHeader>
-                    <CardTitle className="text-lg font-bold text-slate-800">Class Averages by Subject</CardTitle>
-                    <CardDescription className="font-medium text-slate-500">Average performance in subjects across your department.</CardDescription>
+                    <CardTitle className="text-lg font-bold text-foreground">Class Averages by Subject</CardTitle>
+                    <CardDescription className="font-medium text-muted-foreground">Average performance in subjects across your department.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ChartContainer config={chartConfig} className="w-full h-[250px]">
@@ -300,10 +300,10 @@ export function HodDashboard() {
         </div>
         
         <div className="lg:col-span-1 space-y-6">
-             <Card className="shadow-sm border-slate-200/60">
+             <Card className="shadow-sm border-border">
                 <CardHeader>
-                    <CardTitle className="text-lg font-bold text-slate-800">Department Submission</CardTitle>
-                    <CardDescription className="font-medium text-slate-500">Overview of lesson note statuses.</CardDescription>
+                    <CardTitle className="text-lg font-bold text-foreground">Department Submission</CardTitle>
+                    <CardDescription className="font-medium text-muted-foreground">Overview of lesson note statuses.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {isLoading ? ( <Skeleton className="h-[250px] w-full rounded-full" /> ) : totalNotes > 0 ? (
@@ -319,17 +319,17 @@ export function HodDashboard() {
                             </PieChart>
                         </ChartContainer>
                     ) : (
-                         <div className="flex h-[250px] items-center justify-center text-center text-slate-400 font-medium bg-slate-50 rounded-full border border-dashed border-slate-200 mx-8">
+                         <div className="flex h-[250px] items-center justify-center text-center text-muted-foreground font-medium bg-background rounded-full border border-dashed border-border mx-8">
                             <p>No submission data available.</p>
                         </div>
                     )}
                 </CardContent>
             </Card>
             
-            <Card className="shadow-sm border-slate-200/60">
+            <Card className="shadow-sm border-border">
                 <CardHeader>
-                    <CardTitle className="text-lg font-bold text-slate-800">Grading Progress</CardTitle>
-                    <CardDescription className="font-medium text-slate-500">Status of score entry for the current term.</CardDescription>
+                    <CardTitle className="text-lg font-bold text-foreground">Grading Progress</CardTitle>
+                    <CardDescription className="font-medium text-muted-foreground">Status of score entry for the current term.</CardDescription>
                 </CardHeader>
                 <CardContent className="pb-8">
                     <div className="space-y-4">

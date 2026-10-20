@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { STAFF_FILTER } from './staff-repository';
 
 export class AcademicRepository {
     async createStandard(data: any) {
@@ -53,7 +54,7 @@ export class AcademicRepository {
 
     async getAdminDashboardStats() {
         const totalStudents = await prisma.student.count({ where: { status: 'Active' } });
-        const totalStaff = await prisma.user.count({ where: { isSuperAdmin: false } });
+        const totalStaff = await prisma.user.count({ where: STAFF_FILTER });
         const revenueAgg = await prisma.invoice.aggregate({ where: {}, _sum: { amountPaid: true } });
         const pendingPayments = await prisma.invoice.count({ where: { status: { not: 'PAID' } } });
         const activeClasses = await prisma.class.count({ where: {} });

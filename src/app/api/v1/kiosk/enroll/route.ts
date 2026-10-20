@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const { staff_id, template, pin } = body;
 
-        let kioskPin = null;
+        let kioskPin: string | null = null;
         if (pin) {
             kioskPin = await bcrypt.hash(String(pin), 10);
         }

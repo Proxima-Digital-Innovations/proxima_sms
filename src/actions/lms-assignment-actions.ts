@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache";
 import { requireSchoolId } from "@/lib/server-context";
 import { LmsAssignmentService } from "@/lib/services/lms-assignment-service";
 
+import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
+
 const service = new LmsAssignmentService();
 
 /**
@@ -25,8 +28,12 @@ export async function createAssignment(moduleId: string, title: string, points: 
  */
 export async function submitWork(assignmentId: string, studentId: string, fileUrl?: string, body?: string) {
   try {
+    const session = await auth();
+    const resolvedStudentId = (studentId && studentId !== 'mock-student-id')
+      ? studentId
+      : (session?.user?.id || (await prisma.student.findFirst())?.id || 'student');
     
-    const submission = await service.submitWork(assignmentId, studentId, fileUrl, body);
+    const submission = await service.submitWork(assignmentId, resolvedStudentId, fileUrl, body);
     revalidatePath("/student/lms");
     return { success: true, submission };
   } catch (error: any) {

@@ -23,10 +23,10 @@ export async function POST(req: Request) {
     // Validate it immediately
     const validation = await validateSystemLicense();
 
-    if (validation.status === 'INVALID') {
+    if (validation.status === 'INVALID' || !validation.payload) {
       // Revert if invalid
       await prisma.systemLicense.deleteMany();
-      return NextResponse.json({ error: validation.message }, { status: 400 });
+      return NextResponse.json({ error: validation.message || 'Invalid subscription payload.' }, { status: 400 });
     }
 
     // Update with actual payload data
@@ -36,6 +36,8 @@ export async function POST(req: Request) {
         tier: validation.payload.tier,
         expiresAt: new Date(validation.payload.expiresAt),
         maxStudents: validation.payload.maxStudents,
+        billingFrequency: validation.payload.billingFrequency || 'PER_TERM',
+        discountPercent: validation.payload.discountPercent || 0.0,
         status: 'ACTIVE'
       }
     });

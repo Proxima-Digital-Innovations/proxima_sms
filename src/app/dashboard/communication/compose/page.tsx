@@ -45,7 +45,7 @@ export default function ComposeMemoPage() {
     
     setIsSubmitting(true);
     try {
-      let metadata = null;
+      let metadata: any = null;
       if (type === 'LEAVE_REQUEST') {
         metadata = { startDate, endDate };
       } else if (type === 'CASH_VOUCHER') {

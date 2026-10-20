@@ -54,7 +54,7 @@ export class MidtermService {
   }
   async getClassMidtermReports(classLevel: string, term: string, session: string) {
     const students = await this.repository.getActiveStudentsByClass(classLevel);
-    const reports = [];
+    const reports: any[] = [];
     for (const student of students) {
       try {
         const report = await this.getStudentMidtermReport(student.id, term, session);

@@ -3,6 +3,12 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
+function safeRevalidatePath(path: string) {
+  try {
+    revalidatePath(path);
+  } catch {}
+}
+
 export async function createLessonNote(data: {
   title: string;
   subjectId: string;
@@ -35,7 +41,7 @@ export async function createLessonNote(data: {
         status: 'DRAFT',
       },
     });
-    revalidatePath('/dashboard/lesson-notes');
+    safeRevalidatePath('/dashboard/lesson-notes');
     return { success: true, note };
   } catch (error: any) {
     return { success: false, message: error.message };
@@ -60,7 +66,7 @@ export async function updateLessonNote(
       where: { id: noteId },
       data,
     });
-    revalidatePath('/dashboard/lesson-notes');
+    safeRevalidatePath('/dashboard/lesson-notes');
     return { success: true };
   } catch (error: any) {
     return { success: false, message: error.message };
@@ -73,7 +79,7 @@ export async function submitLessonNote(noteId: string) {
       where: { id: noteId },
       data: { status: 'SUBMITTED', submissionDate: new Date() },
     });
-    revalidatePath('/dashboard/lesson-notes');
+    safeRevalidatePath('/dashboard/lesson-notes');
     return { success: true };
   } catch (error: any) {
     return { success: false, message: error.message };
@@ -96,8 +102,31 @@ export async function reviewLessonNote(data: {
         reviewedAt: new Date(),
       },
     });
-    revalidatePath('/dashboard/lesson-notes');
+    safeRevalidatePath('/dashboard/lesson-notes');
     return { success: true };
+  } catch (error: any) {
+    return { success: false, message: error.message };
+  }
+}
+
+export async function bulkReviewLessonNotes(data: {
+  noteIds: string[];
+  reviewerId: string;
+  action: 'APPROVED' | 'REJECTED';
+  reviewNote?: string;
+}) {
+  try {
+    await prisma.lessonNote.updateMany({
+      where: { id: { in: data.noteIds } },
+      data: {
+        status: data.action,
+        reviewerId: data.reviewerId,
+        reviewNote: data.reviewNote ?? null,
+        reviewedAt: new Date(),
+      },
+    });
+    safeRevalidatePath('/dashboard/lesson-notes');
+    return { success: true, count: data.noteIds.length };
   } catch (error: any) {
     return { success: false, message: error.message };
   }
@@ -111,7 +140,11 @@ export async function getLessonNotes(filters?: {
   status?: string;
 }) {
   try {
-    const where: any = {};
+    const where: any = {
+      NOT: {
+        evaluation: { startsWith: 'QUESTION_PAPER' },
+      },
+    };
     if (filters?.teacherId) where.teacherId = filters.teacherId;
     if (filters?.classId) where.classId = filters.classId;
     if (filters?.subjectId) where.subjectId = filters.subjectId;
@@ -156,7 +189,7 @@ export async function getLessonNoteById(noteId: string) {
 export async function deleteLessonNote(noteId: string) {
   try {
     await prisma.lessonNote.delete({ where: { id: noteId } });
-    revalidatePath('/dashboard/lesson-notes');
+    safeRevalidatePath('/dashboard/lesson-notes');
     return { success: true };
   } catch (error: any) {
     return { success: false, message: error.message };

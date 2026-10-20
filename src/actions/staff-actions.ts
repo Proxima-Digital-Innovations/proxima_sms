@@ -4,38 +4,69 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { requireSchoolId } from '@/lib/server-context';
 import { StaffService } from '@/lib/services/staff-service';
+import { CommEngine } from '@/lib/services/comm-engine';
 
 const staffSchema = z.object({
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
+  firstName: z.string().min(1, 'First name is required.'),
+  lastName: z.string().min(1, 'Last name is required.'),
   gender: z.enum(['Male', 'Female']),
   dateOfBirth: z.string(),
-  stateOfOrigin: z.string().min(1, 'State of Origin is required.'),
-  phone: z.string().min(1),
-  email: z.string().email(),
-  address: z.string().min(1),
+  stateOfOrigin: z.string().min(1, 'State of origin is required.'),
+  phone: z.string().min(1, 'Phone number is required.'),
+  email: z.string().email('Invalid email address.'),
+  address: z.string().min(1, 'Address is required.'),
   role: z.enum(['ADMIN', 'SLT', 'HOD', 'TEACHER', 'ACCOUNTANT', 'EXAM_OFFICER']),
-  departmentId: z.string().optional(),
+  departmentId: z.string().optional().nullable(),
   dateOfEmployment: z.string(),
+  baseSalary: z.string().optional(),
+  staffId: z.string().optional(),
+  kioskPin: z.string().optional(),
+  clockInTime: z.string().optional(),
+  clockOutTime: z.string().optional(),
+  initialPassword: z.string().optional(),
 });
 
 export async function createStaff(formData: FormData) {
   try {
-    
     const rawData = Object.fromEntries(formData.entries());
     const parsed = staffSchema.safeParse(rawData);
 
     if (!parsed.success) {
-        return { error: 'Invalid form data: ' + JSON.stringify(parsed.error.flatten().fieldErrors) };
+      const fieldErrors = parsed.error.flatten().fieldErrors;
+      const firstError = Object.values(fieldErrors).flat()[0] || 'Invalid form data';
+      return { error: firstError, details: fieldErrors };
     }
     
     const user = await StaffService.createStaff(parsed.data);
-    revalidatePath("/admin/staff");
+    
+    // Dispatch welcome and login credentials notification
+    if (user && user.email && user.email.includes('@')) {
+      const initialPass = parsed.data.initialPassword?.trim() || parsed.data.stateOfOrigin?.trim() || 'Password123!';
+      CommEngine.sendStaffWelcomeNotification({
+        staffName: `${user.firstName} ${user.lastName}`,
+        staffEmail: user.email,
+        staffId: user.staffId || 'PENDING',
+        role: user.role,
+        temporaryPassword: initialPass,
+      }).catch(err => console.error('[createStaff] Welcome email error:', err));
+    }
+
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/users");
+    revalidatePath("/dashboard/analytics");
+    revalidatePath("/dashboard/slt");
+    revalidatePath("/dashboard/finance/payroll");
+    revalidatePath("/dashboard/bas/dashboard");
+    revalidatePath("/dashboard/bas/staff");
     return { success: true, user };
   } catch (error: any) {
     console.error('Error creating staff:', error);
     if (error.code === 'P2002') {
-      return { error: 'Email already exists.' };
+      const target = error.meta?.target;
+      if (Array.isArray(target) && target.includes('staffId')) {
+        return { error: 'Staff ID already in use. Please specify a unique ID.' };
+      }
+      return { error: 'A staff member with this email or Staff ID already exists.' };
     }
     return { error: error.message || 'An unexpected error occurred.' };
   }
@@ -43,7 +74,6 @@ export async function createStaff(formData: FormData) {
 
 export async function getStaffList() {
   try {
-    
     const staff = await StaffService.getStaffList();
     return { success: true, staff };
   } catch (error: any) {
@@ -53,9 +83,13 @@ export async function getStaffList() {
 
 export async function bulkCreateStaff(staffList: any[]) {
   try {
-    
     const result = await StaffService.bulkCreateStaff(staffList);
-    revalidatePath("/admin/staff");
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/users");
+    revalidatePath("/dashboard/analytics");
+    revalidatePath("/dashboard/slt");
+    revalidatePath("/dashboard/finance/payroll");
+    revalidatePath("/dashboard/bas/dashboard");
     return { success: true, ...result };
   } catch (error: any) {
     console.error('Error bulk creating staff:', error);
@@ -65,9 +99,13 @@ export async function bulkCreateStaff(staffList: any[]) {
 
 export async function deleteStaff(userId: string) {
   try {
-    
     await StaffService.deleteStaff(userId);
-    revalidatePath("/[school]/dashboard/users");
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/users");
+    revalidatePath("/dashboard/analytics");
+    revalidatePath("/dashboard/slt");
+    revalidatePath("/dashboard/finance/payroll");
+    revalidatePath("/dashboard/bas/dashboard");
     return { success: true };
   } catch (error: any) {
     console.error('Error deleting staff:', error);

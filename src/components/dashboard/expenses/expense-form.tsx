@@ -97,7 +97,7 @@ export function ExpenseForm({ initialData, onFormSubmit }: ExpenseFormProps) {
     }
     setIsSubmitting(true);
     try {
-      const result = await saveExpense({ ...values, userId: user.uid });
+      const result: any = await saveExpense({ ...values, userId: user.uid });
       if (result.error) {
           Object.entries(result.error).forEach(([key, messages]) => {
               if (Array.isArray(messages)) {
@@ -168,7 +168,7 @@ export function ExpenseForm({ initialData, onFormSubmit }: ExpenseFormProps) {
                          {isAiCategorizing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                     </Button>
                 </div>
-                 <p className="text-xs text-muted-foreground">Enter a description and click the ✨ button to get an AI category suggestion.</p>
+                 <p className="text-xs text-muted-foreground">Enter a description and click the AI suggestion button to categorize automatically.</p>
                 <FormMessage />
             </FormItem>
             )}

@@ -1,0 +1,5 @@
+# Project Rules
+
+## UI/UX Rules
+- **Auth Page:** The authentication page must NEVER have vertical or horizontal scrolling (`h-screen overflow-hidden` must be strictly enforced). Do not use flex-col on the main container without strict height bounds if it could cause the page to exceed viewport height on mobile.
+- **Glassmorphism:** Do not use glassmorphism effects (e.g. `backdrop-blur-md`, `bg-white/10`) unless explicitly requested. Prefer clean, solid colors that match the main dashboard aesthetic (`bg-slate-50`, `bg-white`, solid borders).

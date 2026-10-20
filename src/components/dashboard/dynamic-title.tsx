@@ -36,7 +36,7 @@ export function DynamicPageTitle() {
       }
     }
 
-    document.title = `${pageName} | ProximaOne`;
+    document.title = `${pageName} | Proxima SMS`;
   }, [pathname]);
 
   return null;
@@ -47,7 +47,7 @@ export function DynamicTitle({ breadcrumbs }: { breadcrumbs: { label: string, hr
   useEffect(() => {
     if (breadcrumbs && breadcrumbs.length > 0) {
       const pageName = breadcrumbs[breadcrumbs.length - 1].label;
-      document.title = `${pageName} | ProximaOne`;
+      document.title = `${pageName} | Proxima SMS`;
     }
   }, [breadcrumbs]);
 

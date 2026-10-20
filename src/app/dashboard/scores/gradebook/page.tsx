@@ -156,7 +156,7 @@ export default function GradebookPage() {
   };
 
   const getScoreColor = (value: string, max: number) => {
-    if (!value) return 'bg-slate-50';
+    if (!value) return 'bg-background';
     const pct = (parseFloat(value) / max) * 100;
     if (pct >= 75) return 'bg-emerald-50 border-emerald-200';
     if (pct >= 50) return 'bg-amber-50 border-amber-200';
@@ -309,7 +309,7 @@ export default function GradebookPage() {
           <CardContent className="p-0 overflow-x-auto">
             {assignments.length === 0 ? (
               <div className="p-12 text-center text-muted-foreground">
-                <AlertCircle className="h-10 w-10 mx-auto text-slate-300 mb-3" />
+                <AlertCircle className="h-10 w-10 mx-auto text-foreground mb-3" />
                 <p className="font-medium">No assignments yet</p>
                 <p className="text-sm">Click &quot;Add Assignment&quot; to create gradebook columns.</p>
               </div>
@@ -320,7 +320,7 @@ export default function GradebookPage() {
                   <tr className="border-b bg-slate-100">
                     <th className="text-left p-3 sticky left-0 bg-slate-100 z-10 min-w-[200px]">Student</th>
                     {groupedAssignments.map(g => (
-                      <th key={g.category.id} colSpan={g.items.length} className="text-center p-2 border-l border-slate-200">
+                      <th key={g.category.id} colSpan={g.items.length} className="text-center p-2 border-l border-border">
                         <span className="font-semibold text-xs uppercase tracking-wider text-slate-600">
                           {g.category.name}
                         </span>
@@ -336,7 +336,7 @@ export default function GradebookPage() {
                     {assignments.map(a => (
                       <th key={a.id} className="text-center p-2 border-l text-xs text-muted-foreground font-normal min-w-[80px]">
                         <div className="truncate max-w-[80px]" title={a.title}>{a.title}</div>
-                        <div className="text-[10px] text-slate-400">/{a.maxScore}</div>
+                        <div className="text-[10px] text-muted-foreground">/{a.maxScore}</div>
                       </th>
                     ))}
                     <th className="border-l bg-indigo-50" />
@@ -348,7 +348,7 @@ export default function GradebookPage() {
                     const { total, percentage } = computeStudentTotal(student.id);
                     const grade = getGrade(percentage);
                     return (
-                      <tr key={student.id} className={`border-b ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-blue-50/30 transition-colors`}>
+                      <tr key={student.id} className={`border-b ${idx % 2 === 0 ? 'bg-white' : 'bg-background'} hover:bg-blue-50/30 transition-colors`}>
                         <td className="p-2 sticky left-0 z-10 font-medium text-sm" style={{ backgroundColor: idx % 2 === 0 ? 'white' : '#f8fafc' }}>
                           {student.lastName}, {student.firstName}
                         </td>
@@ -393,7 +393,7 @@ export default function GradebookPage() {
             <h4 className="font-semibold text-sm text-muted-foreground mb-3">Grading Weights</h4>
             <div className="flex flex-wrap gap-4">
               {categories.map(cat => (
-                <div key={cat.id} className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg">
+                <div key={cat.id} className="flex items-center gap-2 bg-background px-3 py-2 rounded-lg">
                   <BarChart3 className="h-4 w-4 text-indigo-500" />
                   <span className="text-sm font-medium">{cat.name}</span>
                   <Badge variant="secondary">{Math.round(cat.weight * 100)}%</Badge>

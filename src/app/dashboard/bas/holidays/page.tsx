@@ -13,7 +13,7 @@ import {
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const containerVariants = {
+const containerVariants: any = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -21,7 +21,7 @@ const containerVariants = {
   }
 };
 
-const itemVariants = {
+const itemVariants: any = {
   hidden: { opacity: 0, y: 15 },
   visible: {
     opacity: 1,
@@ -62,16 +62,16 @@ export default function HolidaysPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-950 pb-12 -mt-6 -mx-6">
+        <div className="min-h-screen bg-background pb-12 -mt-6 -mx-6">
             {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center px-8 py-5 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-20 shadow-sm gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center px-8 py-5 bg-background backdrop-blur-md border-b border-border sticky top-0 z-20 shadow-sm gap-4">
                 <div className="flex items-center gap-4">
                     <div className="p-2.5 bg-blue-600/20 border border-blue-500/30 rounded-xl shadow-[0_0_15px_rgba(59,130,246,0.15)]">
                         <PartyPopper className="text-blue-400 w-5 h-5" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-white tracking-tight">Public Holidays</h1>
-                        <p className="text-xs text-slate-400 font-medium">Manage public holidays that affect attendance calculations.</p>
+                        <h1 className="text-xl font-bold text-foreground tracking-tight">Public Holidays</h1>
+                        <p className="text-xs text-muted-foreground font-medium">Manage public holidays that affect attendance calculations.</p>
                     </div>
                 </div>
                 
@@ -83,13 +83,13 @@ export default function HolidaysPage() {
             <div className="px-8 py-8 max-w-5xl mx-auto">
                 <motion.div variants={containerVariants} initial="hidden" animate="visible">
                     <motion.div variants={itemVariants}>
-                        <Card className="bg-slate-900/50 border-slate-800 shadow-xl overflow-hidden">
-                            <CardHeader className="border-b border-slate-800/50 bg-slate-900/40 pb-5">
-                                <CardTitle className="text-lg font-bold text-white flex items-center gap-2">
+                        <Card className="bg-background border-border shadow-xl overflow-hidden">
+                            <CardHeader className="border-b border-border bg-background pb-5">
+                                <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
                                     <CalendarDays className="h-5 w-5 text-blue-400" />
                                     Holiday Calendar
                                 </CardTitle>
-                                <CardDescription className="text-slate-400 mt-1">
+                                <CardDescription className="text-muted-foreground mt-1">
                                     Staff who clock in on these dates will appear in the Off-Day report. Absent counts are zeroed for general holidays.
                                 </CardDescription>
                             </CardHeader>
@@ -99,21 +99,21 @@ export default function HolidaysPage() {
                                         <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-500 border-r-transparent" />
                                     </div>
                                 ) : holidays.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center py-20 text-slate-500">
-                                        <div className="w-16 h-16 bg-slate-900 rounded-full flex items-center justify-center mb-4">
+                                    <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+                                        <div className="w-16 h-16 bg-background rounded-full flex items-center justify-center mb-4">
                                             <CalendarDays className="h-8 w-8 text-slate-600" />
                                         </div>
-                                        <p className="text-sm font-medium text-slate-400">No holidays configured yet.</p>
+                                        <p className="text-sm font-medium text-muted-foreground">No holidays configured yet.</p>
                                         <p className="text-xs mt-1">Add public holidays to improve attendance accuracy.</p>
                                     </div>
                                 ) : (
                                     <div className="overflow-x-auto">
                                         <Table>
-                                            <TableHeader className="bg-slate-900/80 border-b border-slate-800">
+                                            <TableHeader className="bg-background border-b border-border">
                                                 <TableRow className="hover:bg-transparent border-none">
-                                                    <TableHead className="pl-6 text-slate-400 font-bold uppercase tracking-wider text-[10px] h-10">Holiday Name</TableHead>
-                                                    <TableHead className="text-slate-400 font-bold uppercase tracking-wider text-[10px] h-10">Start Date</TableHead>
-                                                    <TableHead className="text-slate-400 font-bold uppercase tracking-wider text-[10px] h-10">End Date</TableHead>
+                                                    <TableHead className="pl-6 text-muted-foreground font-bold uppercase tracking-wider text-[10px] h-10">Holiday Name</TableHead>
+                                                    <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] h-10">Start Date</TableHead>
+                                                    <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] h-10">End Date</TableHead>
                                                     <TableHead className="w-20 pr-6"></TableHead>
                                                 </TableRow>
                                             </TableHeader>
@@ -125,13 +125,13 @@ export default function HolidaysPage() {
                                                             initial={{ opacity: 0 }}
                                                             animate={{ opacity: 1 }}
                                                             exit={{ opacity: 0 }}
-                                                            className="border-b border-slate-800/50 hover:bg-slate-800/20 transition-colors"
+                                                            className="border-b border-border hover:bg-muted transition-colors"
                                                         >
-                                                            <TableCell className="pl-6 font-medium text-white">{h.name}</TableCell>
-                                                            <TableCell className="text-slate-300 font-medium">{format(new Date(h.startDate), 'MMM d, yyyy')}</TableCell>
-                                                            <TableCell className="text-slate-300 font-medium">{format(new Date(h.endDate), 'MMM d, yyyy')}</TableCell>
+                                                            <TableCell className="pl-6 font-medium text-foreground">{h.name}</TableCell>
+                                                            <TableCell className="text-foreground font-medium">{format(new Date(h.startDate), 'MMM d, yyyy')}</TableCell>
+                                                            <TableCell className="text-foreground font-medium">{format(new Date(h.endDate), 'MMM d, yyyy')}</TableCell>
                                                             <TableCell className="pr-6 text-right">
-                                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 rounded-full" onClick={() => handleDelete(h.id)}>
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-rose-400 hover:bg-rose-950/30 rounded-full" onClick={() => handleDelete(h.id)}>
                                                                     <Trash2 className="h-4 w-4" />
                                                                 </Button>
                                                             </TableCell>
@@ -149,31 +149,31 @@ export default function HolidaysPage() {
             </div>
 
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogContent className="bg-slate-900 border-slate-800 text-slate-200">
+                <DialogContent className="bg-background border-border text-foreground">
                     <DialogHeader>
-                        <DialogTitle className="text-white">Add Public Holiday</DialogTitle>
-                        <DialogDescription className="text-slate-400">
+                        <DialogTitle className="text-foreground">Add Public Holiday</DialogTitle>
+                        <DialogDescription className="text-muted-foreground">
                             Define a public holiday period. Staff attendance on these days will be flagged.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-5 py-4">
                         <div>
-                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Holiday Name</label>
-                            <Input placeholder="e.g. Christmas Break" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="bg-slate-950 border-slate-800 text-white focus-visible:ring-blue-500" />
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 block">Holiday Name</label>
+                            <Input placeholder="e.g. Christmas Break" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="bg-background border-border text-foreground focus-visible:ring-blue-500" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Start Date</label>
-                                <Input type="date" value={form.startDate} onChange={e => setForm({...form, startDate: e.target.value})} className="bg-slate-950 border-slate-800 text-white focus-visible:ring-blue-500 [color-scheme:dark]" />
+                                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 block">Start Date</label>
+                                <Input type="date" value={form.startDate} onChange={e => setForm({...form, startDate: e.target.value})} className="bg-background border-border text-foreground focus-visible:ring-blue-500 [color-scheme:dark]" />
                             </div>
                             <div>
-                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">End Date</label>
-                                <Input type="date" value={form.endDate} onChange={e => setForm({...form, endDate: e.target.value})} className="bg-slate-950 border-slate-800 text-white focus-visible:ring-blue-500 [color-scheme:dark]" />
+                                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 block">End Date</label>
+                                <Input type="date" value={form.endDate} onChange={e => setForm({...form, endDate: e.target.value})} className="bg-background border-border text-foreground focus-visible:ring-blue-500 [color-scheme:dark]" />
                             </div>
                         </div>
                     </div>
-                    <DialogFooter className="border-t border-slate-800 pt-4 mt-2">
-                        <Button variant="ghost" onClick={() => setDialogOpen(false)} className="text-slate-400 hover:text-white hover:bg-slate-800">Cancel</Button>
+                    <DialogFooter className="border-t border-border pt-4 mt-2">
+                        <Button variant="ghost" onClick={() => setDialogOpen(false)} className="text-muted-foreground hover:text-foreground hover:bg-muted">Cancel</Button>
                         <Button onClick={handleCreate} disabled={saving || !form.name || !form.startDate || !form.endDate} className="bg-blue-600 hover:bg-blue-700 text-white">
                             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
                             {saving ? 'Saving...' : 'Add Holiday'}

@@ -14,7 +14,9 @@ import {
   CommandShortcut,
 } from "@/components/ui/command"
 
-export function GlobalSearch() {
+import { allNavLinks, navConfig, iconMap } from "@/lib/auth-guard"
+
+export function GlobalSearch({ compact = false }: { compact?: boolean }) {
   const [open, setOpen] = React.useState(false)
   const router = useRouter()
 
@@ -34,78 +36,62 @@ export function GlobalSearch() {
     command()
   }, [])
 
+  // Flat list of all links
+  const links = Object.values(allNavLinks);
+
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="w-full relative flex items-center gap-2 px-3 py-1.5 text-sm text-slate-500 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent group"
-      >
-        <Search className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
-        <span className="flex-1 text-left hidden sm:inline-flex">Search everything...</span>
-        <span className="flex-1 text-left sm:hidden">Search...</span>
-        <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border border-slate-300 bg-slate-100 px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
-          <span className="text-xs">⌘</span>K
-        </kbd>
-      </button>
+      {compact ? (
+        <button
+          onClick={() => setOpen(true)}
+          className="flex items-center justify-center h-9 w-9 text-muted-foreground hover:text-foreground bg-muted hover:bg-accent border border-border rounded-full transition-colors"
+          title="Search pages (Ctrl + K)"
+          aria-label="Search pages"
+        >
+          <Search className="w-4 h-4" />
+        </button>
+      ) : (
+        <button
+          onClick={() => setOpen(true)}
+          className="w-full relative flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground bg-muted hover:bg-muted/80 border border-border rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent group"
+        >
+          <Search className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+          <span className="flex-1 text-left hidden sm:inline-flex">Search pages...</span>
+          <span className="flex-1 text-left sm:hidden">Search...</span>
+          <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border border-border bg-background px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+            <span>Ctrl</span> <span>K</span>
+          </kbd>
+        </button>
+      )}
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Type a command or search..." />
+        <CommandInput placeholder="Type a command or search pages..." />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
-          <CommandGroup heading="Core Pages">
-            <CommandItem onSelect={() => runCommand(() => router.push("/dashboard"))}>
-              <LayoutDashboard className="mr-2 h-4 w-4" />
-              <span>Dashboard</span>
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => router.push("/dashboard/students"))}>
-              <GraduationCap className="mr-2 h-4 w-4" />
-              <span>Students Directory</span>
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => router.push("/dashboard/staff"))}>
-              <Briefcase className="mr-2 h-4 w-4" />
-              <span>Staff Management</span>
-            </CommandItem>
+          
+          <CommandGroup heading="Navigation">
+            {links.map((link, idx) => {
+              const Icon = link.icon && iconMap[link.icon] ? iconMap[link.icon] : LayoutDashboard;
+              return (
+               <CommandItem key={idx} onSelect={() => runCommand(() => router.push(link.path))}>
+                  <Icon className="mr-2 h-4 w-4 text-muted-foreground" />
+                  <span>{link.label}</span>
+               </CommandItem>
+              );
+            })}
           </CommandGroup>
+          
           <CommandSeparator />
-          <CommandGroup heading="Academics">
-            <CommandItem onSelect={() => runCommand(() => router.push("/dashboard/results"))}>
-              <FileText className="mr-2 h-4 w-4" />
-              <span>Results & Grading</span>
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => router.push("/dashboard/exam-questions"))}>
-              <ClipboardList className="mr-2 h-4 w-4" />
-              <span>Exam Questions</span>
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => router.push("/dashboard/lesson-notes"))}>
-              <Calendar className="mr-2 h-4 w-4" />
-              <span>Lesson Notes</span>
-            </CommandItem>
-          </CommandGroup>
-          <CommandSeparator />
-          <CommandGroup heading="Finance">
-            <CommandItem onSelect={() => runCommand(() => router.push("/dashboard/finance/invoices"))}>
-              <CreditCard className="mr-2 h-4 w-4" />
-              <span>Invoices & Billing</span>
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => router.push("/dashboard/finance/payroll"))}>
-              <Calculator className="mr-2 h-4 w-4" />
-              <span>Payroll</span>
-            </CommandItem>
-          </CommandGroup>
-          <CommandSeparator />
+          
           <CommandGroup heading="Settings">
             <CommandItem onSelect={() => runCommand(() => router.push("/profile"))}>
               <User className="mr-2 h-4 w-4" />
               <span>Profile</span>
-              <CommandShortcut>⌘P</CommandShortcut>
+              <CommandShortcut>Ctrl+P</CommandShortcut>
             </CommandItem>
             <CommandItem onSelect={() => runCommand(() => router.push("/dashboard/settings"))}>
               <Settings className="mr-2 h-4 w-4" />
               <span>Settings</span>
-              <CommandShortcut>⌘S</CommandShortcut>
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => router.push("/dashboard/system"))}>
-              <Database className="mr-2 h-4 w-4" />
-              <span>System Config</span>
+              <CommandShortcut>Ctrl+S</CommandShortcut>
             </CommandItem>
           </CommandGroup>
         </CommandList>

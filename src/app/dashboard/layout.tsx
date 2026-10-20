@@ -6,14 +6,16 @@ import { useEffect, useState } from 'react';
 
 import { DashboardHeader } from '@/components/dashboard/header';
 import DashboardSidebar from '@/components/dashboard/sidebar';
-import { SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider, useSidebar } from '@/components/ui/sidebar';
 import { useRole } from '@/context/role-context';
+import { cn } from '@/lib/utils';
 import { Loader2, ShieldAlert } from 'lucide-react';
 import { MaintenanceBanner } from '@/components/maintenance-banner';
 import { isPathAuthorized, navConfig } from '@/lib/auth-guard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SupportBot } from '@/components/dashboard/support-bot/SupportBot';
+import { ForcePasswordChangeModal } from '@/components/auth/force-password-change-modal';
 import { DynamicPageTitle } from '@/components/dashboard/dynamic-title';
 import { checkLicenseStatus } from '@/actions/license-actions';
 import { LicenseProvider } from '@/components/license/license-provider';
@@ -53,6 +55,33 @@ const AuthLoader = () => (
         </div>
     </div>
 );
+
+function MainLayout({ children, isCheckingAuth, isAuthorized }: { children: React.ReactNode, isCheckingAuth: boolean, isAuthorized: boolean }) {
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
+
+  return (
+    <div className="flex h-full overflow-hidden print:h-auto print:overflow-visible">
+      <div className="print-hidden">
+        <DashboardSidebar />
+      </div>
+      <div 
+        className={cn(
+          "flex flex-1 flex-col overflow-y-auto overflow-x-hidden relative transition-all duration-300 ease-in-out min-w-0 print:ml-0 print:w-full print:h-auto print:overflow-visible print:bg-white",
+          isCollapsed ? "lg:ml-[80px]" : "lg:ml-72"
+        )}
+      >
+          <div className="print-hidden sticky top-0 z-20 bg-background/95 backdrop-blur border-b border-border">
+            <MaintenanceBanner />
+            <DashboardHeader />
+          </div>
+          <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 flex flex-col max-w-7xl mx-auto w-full print:p-0 print:m-0 print:block min-w-0 overflow-x-hidden">
+            {isCheckingAuth ? <AuthLoader /> : (isAuthorized ? children : <AccessDenied />)}
+          </main>
+      </div>
+    </div>
+  );
+}
 
 
 export default function DashboardLayout({
@@ -111,7 +140,7 @@ export default function DashboardLayout({
   return (
     <LicenseProvider status={licenseStatus} message={licenseMessage}>
       <SidebarProvider>
-      <div className="font-body h-screen flex flex-col">
+      <div className="font-body h-screen flex flex-col print:h-auto print:overflow-visible">
         <style jsx global>{`
           @media print {
             body {
@@ -121,40 +150,20 @@ export default function DashboardLayout({
             .print-hidden {
               display: none !important;
             }
-            main {
+            @page {
               margin: 0;
-              padding: 0 !important;
-              min-height: auto;
-              overflow: visible !important;
-            }
-            body > div, 
-            body > div > div, 
-            body > div > div > div {
-              display: block !important;
-              height: auto !important;
-              overflow: visible !important;
             }
           }
         `}</style>
          <DynamicPageTitle />
-         {/* Solid clean background */}
-         <div className="fixed inset-0 bg-slate-50 -z-10" />
          
-         <div className="flex h-full overflow-hidden">
-          <div className="print-hidden">
-            <DashboardSidebar />
-          </div>
-          <div className="flex flex-1 flex-col overflow-y-auto lg:ml-72 relative">
-              <div className="print-hidden sticky top-0 z-20 bg-white border-b border-gray-200">
-                <MaintenanceBanner />
-                <DashboardHeader />
-              </div>
-              <main className="flex-1 p-4 md:p-6 lg:p-8 flex flex-col max-w-7xl mx-auto w-full">
-                {isCheckingAuth ? <AuthLoader /> : (isAuthorized ? children : <AccessDenied />)}
-              </main>
-          </div>
+         <MainLayout isCheckingAuth={isCheckingAuth} isAuthorized={isAuthorized}>
+           {children}
+         </MainLayout>
+        <div className="print-hidden">
+          <SupportBot />
         </div>
-        <SupportBot />
+        <ForcePasswordChangeModal />
       </div>
     </SidebarProvider>
     </LicenseProvider>

@@ -5,7 +5,7 @@ import { ShieldAlert } from 'lucide-react';
 
 export default function UnauthorizedPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6 text-center">
+    <div className="min-h-screen flex items-center justify-center bg-background p-6 text-center">
       <div className="max-w-md space-y-6">
         <div className="flex justify-center">
           <div className="p-4 bg-red-100 rounded-full">
@@ -14,11 +14,11 @@ export default function UnauthorizedPage() {
         </div>
         <div className="space-y-2">
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Access Denied</h1>
-          <p className="text-slate-500 font-medium">
+          <p className="text-muted-foreground font-medium">
             You do not have permission to access this resource. This could be due to a tenant mismatch or insufficient role privileges.
           </p>
         </div>
-        <Button asChild className="w-full h-11 rounded-xl bg-slate-900 font-bold">
+        <Button asChild className="w-full h-11 rounded-xl bg-background font-bold">
           <Link href="/login">Return to Login</Link>
         </Button>
       </div>

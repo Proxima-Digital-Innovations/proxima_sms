@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { STAFF_FILTER } from './staff-repository';
 
 export class HrRepository {
     async getLeaveRequests() {
@@ -72,7 +73,7 @@ export class HrRepository {
 
     async getStaffProfiles() {
         return prisma.user.findMany({
-            where: { role: { in: ['TEACHER', 'HOD', 'SLT', 'ACCOUNTANT', 'EXAM_OFFICER'] } },
+            where: STAFF_FILTER,
             include: {
                 department: true,
                 contracts: true

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { DateRange } from 'react-day-picker';
 import { addDays, format, startOfMonth } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,8 +9,9 @@ import { Button } from '@/components/ui/button';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { useToast } from '@/hooks/use-toast';
 import { getFinancialReportData } from '@/actions/finance-actions';
+import { getSystemSettings } from '@/actions/system-actions';
 import type { Payment, Expense } from '@/lib/schema';
-import { ArrowDown, ArrowUp, BarChart, FileText, Loader2, Minus, Plus, Printer, Sparkles } from 'lucide-react';
+import { ArrowDown, ArrowUp, BarChart, FileText, Loader2, Minus, Plus, Printer, Sparkles, School } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
@@ -37,6 +38,33 @@ export function FinancialReportGenerator() {
     const { toast } = useToast();
     const [isGeneratingAiSummary, startAiTransition] = useTransition();
     const [aiSummary, setAiSummary] = useState<string | null>(null);
+    const [schoolInfo, setSchoolInfo] = useState({
+      name: "Proxima SMS Academy",
+      address: "12 Education Avenue, Knowledge District",
+      phone: "+234 (0) 800 123 4567",
+      email: "finance@proximaschools.edu",
+      logo: null as string | null,
+    });
+
+    useEffect(() => {
+      async function loadSettings() {
+        try {
+          const res = await getSystemSettings();
+          if (res.success && res.data) {
+            setSchoolInfo({
+              name: res.data.schoolName || "Proxima SMS Academy",
+              address: res.data.schoolAddress || "12 Education Avenue, Knowledge District",
+              phone: res.data.schoolPhone || "+234 (0) 800 123 4567",
+              email: res.data.schoolEmail || "finance@proximaschools.edu",
+              logo: res.data.schoolLogo || null,
+            });
+          }
+        } catch {
+          // fallback
+        }
+      }
+      loadSettings();
+    }, []);
     
     const chartConfig = {
       total: { label: 'Expenses', color: 'hsl(var(--chart-1))' },
@@ -149,9 +177,25 @@ export function FinancialReportGenerator() {
             {reportData && (
                 <div id="print-area" className="space-y-6">
                     <div className="max-w-4xl mx-auto">
-                         <div className="hidden print:block text-center mb-8">
-                            <h1 className="text-2xl font-bold">Proxima Hub</h1>
-                            <h2 className="text-xl font-semibold">{reportTitle}</h2>
+                         <div className="hidden print:flex items-center justify-between border-b-2 border-slate-900 pb-4 mb-6">
+                            <div className="flex items-center gap-3">
+                              {schoolInfo.logo ? (
+                                <img src={schoolInfo.logo} alt="Logo" className="w-14 h-14 object-contain" />
+                              ) : (
+                                <div className="w-14 h-14 rounded-lg bg-slate-100 border border-slate-300 flex items-center justify-center">
+                                  <School className="w-8 h-8 text-slate-700" />
+                                </div>
+                              )}
+                              <div className="text-left">
+                                <h1 className="text-xl font-black uppercase tracking-wider text-slate-900">{schoolInfo.name}</h1>
+                                <p className="text-xs text-slate-600 uppercase">{schoolInfo.address}</p>
+                                <p className="text-[11px] text-slate-500 font-mono">Tel: {schoolInfo.phone} • Email: {schoolInfo.email}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block">Financial Audit Statement</span>
+                              <span className="text-sm font-black text-slate-900">{reportTitle}</span>
+                            </div>
                         </div>
                          <Card>
                             <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
@@ -183,7 +227,7 @@ export function FinancialReportGenerator() {
                                         </div>
                                         <div>
                                             <p className="text-sm text-muted-foreground">Total Revenue</p>
-                                            <p className="text-2xl font-bold">NGN {reportData.totalRevenue.toLocaleString()}</p>
+                                            <p className="text-2xl font-bold">₦{reportData.totalRevenue.toLocaleString()}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-4 rounded-lg border p-4 bg-red-50 dark:bg-red-900/30">
@@ -192,7 +236,7 @@ export function FinancialReportGenerator() {
                                         </div>
                                         <div>
                                             <p className="text-sm text-muted-foreground">Total Expenses</p>
-                                            <p className="text-2xl font-bold">NGN {reportData.totalExpenses.toLocaleString()}</p>
+                                            <p className="text-2xl font-bold">₦{reportData.totalExpenses.toLocaleString()}</p>
                                         </div>
                                     </div>
                                     <div className={`flex items-center gap-4 rounded-lg border p-4 ${reportData.netIncome >= 0 ? 'bg-blue-50 dark:bg-blue-900/30' : 'bg-orange-50 dark:bg-orange-900/30'}`}>
@@ -201,7 +245,7 @@ export function FinancialReportGenerator() {
                                         </div>
                                         <div>
                                             <p className="text-sm text-muted-foreground">Net Income</p>
-                                            <p className={`text-2xl font-bold ${netIncomeColor}`}>NGN {reportData.netIncome.toLocaleString()}</p>
+                                            <p className={`text-2xl font-bold ${netIncomeColor}`}>₦{reportData.netIncome.toLocaleString()}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -236,8 +280,10 @@ export function FinancialReportGenerator() {
                                             {reportData.payments.map(p => (
                                                 <TableRow key={p.id}>
                                                     <TableCell>{p.studentName}</TableCell>
-                                                    <TableCell>NGN {p.amountPaid.toLocaleString()}</TableCell>
-                                                    <TableCell className="hidden sm:table-cell">{format(new Date(p.paymentDate.seconds*1000), 'PPP')}</TableCell>
+                                                    <TableCell className="font-mono font-medium">₦{p.amountPaid.toLocaleString()}</TableCell>
+                                                    <TableCell className="hidden sm:table-cell font-mono text-xs">
+                                                        {p.paymentDate?.seconds ? format(new Date(p.paymentDate.seconds * 1000), 'PPP') : (p.paymentDate ? format(new Date(p.paymentDate), 'PPP') : '-')}
+                                                    </TableCell>
                                                 </TableRow>
                                             ))}
                                             {reportData.payments.length === 0 && <TableRow><TableCell colSpan={3} className="text-center h-24">No income recorded in this period.</TableCell></TableRow>}
@@ -254,8 +300,10 @@ export function FinancialReportGenerator() {
                                             {reportData.expenses.map(e => (
                                                 <TableRow key={e.id}>
                                                     <TableCell>{e.description}</TableCell>
-                                                    <TableCell>NGN {e.amount.toLocaleString()}</TableCell>
-                                                    <TableCell className="hidden sm:table-cell">{format(new Date(e.date.seconds*1000), 'PPP')}</TableCell>
+                                                    <TableCell className="font-mono font-medium">₦{e.amount.toLocaleString()}</TableCell>
+                                                    <TableCell className="hidden sm:table-cell font-mono text-xs">
+                                                        {e.date?.seconds ? format(new Date(e.date.seconds * 1000), 'PPP') : (e.date ? format(new Date(e.date), 'PPP') : '-')}
+                                                    </TableCell>
                                                 </TableRow>
                                             ))}
                                              {reportData.expenses.length === 0 && <TableRow><TableCell colSpan={3} className="text-center h-24">No expenses recorded in this period.</TableCell></TableRow>}
@@ -269,30 +317,28 @@ export function FinancialReportGenerator() {
             )}
             <style jsx global>{`
                 @media print {
-                  body {
-                    -webkit-print-color-adjust: exact;
-                    print-color-adjust: exact;
+                  body * {
+                    visibility: hidden;
+                  }
+                  #print-area, #print-area * {
+                    visibility: visible;
                   }
                   #print-area {
-                    color: black;
-                    background-color: white;
+                    position: fixed !important;
+                    top: 0 !important;
+                    left: 0 !important;
+                    width: 100vw !important;
+                    margin: 0 !important;
+                    padding: 24px !important;
+                    background: white !important;
+                    color: black !important;
+                    z-index: 999999 !important;
+                    display: block !important;
                   }
-                  #print-area * {
-                     color: black !important;
-                     background-color: white !important;
+                  @page {
+                    size: A4 portrait;
+                    margin: 10mm;
                   }
-                  .print\\:hidden {
-                      display: none;
-                  }
-                   .print\\:block {
-                      display: block;
-                  }
-                  .print\\:grid-cols-2 {
-                      grid-template-columns: repeat(2, minmax(0, 1fr));
-                  }
-                   .print\\:space-y-0 {
-                        row-gap: 0;
-                   }
                 }
             `}</style>
         </div>

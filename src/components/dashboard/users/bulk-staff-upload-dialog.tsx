@@ -38,13 +38,15 @@ export function BulkStaffUploadDialog({ onUploadComplete }: { onUploadComplete: 
   const { toast } = useToast();
   
   const handleDownloadTemplate = () => {
-    // Simplified to only the required fields for account creation
     const headers = [
-      "firstName", "lastName", "email", "phone", "role", "stateOfOrigin"
+      "firstName", "lastName", "email", "phone", "role", "stateOfOrigin", "baseSalary", "staffId", "kioskPin"
+    ];
+    const sampleRow = [
+      "Fatima", "Aliyu", "fatima.aliyu@school.edu", "08031234567", "TEACHER", "Kano", 150000, "PROX-24TEA0001", "1234"
     ];
     
     const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.aoa_to_sheet([headers]);
+    const worksheet = XLSX.utils.aoa_to_sheet([headers, sampleRow]);
     XLSX.utils.book_append_sheet(workbook, worksheet, "Staff");
     XLSX.writeFile(workbook, "staff-upload-template.xlsx");
   };
@@ -172,7 +174,7 @@ export function BulkStaffUploadDialog({ onUploadComplete }: { onUploadComplete: 
   }
 
   return (
-    <DialogContent className="max-w-3xl">
+    <DialogContent className="max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
       <DialogHeader>
         <DialogTitle>Bulk Staff Upload</DialogTitle>
         <DialogDescription>

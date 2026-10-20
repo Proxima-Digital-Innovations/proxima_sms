@@ -26,14 +26,14 @@ export default async function SchoolsPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-slate-900">Schools & Tenants</h1>
-                    <p className="text-slate-500 mt-2">
+                    <p className="text-muted-foreground mt-2">
                         Manage all deployed school instances on the Proxima platform.
                     </p>
                 </div>
                 <CreateSchoolDialog />
             </div>
 
-            <Card className="border-slate-200 shadow-sm">
+            <Card className="border-border shadow-sm">
                 <CardHeader>
                     <CardTitle>Active Deployments</CardTitle>
                     <CardDescription>A complete list of all tenants registered in the global database.</CardDescription>
@@ -55,7 +55,7 @@ export default async function SchoolsPage() {
                             {schools.map((school) => (
                                 <TableRow key={school.id}>
                                     <TableCell className="font-medium text-slate-900">{school.name}</TableCell>
-                                    <TableCell className="font-mono text-sm text-slate-500">{school.name}</TableCell>
+                                    <TableCell className="font-mono text-sm text-muted-foreground">{school.name}</TableCell>
                                     <TableCell>
                                         <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
                                             Active
@@ -63,7 +63,7 @@ export default async function SchoolsPage() {
                                     </TableCell>
                                     <TableCell className="text-right">{0}</TableCell>
                                     <TableCell className="text-right">{(school as any)._count?.users || 0}</TableCell>
-                                    <TableCell className="text-slate-500 text-sm">
+                                    <TableCell className="text-muted-foreground text-sm">
                                         {format(new Date(school.createdAt), 'MMM d, yyyy')}
                                     </TableCell>
                                     <TableCell className="text-right">
@@ -84,7 +84,7 @@ export default async function SchoolsPage() {
                             ))}
                             {schools.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="h-24 text-center text-slate-500">
+                                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                                         No schools have been deployed yet.
                                     </TableCell>
                                 </TableRow>

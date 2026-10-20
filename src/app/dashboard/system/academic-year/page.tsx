@@ -112,7 +112,7 @@ export default function AcademicCalendarPage() {
     const formatDate = (dateValue: any) => {
         if (!dateValue) return '-';
         const date = new Date(dateValue);
-        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        return date.toLocaleDateString('en-NG', { year: 'numeric', month: 'long', day: 'numeric' });
     };
 
     const getEventColor = (type: string) => {

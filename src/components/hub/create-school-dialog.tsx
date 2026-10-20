@@ -93,7 +93,7 @@ export function CreateSchoolDialog() {
                             value={formData.slug}
                             onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
                         />
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-muted-foreground">
                             Users will log in at: {typeof window !== 'undefined' ? window.location.origin : 'https://proxima.com'}/{formData.slug || 'slug'}/login
                         </p>
                     </div>

@@ -49,7 +49,7 @@ export default function PrintExamResultsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-900">
+      <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
       </div>
     );
@@ -57,23 +57,23 @@ export default function PrintExamResultsPage() {
 
   if (data.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900">
-        <p className="text-lg text-slate-400">No results found.</p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+        <p className="text-lg text-muted-foreground">No results found.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 p-8 print:p-0 print:bg-white">
+    <div className="min-h-screen bg-background p-8 print:p-0 print:bg-white">
       <div className="mb-8 flex justify-between items-center print:hidden max-w-5xl mx-auto">
-        <h1 className="text-2xl font-bold text-white">Print Exam Results</h1>
+        <h1 className="text-2xl font-bold text-foreground">Print Exam Results</h1>
         <Button onClick={() => handlePrint()} className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white">
           <Printer className="w-4 h-4" />
           Print / Save as PDF
         </Button>
       </div>
 
-      <div ref={componentRef} className="bg-slate-900 print:bg-white max-w-5xl mx-auto">
+      <div ref={componentRef} className="bg-background print:bg-white max-w-5xl mx-auto">
         {data.map((item, index) => (
           <div key={item.student.id} className="print:break-after-page mb-8 print:mb-0 last:mb-0 shadow-2xl print:shadow-none">
             <PrintableExamResultCard
@@ -86,7 +86,7 @@ export default function PrintExamResultsPage() {
             />
             {/* Add a page break visual in non-print mode if multiple students */}
             {index < data.length - 1 && (
-              <div className="h-8 bg-slate-900 print:hidden" />
+              <div className="h-8 bg-background print:hidden" />
             )}
           </div>
         ))}

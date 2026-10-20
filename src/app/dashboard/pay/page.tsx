@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { DollarSign } from "lucide-react";
+import { Wallet } from "lucide-react";
 
 export default function ParentPaymentsPage() {
     return (
@@ -25,7 +25,7 @@ export default function ParentPaymentsPage() {
                 <CardContent>
                     <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center">
                          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                             <DollarSign className="h-8 w-8 text-primary" />
+                             <Wallet className="h-8 w-8 text-primary" />
                          </div>
                         <h3 className="text-lg font-semibold">Online Payments Are Coming Soon</h3>
                         <p className="text-sm text-muted-foreground mt-2">

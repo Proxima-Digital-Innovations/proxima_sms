@@ -71,7 +71,7 @@ export async function updateKioskName(id: string, name: string) {
 export async function updateKioskMode(id: string, mode: string) {
     try {
         const isMaintenance = mode === 'maintenance';
-        const operatingMode = mode === 'maintenance' ? 'auto' : mode;
+        const operatingMode = mode === 'maintenance' ? 'AUTO' : mode.toUpperCase();
 
         const updated = await prisma.kiosk.update({
             where: { id },

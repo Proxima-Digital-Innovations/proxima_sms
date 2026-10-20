@@ -23,6 +23,9 @@ model SystemProfile {
   expiresAt       DateTime?
   gradingScale    String?
   aiConfig        String?
+  commConfig      String? // JSON configuration for SMTP and WhatsApp gateways
+  currency        String?   @default("NGN")
+  currencySymbol  String?   @default("₦")
   maintenanceMode Boolean   @default(false)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -49,10 +52,18 @@ model User {
   lockoutUntil        DateTime?
   lastLoginAt         DateTime?
   lastLoginIp         String?
+  requiresPasswordChange Boolean @default(true)
   departmentId        String?
   department          Department? @relation(fields: [departmentId], references: [id])
   status              String      @default("active")
   avatarUrl           String?
+
+  // Demographic & Employment Details
+  gender              String?
+  dateOfBirth         DateTime?
+  stateOfOrigin       String?
+  address             String?
+  dateOfEmployment    DateTime?
 
   // Platform Integration Fields
   biometricId       String? @unique
@@ -79,6 +90,11 @@ model User {
   sentMemos    StaffMemo[]        @relation("MemoSender")
   handledMemos StaffMemo[]        @relation("MemoHandler")
   memoActions  StaffMemoHistory[] @relation("MemoActor")
+
+  // Bank & Payroll Details
+  bankName      String?
+  accountNumber String?
+  accountName   String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -119,6 +135,7 @@ model User {
   allowances       PayrollAllowance[] @relation("StaffAllowances")
   journalEntries   JournalEntry[]     @relation("JournalEntriesRecorded")
   assetAssignments AssetAssignment[]  @relation("AssetsAssigned")
+  scoreAuditsModified ScoreAuditLog[] @relation("ScoreAuditsModified")
 }
 
 model Department {
@@ -506,9 +523,20 @@ model Payroll {
   deductions          Float     @default(0)
   bonuses             Float     @default(0)
   netAmount           Float     @default(0)
+  tax                 Float     @default(0)
+  pension             Float     @default(0)
+  attendancePenalty   Float     @default(0)
+  loanDeduction       Float     @default(0)
+  allowances          Float     @default(0)
+  holdReason          String?
+  heldAt              DateTime?
+  heldById            String?
+  disbursedById       String?
+  approvedById        String?
+  payslipSentAt       DateTime?
   basReport           String?
   subscriptionsReport String?
-  status              String    @default("pending")
+  status              String    @default("pending") // pending, paid, held
   paidAt              DateTime?
 }
 
@@ -550,6 +578,11 @@ model PaymentReceipt {
   method    String   @default("CASH")
   reference String?
   date      DateTime @default(now())
+  status    String   @default("VERIFIED") // VERIFIED, PENDING, REVERSED
+  payerName String?
+  reversalReason String?
+  reversedAt     DateTime?
+  reversedById   String?
 
   loggedById String
   loggedBy   User   @relation(fields: [loggedById], references: [id])
@@ -693,11 +726,45 @@ model TermGrade {
   teacherRemark   String?
   principalRemark String?
   isPublished     Boolean @default(false)
+  status          String  @default("Draft")
+
+  // Governance & Moderation Fields
+  moderatorNote   String?   // Strictly internal review notes (never printed on parent report cards)
+  submittedAt     DateTime?
+  submittedById   String?
+  reviewedAt      DateTime?
+  reviewedById    String?
+  isLocked        Boolean   @default(false)
+
+  // Audit of original teacher marks
+  originalCa1     Float?
+  originalCa2     Float?
+  originalExam    Float?
+  scoreAuditLogs  ScoreAuditLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([studentId, subjectId, termId])
+}
+
+model ScoreAuditLog {
+  id          String    @id @default(cuid())
+  termGradeId String
+  termGrade   TermGrade @relation(fields: [termGradeId], references: [id], onDelete: Cascade)
+  studentId   String
+  subjectId   String
+  termId      String
+  modifierId  String
+  modifier    User      @relation("ScoreAuditsModified", fields: [modifierId], references: [id])
+  field       String    // "ca1" | "ca2" | "exam"
+  oldValue    Float?
+  newValue    Float?
+  reason      String?
+  createdAt   DateTime  @default(now())
+
+  @@index([termGradeId])
+  @@index([termId, subjectId])
 }
 
 // --- HR & SUBSTITUTE MANAGEMENT ---
@@ -870,15 +937,19 @@ model QuizAttempt {
 // --- MISSING ERP MODELS ---
 
 model Expense {
-  id          String   @id @default(cuid())
-  category    String
-  description String
-  amount      Float
-  date        DateTime @default(now())
-  department  String?
-  recordedBy  String
-  recordedByU User     @relation("RecordedExpenses", fields: [recordedBy], references: [id])
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  category      String
+  description   String
+  amount        Float
+  date          DateTime @default(now())
+  department    String?
+  paymentMethod String?  @default("CASH")
+  vendor        String?
+  receiptUrl    String?
+  notes         String?
+  recordedBy    String
+  recordedByU   User     @relation("RecordedExpenses", fields: [recordedBy], references: [id])
+  createdAt     DateTime @default(now())
 
   memoId String?
   memo   StaffMemo? @relation("ExpenseMemo", fields: [memoId], references: [id])
@@ -886,12 +957,17 @@ model Expense {
 
 model FeeStructure {
   id          String    @id @default(cuid())
+  name        String?
   className   String
+  category    String?   @default("TUITION")
+  scope       String?   @default("CLASS")
   session     String
   term        String
   totalAmount Float     @default(0)
+  status      String    @default("ACTIVE") // ACTIVE, DRAFT, ARCHIVED
   items       FeeItem[]
   createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
 }
 
 model FeeItem {
@@ -911,14 +987,15 @@ model BehaviouralAssessment {
   termId        String
   term          Term     @relation(fields: [termId], references: [id])
   session       String
-  conduct       Int
-  punctuality   Int
-  dedication    Int
-  participation Int
-  hospitality   Int
-  neatness      Int
-  creativity    Int
-  physical      Int
+  conduct       Int      @default(3)
+  punctuality   Int      @default(3)
+  dedication    Int      @default(3)
+  participation Int      @default(3)
+  hospitality   Int      @default(3)
+  neatness      Int      @default(3)
+  creativity    Int      @default(3)
+  physical      Int      @default(3)
+  comment       String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -1488,14 +1565,20 @@ model AssetAssignment {
 
 
 model SystemLicense {
-  id              String   @id @default(cuid())
-  licenseKey      String   // The base64 payload + signature
-  schoolName      String
-  tier            String   @default("BASIC") // BASIC, PREMIUM, ENTERPRISE
-  expiresAt       DateTime
-  maxStudents     Int      @default(500)
-  status          String   @default("ACTIVE") // ACTIVE, EXPIRED, SUSPENDED
-  lastValidatedAt DateTime @default(now())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                   String    @id @default(cuid())
+  licenseKey           String    // The base64 payload + signature
+  schoolName           String
+  tier                 String    @default("BASIC") // BASIC, PREMIUM, ENTERPRISE
+  billingFrequency     String    @default("PER_TERM") // PER_TERM, PER_SESSION
+  discountPercent      Float     @default(0.0)        // e.g. 5.0 to 8.0 for annual
+  currentTermId        String?
+  sessionId            String?
+  nextRenewalDate      DateTime?
+  startingStudentCount Int?      // Snapshot at term start
+  expiresAt            DateTime
+  maxStudents          Int       @default(500)
+  status               String    @default("ACTIVE") // ACTIVE, EXPIRED, SUSPENDED
+  lastValidatedAt      DateTime  @default(now())
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 }

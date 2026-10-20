@@ -10,7 +10,7 @@ import {
 import {
   Users,
   Clock,
-  DollarSign,
+  Wallet,
   GraduationCap,
   TrendingUp,
   Briefcase,
@@ -91,7 +91,7 @@ export default function SltPage() {
     {
         title: 'Term Revenue',
         value: renderStat(stats?.totalRevenue, true),
-        icon: DollarSign,
+        icon: Wallet,
         gradient: 'from-emerald-500/20 to-emerald-600/5',
         iconColor: 'text-emerald-600'
     }
@@ -124,7 +124,7 @@ export default function SltPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.1 }}
                     >
-                        <Card className="relative overflow-hidden group hover:shadow-xl transition-all duration-300 border-slate-200/60 bg-white">
+                        <Card className="relative overflow-hidden group hover:shadow-xl transition-all duration-300 border-border bg-white">
                             <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-50 group-hover:opacity-100 transition-opacity duration-500 z-0`}></div>
                             <CardHeader className="flex flex-row items-center justify-between pb-2 relative z-10">
                                 <CardTitle className="text-sm font-bold text-slate-700">{card.title}</CardTitle>

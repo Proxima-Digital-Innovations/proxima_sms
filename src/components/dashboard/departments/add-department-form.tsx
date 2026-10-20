@@ -41,8 +41,10 @@ export function AddDepartmentForm({ onDepartmentAdded }: { onDepartmentAdded: ()
     const fetchTeachers = async () => {
       const result = await getStaffUsers();
       if (result.success && result.data) {
-        // filter for teachers/hods
-        const eligible = result.data.filter((u: any) => u.role === 'Teacher' || u.role === 'HeadOfDepartment');
+        // filter for teachers/hods/slt
+        const eligible = result.data.filter((u: any) => 
+          ['TEACHER', 'HOD', 'SLT', 'ADMIN', 'HEADOFDEPARTMENT'].includes(u.role?.toUpperCase())
+        );
         setTeachers(eligible as any);
       }
     };
@@ -116,9 +118,9 @@ export function AddDepartmentForm({ onDepartmentAdded }: { onDepartmentAdded: ()
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {teachers.map((teacher) => (
+                  {teachers.map((teacher: any) => (
                     <SelectItem key={teacher.id} value={teacher.id}>
-                      {teacher.name}
+                      {teacher.name || `${teacher.firstName || ''} ${teacher.lastName || ''}`.trim() || teacher.email} ({teacher.role})
                     </SelectItem>
                   ))}
                 </SelectContent>

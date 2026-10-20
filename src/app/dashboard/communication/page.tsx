@@ -104,7 +104,7 @@ export default function CommunicationHubPage() {
         </div>
 
         <Card className="md:col-span-3 border-none shadow-xl bg-white/50 backdrop-blur-sm">
-          <CardHeader className="border-b bg-slate-50/50 pb-4">
+          <CardHeader className="border-b bg-background pb-4">
             <CardTitle className="text-xl">
               {activeTab === 'INBOX' && 'My Inbox'}
               {activeTab === 'SENT' && 'Sent Memos'}
@@ -113,7 +113,7 @@ export default function CommunicationHubPage() {
           </CardHeader>
           <CardContent className="p-0">
             <Table>
-              <TableHeader className="bg-slate-50/80">
+              <TableHeader className="bg-background">
                 <TableRow>
                   <TableHead className="pl-6 w-[50px]"></TableHead>
                   <TableHead>Reference</TableHead>
@@ -141,11 +141,11 @@ export default function CommunicationHubPage() {
                   </TableRow>
                 ) : (
                   filteredMemos.map((m) => (
-                    <TableRow key={m.id} className="hover:bg-slate-50/50 transition-colors cursor-pointer" onClick={() => window.location.href = `/dashboard/communication/${m.id}`}>
+                    <TableRow key={m.id} className="hover:bg-background transition-colors cursor-pointer" onClick={() => window.location.href = `/dashboard/communication/${m.id}`}>
                       <TableCell className="pl-6">
                         {getIconForType(m.type)}
                       </TableCell>
-                      <TableCell className="font-mono text-xs text-slate-500">{m.reference}</TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">{m.reference}</TableCell>
                       <TableCell className="font-medium">{m.title}</TableCell>
                       <TableCell className="text-sm">
                         {activeTab === 'SENT' 
@@ -162,7 +162,7 @@ export default function CommunicationHubPage() {
                           {m.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-sm text-slate-500">
+                      <TableCell className="text-sm text-muted-foreground">
                         {format(new Date(m.createdAt), 'MMM d, yyyy')}
                       </TableCell>
                     </TableRow>

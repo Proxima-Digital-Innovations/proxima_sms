@@ -3,11 +3,14 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, GraduationCap, DollarSign, BookOpen, TrendingUp, TrendingDown, Activity, ArrowUpRight, BarChart3, Clock, PlusCircle, Settings, FileText } from 'lucide-react';
+import { Users, GraduationCap, Wallet, BookOpen, TrendingUp, TrendingDown, Activity, ArrowUpRight, BarChart3, Clock, PlusCircle, Settings, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { getAdminDashboardStats } from '@/actions/academic-actions';
 import { motion } from 'framer-motion';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { useSession } from 'next-auth/react';
+import { useRole } from '@/context/role-context';
+import { Badge } from '@/components/ui/badge';
 
 type DashboardStats = {
     totalStudents: number;
@@ -21,6 +24,40 @@ type DashboardStats = {
 };
 
 export function NewAdminDashboard() {
+    const { data: session } = useSession();
+    const { role: contextRole } = useRole();
+
+    const role = String((session?.user as any)?.role || contextRole || 'ADMIN').toUpperCase();
+
+    const roleLabels: Record<string, string> = {
+        SUPER_ADMIN: 'Super Administrator',
+        ADMIN: 'Administrator',
+        SLT: 'Senior Leadership Team',
+        ACCOUNTANT: 'Finance Officer',
+        HOD: 'Head of Department',
+        EXAM_OFFICER: 'Examination Officer',
+        TEACHER: 'Educator',
+        PARENT: 'Parent',
+        STUDENT: 'Student',
+    };
+
+    const roleSubtitles: Record<string, string> = {
+        SUPER_ADMIN: 'Comprehensive platform overview, institutional metrics, and global oversight.',
+        ADMIN: "Here is the latest snapshot of your institution's performance.",
+        SLT: 'Strategic institutional indicators, academic milestones, and operational health.',
+        ACCOUNTANT: 'Current revenue tracking, tuition collection, and general ledger accounts.',
+        HOD: 'Departmental curriculum progress, teacher lesson submissions, and subject analytics.',
+        EXAM_OFFICER: 'Assessment moderation pipeline, question paper approvals, and gradebook status.',
+        TEACHER: 'Class schedules, active student rosters, lesson plans, and score submissions.',
+        PARENT: 'Academic reports, attendance records, and outstanding fee invoices.',
+        STUDENT: 'Enrolled courses, upcoming assessments, timetable, and study materials.',
+    };
+
+    const userName = session?.user?.name?.trim();
+    const greetingTarget = userName || roleLabels[role] || 'Administrator';
+    const greeting = `Welcome back, ${greetingTarget}`;
+    const subtitle = roleSubtitles[role] || "Here is the latest snapshot of your institution's performance.";
+
     const [stats, setStats] = useState<DashboardStats>({
         totalStudents: 0,
         totalStaff: 0,
@@ -81,9 +118,9 @@ export function NewAdminDashboard() {
             iconColor: 'text-indigo-600'
         },
         {
-            title: 'Term Revenue',
+            title: 'YTD Revenue',
             value: `₦${stats.totalRevenue.toLocaleString()}`,
-            icon: DollarSign,
+            icon: Wallet,
             trend: '+8%',
             trendUp: true,
             gradient: 'from-emerald-500/20 to-emerald-600/5',
@@ -118,24 +155,29 @@ export function NewAdminDashboard() {
     }
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Header Area */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-foreground">Welcome back, Admin 👋</h1>
-                    <p className="text-muted-foreground mt-1">Here is the latest snapshot of your institution's performance.</p>
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-foreground">{greeting}</h1>
+                        <Badge variant="outline" className="text-xs font-semibold px-2.5 py-0.5 border-primary/20 text-primary bg-primary/5">
+                            {roleLabels[role] || role}
+                        </Badge>
+                    </div>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">{subtitle}</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <span className="flex h-3 w-3 relative">
+                <div className="flex items-center gap-2 text-xs sm:text-sm font-medium text-muted-foreground self-end sm:self-auto">
+                    <span className="flex h-2.5 w-2.5 relative">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                     </span>
-                    <span className="text-sm font-medium text-muted-foreground">System Live</span>
+                    <span>System Live</span>
                 </div>
             </div>
 
-            {/* Premium Stat Cards */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {/* Premium Stat Cards - 2 cols on mobile, 4 on desktop */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
                 {statCards.map((card, index) => (
                     <motion.div 
                         key={index}
@@ -143,28 +185,28 @@ export function NewAdminDashboard() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.1 }}
                     >
-                        <Card className={`relative overflow-hidden group hover:shadow-lg transition-all duration-300 border-border/50 bg-card/80 backdrop-blur-sm`}>
+                        <Card className={`relative overflow-hidden group hover:shadow-lg transition-all duration-300 border-border/50 bg-card/80 backdrop-blur-sm rounded-2xl`}>
                             <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-50 group-hover:opacity-100 transition-opacity duration-500`}></div>
-                            <CardHeader className="flex flex-row items-center justify-between pb-2 relative z-10">
-                                <CardTitle className="text-sm font-medium text-muted-foreground">
+                            <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 p-3 sm:p-5 relative z-10">
+                                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground line-clamp-1">
                                     {card.title}
                                 </CardTitle>
-                                <div className={`p-2 rounded-xl bg-background shadow-sm border border-border/50`}>
-                                    <card.icon className={`h-4 w-4 ${card.iconColor}`} />
+                                <div className={`p-1.5 sm:p-2 rounded-xl bg-background shadow-sm border border-border/50 shrink-0`}>
+                                    <card.icon className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${card.iconColor}`} />
                                 </div>
                             </CardHeader>
-                            <CardContent className="relative z-10">
-                                <div className="text-3xl font-bold tracking-tight mb-2">{card.value}</div>
-                                <div className="flex items-center text-xs font-medium">
-                                    <span className={`flex items-center px-1.5 py-0.5 rounded-md ${card.trendUp ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400'}`}>
+                            <CardContent className="p-3 sm:p-5 pt-0 relative z-10">
+                                <div className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight mb-1 sm:mb-2 truncate">{card.value}</div>
+                                <div className="flex items-center text-[10px] sm:text-xs font-medium flex-wrap gap-1">
+                                    <span className={`flex items-center px-1.5 py-0.5 rounded-md shrink-0 ${card.trendUp ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400'}`}>
                                         {card.trendUp ? (
-                                            <TrendingUp className="h-3 w-3 mr-1" />
+                                            <TrendingUp className="h-3 w-3 mr-0.5 sm:mr-1" />
                                         ) : (
-                                            <TrendingDown className="h-3 w-3 mr-1" />
+                                            <TrendingDown className="h-3 w-3 mr-0.5 sm:mr-1" />
                                         )}
                                         {card.trend}
                                     </span>
-                                    <span className="text-muted-foreground ml-2">vs last month</span>
+                                    <span className="hidden sm:inline text-muted-foreground ml-1">vs last mo</span>
                                 </div>
                             </CardContent>
                         </Card>
@@ -172,30 +214,30 @@ export function NewAdminDashboard() {
                 ))}
             </div>
 
-            {/* Quick Actions */}
-            <div className="grid gap-4 md:grid-cols-4">
+            {/* Quick Actions - 2x2 grid on mobile */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
                 <Link href="/dashboard/students/admissions">
-                    <Button variant="outline" className="w-full h-16 flex flex-col items-center justify-center gap-1 border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors">
-                        <PlusCircle className="h-5 w-5" />
-                        <span className="font-semibold text-xs">Admit Student</span>
+                    <Button variant="outline" className="w-full h-14 sm:h-16 flex flex-col items-center justify-center gap-1 border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors rounded-xl">
+                        <PlusCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+                        <span className="font-semibold text-[11px] sm:text-xs">Admit Student</span>
                     </Button>
                 </Link>
                 <Link href="/dashboard/users">
-                    <Button variant="outline" className="w-full h-16 flex flex-col items-center justify-center gap-1 border-indigo-500/20 hover:bg-indigo-500/5 hover:text-indigo-600 transition-colors">
-                        <Users className="h-5 w-5" />
-                        <span className="font-semibold text-xs">Manage Staff</span>
+                    <Button variant="outline" className="w-full h-14 sm:h-16 flex flex-col items-center justify-center gap-1 border-indigo-500/20 hover:bg-indigo-500/5 hover:text-indigo-600 transition-colors rounded-xl">
+                        <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+                        <span className="font-semibold text-[11px] sm:text-xs">Manage Staff</span>
                     </Button>
                 </Link>
-                <Link href="/dashboard/invoices">
-                    <Button variant="outline" className="w-full h-16 flex flex-col items-center justify-center gap-1 border-emerald-500/20 hover:bg-emerald-500/5 hover:text-emerald-600 transition-colors">
-                        <DollarSign className="h-5 w-5" />
-                        <span className="font-semibold text-xs">Collect Fees</span>
+                <Link href="/dashboard/finance/invoices">
+                    <Button variant="outline" className="w-full h-14 sm:h-16 flex flex-col items-center justify-center gap-1 border-emerald-500/20 hover:bg-emerald-500/5 hover:text-emerald-600 transition-colors rounded-xl">
+                        <Wallet className="h-4 w-4 sm:h-5 sm:w-5" />
+                        <span className="font-semibold text-[11px] sm:text-xs">Collect Fees</span>
                     </Button>
                 </Link>
                 <Link href="/dashboard/system">
-                    <Button variant="outline" className="w-full h-16 flex flex-col items-center justify-center gap-1 border-slate-500/20 hover:bg-slate-500/5 hover:text-slate-600 transition-colors">
-                        <Settings className="h-5 w-5" />
-                        <span className="font-semibold text-xs">System Settings</span>
+                    <Button variant="outline" className="w-full h-14 sm:h-16 flex flex-col items-center justify-center gap-1 border-slate-500/20 hover:bg-muted/50 hover:text-slate-600 transition-colors rounded-xl">
+                        <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
+                        <span className="font-semibold text-[11px] sm:text-xs">Settings</span>
                     </Button>
                 </Link>
             </div>
@@ -243,7 +285,7 @@ export function NewAdminDashboard() {
 
             {/* Attendance Chart & Activity */}
             <div className="col-span-7 md:col-span-3 space-y-6">
-                <Card className="shadow-sm border-slate-200/60 lg:col-span-3">
+                <Card className="shadow-sm border-border lg:col-span-3">
                     <CardHeader>
                         <CardTitle>Attendance Trends</CardTitle>
                         <CardDescription>Daily staff and student attendance</CardDescription>

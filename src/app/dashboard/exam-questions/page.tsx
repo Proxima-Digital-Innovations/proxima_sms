@@ -106,7 +106,7 @@ export default function QuestionPapersPage() {
     }
   };
 
-  const containerVariants = {
+  const containerVariants: any = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -114,7 +114,7 @@ export default function QuestionPapersPage() {
     }
   };
 
-  const itemVariants = {
+  const itemVariants: any = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
   };
@@ -122,10 +122,10 @@ export default function QuestionPapersPage() {
   const DocumentCard = ({ paper }: { paper: any }) => (
     <motion.div variants={itemVariants}>
       <Card 
-        className="group cursor-pointer border-slate-800 bg-slate-900/50 hover:bg-slate-800/80 hover:border-violet-500/50 hover:shadow-[0_0_20px_rgba(139,92,246,0.15)] transition-all duration-300 flex flex-col overflow-hidden h-[240px]" 
+        className="group cursor-pointer border-border bg-background hover:bg-muted hover:border-violet-500/50 hover:shadow-[0_0_20px_rgba(139,92,246,0.15)] transition-all duration-300 flex flex-col overflow-hidden h-[240px]" 
         onClick={() => router.push(`/dashboard/exam-questions/${paper.id}`)}
       >
-        <div className="h-36 bg-gradient-to-br from-slate-800 to-slate-900 border-b border-slate-800 flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="h-36 bg-gradient-to-br from-slate-800 to-slate-900 border-b border-border flex items-center justify-center p-4 relative overflow-hidden">
           {/* Subtle background pattern */}
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '16px 16px' }}></div>
           
@@ -139,15 +139,15 @@ export default function QuestionPapersPage() {
         </div>
         <CardContent className="p-4 flex-1 flex flex-col justify-between">
           <div className="flex justify-between items-start gap-2">
-            <h3 className="font-semibold text-sm text-slate-200 line-clamp-2 leading-tight group-hover:text-violet-300 transition-colors">{paper.title || 'Untitled Document'}</h3>
+            <h3 className="font-semibold text-sm text-foreground line-clamp-2 leading-tight group-hover:text-violet-300 transition-colors">{paper.title || 'Untitled Document'}</h3>
             {paper.status === 'DRAFT' && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>
-                  <Button variant="ghost" className="h-6 w-6 p-0 text-slate-400 hover:text-white hover:bg-slate-700/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-white hover:bg-slate-700/50 opacity-0 group-hover:opacity-100 transition-opacity">
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-slate-900 border-slate-800">
+                <DropdownMenuContent align="end" className="bg-background border-border">
                   <DropdownMenuItem className="text-red-400 focus:text-red-300 focus:bg-red-950/50 cursor-pointer" onClick={(e) => handleDelete(paper.id, e)}>
                     <Trash2 className="w-4 h-4 mr-2" />
                     Delete
@@ -161,11 +161,11 @@ export default function QuestionPapersPage() {
                 text-[10px] px-2 py-0 font-medium border
                 ${paper.status === 'APPROVED' ? 'bg-emerald-950/30 text-emerald-400 border-emerald-800' : ''}
                 ${paper.status === 'SUBMITTED' ? 'bg-amber-950/30 text-amber-400 border-amber-800' : ''}
-                ${paper.status === 'DRAFT' ? 'bg-slate-800 text-slate-300 border-slate-700' : ''}
+                ${paper.status === 'DRAFT' ? 'bg-muted text-foreground border-border' : ''}
              `}>
                {paper.status}
              </Badge>
-             <span className="text-slate-500 font-medium">{format(new Date(paper.submissionDate || paper.createdAt), 'MMM d, yyyy')}</span>
+             <span className="text-muted-foreground font-medium">{format(new Date(paper.submissionDate || paper.createdAt), 'MMM d, yyyy')}</span>
           </div>
         </CardContent>
       </Card>
@@ -173,60 +173,60 @@ export default function QuestionPapersPage() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 pb-12 -mt-6 -mx-6">
+    <div className="min-h-screen bg-background pb-12 -mt-6 -mx-6">
       
       {/* Top Header */}
-      <div className="flex justify-between items-center px-8 py-5 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-20 shadow-sm">
+      <div className="flex justify-between items-center px-8 py-5 bg-background backdrop-blur-md border-b border-border sticky top-0 z-20 shadow-sm">
         <div className="flex items-center gap-4">
           <div className="p-2.5 bg-violet-600/20 border border-violet-500/30 rounded-xl shadow-[0_0_15px_rgba(139,92,246,0.15)]">
             <FileQuestion className="text-violet-400 w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">Question Papers</h1>
-            <p className="text-xs text-slate-400 font-medium">Manage and review exam questions</p>
+            <h1 className="text-xl font-bold text-foreground tracking-tight">Question Papers</h1>
+            <p className="text-xs text-muted-foreground font-medium">Manage and review exam questions</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 w-80 focus-within:border-violet-500/50 focus-within:ring-1 focus-within:ring-violet-500/50 transition-all shadow-inner">
-          <Search className="w-4 h-4 text-slate-500" />
+        <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2.5 w-80 focus-within:border-violet-500/50 focus-within:ring-1 focus-within:ring-violet-500/50 transition-all shadow-inner">
+          <Search className="w-4 h-4 text-muted-foreground" />
           <input 
             type="text" 
             placeholder="Search documents..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-transparent border-none outline-none text-sm w-full text-slate-200 placeholder:text-slate-600" 
+            className="bg-transparent border-none outline-none text-sm w-full text-foreground placeholder:text-slate-600" 
           />
         </div>
       </div>
 
       {/* Start a new document section */}
-      <section className="bg-slate-900 px-8 py-10 border-b border-slate-800">
+      <section className="bg-background px-8 py-10 border-b border-border">
         <div className="max-w-7xl mx-auto">
-          <p className="text-sm font-semibold text-slate-300 mb-6 uppercase tracking-wider">Start a new document</p>
+          <p className="text-sm font-semibold text-foreground mb-6 uppercase tracking-wider">Start a new document</p>
           <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
             
             {/* Blank Document Template */}
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
               <DialogTrigger asChild>
                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="cursor-pointer group flex flex-col gap-3 min-w-[160px]">
-                  <div className="h-56 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-center group-hover:border-violet-500 group-hover:bg-slate-900 transition-all shadow-lg group-hover:shadow-[0_0_20px_rgba(139,92,246,0.15)] relative overflow-hidden">
+                  <div className="h-56 bg-background border border-border rounded-xl flex items-center justify-center group-hover:border-violet-500 group-hover:bg-background transition-all shadow-lg group-hover:shadow-[0_0_20px_rgba(139,92,246,0.15)] relative overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     <div className="w-14 h-14 rounded-full bg-violet-600/10 flex items-center justify-center group-hover:bg-violet-600/20 transition-colors">
                       <Plus className="w-8 h-8 text-violet-500" strokeWidth={2.5} />
                     </div>
                   </div>
-                  <p className="text-sm font-semibold text-slate-200 text-center">Blank Document</p>
+                  <p className="text-sm font-semibold text-foreground text-center">Blank Document</p>
                 </motion.div>
               </DialogTrigger>
-              <DialogContent className="bg-slate-900 border-slate-800 text-slate-200 shadow-2xl">
+              <DialogContent className="bg-background border-border text-foreground shadow-2xl">
                 <DialogHeader>
-                  <DialogTitle className="text-white">New Question Paper</DialogTitle>
-                  <DialogDescription className="text-slate-400">Initialize a new document.</DialogDescription>
+                  <DialogTitle className="text-foreground">New Question Paper</DialogTitle>
+                  <DialogDescription className="text-muted-foreground">Initialize a new document.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-5 py-4">
                   <div className="space-y-2">
-                    <Label className="text-slate-300">Title</Label>
+                    <Label className="text-foreground">Title</Label>
                     <Input 
-                      className="bg-slate-950 border-slate-800 text-slate-200 focus-visible:ring-violet-500"
+                      className="bg-background border-border text-foreground focus-visible:ring-violet-500"
                       value={form.title} 
                       onChange={e => setForm(p => ({ ...p, title: e.target.value }))} 
                       placeholder="e.g. Mid-Term Algebra Test"
@@ -234,47 +234,47 @@ export default function QuestionPapersPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-slate-300">Subject</Label>
+                      <Label className="text-foreground">Subject</Label>
                       <Select value={form.subjectId} onValueChange={v => setForm(p => ({ ...p, subjectId: v }))}>
-                        <SelectTrigger className="bg-slate-950 border-slate-800 text-slate-200 focus:ring-violet-500"><SelectValue placeholder="Select Subject" /></SelectTrigger>
-                        <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
-                          {subjects.map(s => <SelectItem key={s.id} value={s.id} className="focus:bg-slate-800 focus:text-white">{s.name}</SelectItem>)}
+                        <SelectTrigger className="bg-background border-border text-foreground focus:ring-violet-500"><SelectValue placeholder="Select Subject" /></SelectTrigger>
+                        <SelectContent className="bg-background border-border text-foreground">
+                          {subjects.map(s => <SelectItem key={s.id} value={s.id} className="focus:bg-muted focus:text-foreground">{s.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-slate-300">Class</Label>
+                      <Label className="text-foreground">Class</Label>
                       <Select value={form.classId} onValueChange={v => setForm(p => ({ ...p, classId: v }))}>
-                        <SelectTrigger className="bg-slate-950 border-slate-800 text-slate-200 focus:ring-violet-500"><SelectValue placeholder="Select Class" /></SelectTrigger>
-                        <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
-                          {classes.map(c => <SelectItem key={c.id} value={c.id} className="focus:bg-slate-800 focus:text-white">{c.name}</SelectItem>)}
+                        <SelectTrigger className="bg-background border-border text-foreground focus:ring-violet-500"><SelectValue placeholder="Select Class" /></SelectTrigger>
+                        <SelectContent className="bg-background border-border text-foreground">
+                          {classes.map(c => <SelectItem key={c.id} value={c.id} className="focus:bg-muted focus:text-foreground">{c.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-slate-300">Term</Label>
+                      <Label className="text-foreground">Term</Label>
                       <Select value={form.termId} onValueChange={v => setForm(p => ({ ...p, termId: v }))}>
-                        <SelectTrigger className="bg-slate-950 border-slate-800 text-slate-200 focus:ring-violet-500"><SelectValue placeholder="Select Term" /></SelectTrigger>
-                        <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
-                          {terms.map(t => <SelectItem key={t.id} value={t.id} className="focus:bg-slate-800 focus:text-white">{t.name}</SelectItem>)}
+                        <SelectTrigger className="bg-background border-border text-foreground focus:ring-violet-500"><SelectValue placeholder="Select Term" /></SelectTrigger>
+                        <SelectContent className="bg-background border-border text-foreground">
+                          {terms.map(t => <SelectItem key={t.id} value={t.id} className="focus:bg-muted focus:text-foreground">{t.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-slate-300">Paper Type</Label>
+                      <Label className="text-foreground">Paper Type</Label>
                       <Select value={form.paperType} onValueChange={v => setForm(p => ({ ...p, paperType: v }))}>
-                        <SelectTrigger className="bg-slate-950 border-slate-800 text-slate-200 focus:ring-violet-500"><SelectValue placeholder="Select Type" /></SelectTrigger>
-                        <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
-                          {PAPER_TYPES.map(t => <SelectItem key={t} value={t} className="focus:bg-slate-800 focus:text-white">{t}</SelectItem>)}
+                        <SelectTrigger className="bg-background border-border text-foreground focus:ring-violet-500"><SelectValue placeholder="Select Type" /></SelectTrigger>
+                        <SelectContent className="bg-background border-border text-foreground">
+                          {PAPER_TYPES.map(t => <SelectItem key={t} value={t} className="focus:bg-muted focus:text-foreground">{t}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
                 </div>
-                <DialogFooter className="border-t border-slate-800 pt-4">
-                  <Button variant="ghost" onClick={() => setCreateOpen(false)} className="text-slate-400 hover:text-white hover:bg-slate-800">Cancel</Button>
+                <DialogFooter className="border-t border-border pt-4">
+                  <Button variant="ghost" onClick={() => setCreateOpen(false)} className="text-muted-foreground hover:text-foreground hover:bg-muted">Cancel</Button>
                   <Button onClick={handleCreate} disabled={isSaving} className="bg-violet-600 hover:bg-violet-700 text-white min-w-[140px]">
                     {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2"/> : null}
                     {isSaving ? 'Creating...' : 'Create Document'}
@@ -285,12 +285,12 @@ export default function QuestionPapersPage() {
 
             {/* Upload Document Template */}
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="cursor-not-allowed group flex flex-col gap-3 min-w-[160px] opacity-60" onClick={() => toast({ title: "Coming soon", description: "Direct file upload will be enabled soon.", variant: "default" })}>
-              <div className="h-56 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-center transition-all shadow-lg relative overflow-hidden">
-                <div className="w-14 h-14 rounded-full bg-slate-800/50 flex items-center justify-center">
-                  <Upload className="w-6 h-6 text-slate-500" strokeWidth={2} />
+              <div className="h-56 bg-background border border-border rounded-xl flex items-center justify-center transition-all shadow-lg relative overflow-hidden">
+                <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
+                  <Upload className="w-6 h-6 text-muted-foreground" strokeWidth={2} />
                 </div>
               </div>
-              <p className="text-sm font-semibold text-slate-400 text-center">Upload File</p>
+              <p className="text-sm font-semibold text-muted-foreground text-center">Upload File</p>
             </motion.div>
 
           </div>
@@ -301,18 +301,18 @@ export default function QuestionPapersPage() {
       <section className="px-8 py-10 max-w-7xl mx-auto">
         <Tabs defaultValue="my-docs" className="w-full">
           <div className="flex justify-between items-center mb-8">
-            <h2 className="text-lg font-bold text-white">Recent Documents</h2>
+            <h2 className="text-lg font-bold text-foreground">Recent Documents</h2>
             {isOfficer && (
-              <TabsList className="bg-slate-900 border border-slate-800 p-1 h-auto gap-1 rounded-xl">
+              <TabsList className="bg-background border border-border p-1 h-auto gap-1 rounded-xl">
                 <TabsTrigger 
                   value="my-docs" 
-                  className="rounded-lg px-5 py-2 text-sm font-medium text-slate-400 data-[state=active]:bg-slate-800 data-[state=active]:text-white transition-all"
+                  className="rounded-lg px-5 py-2 text-sm font-medium text-muted-foreground data-[state=active]:bg-muted data-[state=active]:text-foreground transition-all"
                 >
                   My Docs
                 </TabsTrigger>
                 <TabsTrigger 
                   value="review" 
-                  className="rounded-lg px-5 py-2 text-sm font-medium text-slate-400 data-[state=active]:bg-violet-600 data-[state=active]:text-white transition-all relative"
+                  className="rounded-lg px-5 py-2 text-sm font-medium text-muted-foreground data-[state=active]:bg-violet-600 data-[state=active]:text-white transition-all relative"
                 >
                   Awaiting Review
                   {reviewQueue.length > 0 && (
@@ -327,17 +327,17 @@ export default function QuestionPapersPage() {
 
           <TabsContent value="my-docs" className="mt-0 outline-none">
             {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-4">
+              <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-4">
                 <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
                 <p className="font-medium text-sm">Loading your documents...</p>
               </div>
             ) : myPapers.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-800 rounded-xl bg-slate-900/50">
-                <div className="p-4 bg-slate-800/50 rounded-full mb-4">
-                  <FileQuestion className="w-8 h-8 text-slate-500" />
+              <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-border rounded-xl bg-background">
+                <div className="p-4 bg-muted rounded-full mb-4">
+                  <FileQuestion className="w-8 h-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-medium text-white mb-1">No documents yet</h3>
-                <p className="text-sm text-slate-400 text-center max-w-sm">Create a blank document above to get started with your exam questions.</p>
+                <h3 className="text-lg font-medium text-foreground mb-1">No documents yet</h3>
+                <p className="text-sm text-muted-foreground text-center max-w-sm">Create a blank document above to get started with your exam questions.</p>
               </div>
             ) : (
               <motion.div 
@@ -356,12 +356,12 @@ export default function QuestionPapersPage() {
           {isOfficer && (
             <TabsContent value="review" className="mt-0 outline-none">
               {reviewQueue.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-800 rounded-xl bg-slate-900/50">
-                  <div className="p-4 bg-slate-800/50 rounded-full mb-4">
-                    <FileQuestion className="w-8 h-8 text-slate-500" />
+                <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-border rounded-xl bg-background">
+                  <div className="p-4 bg-muted rounded-full mb-4">
+                    <FileQuestion className="w-8 h-8 text-muted-foreground" />
                   </div>
-                  <h3 className="text-lg font-medium text-white mb-1">All caught up!</h3>
-                  <p className="text-sm text-slate-400">There are no question papers awaiting your review right now.</p>
+                  <h3 className="text-lg font-medium text-foreground mb-1">All caught up!</h3>
+                  <p className="text-sm text-muted-foreground">There are no question papers awaiting your review right now.</p>
                 </div>
               ) : (
                 <motion.div 

@@ -78,6 +78,8 @@ export async function updateSystemSettings(data: any) {
         if (data.schoolPhone !== undefined) updateData.phone = data.schoolPhone;
         if (data.schoolEmail !== undefined) updateData.email = data.schoolEmail;
         if (data.schoolLogoUrl !== undefined) updateData.logoUrl = data.schoolLogoUrl;
+        if (data.currency !== undefined) updateData.currency = data.currency;
+        if (data.currencySymbol !== undefined) updateData.currencySymbol = data.currencySymbol;
 
         await prisma.systemProfile.update({
             where: { id: profile.id },
@@ -85,9 +87,33 @@ export async function updateSystemSettings(data: any) {
         });
         
         revalidatePath('/dashboard/system');
+        revalidatePath('/dashboard/finance/invoices');
         return { success: true };
     } catch (error: any) {
         console.error('Error updating system settings:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+export async function updateSystemCurrency(currency: string, currencySymbol: string) {
+    try {
+        const profile = await prisma.systemProfile.findFirst();
+        if (!profile) throw new Error('System profile not found');
+        
+        await prisma.systemProfile.update({
+            where: { id: profile.id },
+            data: {
+                currency: currency.toUpperCase(),
+                currencySymbol,
+            }
+        });
+        
+        revalidatePath('/dashboard/finance/invoices');
+        revalidatePath('/dashboard/finance/payments');
+        revalidatePath('/dashboard/system');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error updating currency:', error);
         return { success: false, error: error.message };
     }
 }

@@ -1,6 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
+import { auth } from "@/auth";
 
 export async function getLedgerData() {
   try {
@@ -9,9 +11,13 @@ export async function getLedgerData() {
       include: {
         category: true,
       },
+      orderBy: { code: "asc" }
     });
     const entries = await prisma.journalEntry.findMany({
       include: {
+        recordedBy: {
+          select: { firstName: true, lastName: true }
+        },
         lines: {
           include: {
             account: true,
@@ -29,3 +35,116 @@ export async function getLedgerData() {
     return { success: false, error: "Failed to fetch ledger data" };
   }
 }
+
+export async function createJournalEntry(data: {
+  description: string;
+  reference?: string;
+  date?: Date | string;
+  recordedById?: string;
+  lines: {
+    accountId: string;
+    debit: number;
+    credit: number;
+    description?: string;
+  }[];
+}) {
+  if (!data.description || data.description.trim() === "") {
+    throw new Error("Journal entry description is required");
+  }
+
+  if (!data.lines || data.lines.length < 2) {
+    throw new Error("A journal entry requires at least two lines (double-entry)");
+  }
+
+  const totalDebit = data.lines.reduce((sum, l) => sum + (Number(l.debit) || 0), 0);
+  const totalCredit = data.lines.reduce((sum, l) => sum + (Number(l.credit) || 0), 0);
+
+  if (Math.abs(totalDebit - totalCredit) > 0.01) {
+    throw new Error(`Transaction is unbalanced: Total Debits (₦${totalDebit.toFixed(2)}) must equal Total Credits (₦${totalCredit.toFixed(2)})`);
+  }
+
+  if (totalDebit <= 0) {
+    throw new Error("Total entry value must be greater than zero");
+  }
+
+  // Resolve user recording this transaction
+  let userId = data.recordedById;
+  if (!userId) {
+    try {
+      const session = await auth();
+      userId = (session?.user as any)?.id;
+    } catch {
+      userId = undefined;
+    }
+  }
+
+  if (userId) {
+    const exists = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
+    if (!exists) userId = undefined;
+  }
+
+  if (!userId) {
+    const fallback = await prisma.user.findFirst({
+      where: { role: { in: ["ADMIN", "SUPER_ADMIN", "ACCOUNTANT"] } },
+      select: { id: true }
+    }) || await prisma.user.findFirst({ select: { id: true } });
+    userId = fallback?.id;
+  }
+
+  if (!userId) {
+    throw new Error("A valid user account is required to record journal entries.");
+  }
+
+  const ref = data.reference || `JE-${Date.now().toString().slice(-6)}`;
+
+  const entry = await prisma.$transaction(async (tx) => {
+    const je = await tx.journalEntry.create({
+      data: {
+        description: data.description.trim(),
+        reference: ref,
+        date: data.date ? new Date(data.date) : new Date(),
+        recordedById: userId!,
+        lines: {
+          create: data.lines.map(line => ({
+            accountId: line.accountId,
+            debit: Number(line.debit) || 0,
+            credit: Number(line.credit) || 0,
+            description: line.description || null,
+          }))
+        }
+      },
+      include: {
+        lines: { include: { account: true } }
+      }
+    });
+
+    // Update account balances according to standard double-entry rules:
+    // Assets & Expenses: normal balance is Debit (increment: debit - credit)
+    // Liabilities, Equity, & Revenue: normal balance is Credit (increment: credit - debit)
+    for (const line of data.lines) {
+      const account = await tx.accountCode.findUnique({
+        where: { id: line.accountId },
+        include: { category: true }
+      });
+      const catName = (account?.category?.name || "").toLowerCase();
+      const isCreditNormal = catName.includes("liability") || catName.includes("equity") || catName.includes("revenue");
+      const debitVal = Number(line.debit) || 0;
+      const creditVal = Number(line.credit) || 0;
+      const netChange = isCreditNormal ? (creditVal - debitVal) : (debitVal - creditVal);
+
+      await tx.accountCode.update({
+        where: { id: line.accountId },
+        data: { balance: { increment: netChange } }
+      });
+    }
+
+    return je;
+  });
+
+  try {
+    revalidatePath("/dashboard/finance/ledger");
+    revalidatePath("/dashboard/finance/chart-of-accounts");
+  } catch {}
+  return { success: true, entry };
+}
+

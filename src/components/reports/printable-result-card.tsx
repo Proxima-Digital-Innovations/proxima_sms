@@ -146,20 +146,20 @@ export function PrintableResultCard({
                   <td colSpan={4} className="border border-black p-2 font-medium">
                     {result.subjectName}
                   </td>
-                  <td className="border border-black p-2 text-center font-bold text-green-600">
-                    {result.score >= 0 && result.score <= 6 ? '✔️' : ''}
+                  <td className="border border-black p-2 text-center font-bold text-green-700">
+                    {result.score >= 0 && result.score <= 6 ? '✓' : ''}
                   </td>
-                  <td className="border border-black p-2 text-center font-bold text-green-600">
-                    {result.score >= 7 && result.score <= 9 ? '✔️' : ''}
+                  <td className="border border-black p-2 text-center font-bold text-green-700">
+                    {result.score >= 7 && result.score <= 9 ? '✓' : ''}
                   </td>
-                  <td className="border border-black p-2 text-center font-bold text-green-600">
-                    {result.score >= 10 && result.score <= 12 ? '✔️' : ''}
+                  <td className="border border-black p-2 text-center font-bold text-green-700">
+                    {result.score >= 10 && result.score <= 12 ? '✓' : ''}
                   </td>
-                  <td className="border border-black p-2 text-center font-bold text-green-600">
-                    {result.score >= 13 && result.score <= 16 ? '✔️' : ''}
+                  <td className="border border-black p-2 text-center font-bold text-green-700">
+                    {result.score >= 13 && result.score <= 16 ? '✓' : ''}
                   </td>
-                  <td className="border border-black p-2 text-center font-bold text-green-600">
-                    {result.score >= 17 && result.score <= 20 ? '✔️' : ''}
+                  <td className="border border-black p-2 text-center font-bold text-green-700">
+                    {result.score >= 17 && result.score <= 20 ? '✓' : ''}
                   </td>
                   <td colSpan={5} className="border border-black p-2">
                     {result.achievement}

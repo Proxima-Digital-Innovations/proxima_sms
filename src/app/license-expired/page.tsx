@@ -15,10 +15,6 @@ function LicenseExpiredContent() {
   const { toast } = useToast();
 
   const handleExport = async () => {
-      if (!schoolId) {
-          toast({ title: 'Error', description: 'School ID missing. Cannot export.', variant: 'destructive' });
-          return;
-      }
       setIsExporting(true);
       try {
           const res = await exportSchoolData();
@@ -63,7 +59,7 @@ function LicenseExpiredContent() {
           <div className="space-y-2">
             <h1 className="text-2xl font-black text-white">License Expired</h1>
             <p className="text-neutral-400 leading-relaxed">
-              The Proxima One license for <strong className="text-white">{schoolName}</strong> has expired or been suspended.
+              The Proxima SMS license for <strong className="text-white">{schoolName}</strong> has expired or been suspended.
             </p>
           </div>
 
@@ -79,9 +75,12 @@ function LicenseExpiredContent() {
                 Export My Data
               </button>
 
-              <button className="w-full py-3 bg-white text-black font-bold rounded-xl flex items-center justify-center gap-2 hover:scale-105 transition-transform">
+              <a 
+                href="mailto:support@proximahub.com?subject=License%20Renewal%20Request"
+                className="w-full py-3 bg-primary text-primary-foreground font-bold rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+              >
                 <Mail className="w-4 h-4" /> Contact Support to Renew
-              </button>
+              </a>
           </div>
         </CardContent>
       </Card>

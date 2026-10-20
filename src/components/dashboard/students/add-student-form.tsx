@@ -81,19 +81,8 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded?: () => void
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     
-    const formData = new FormData();
-    Object.entries(values).forEach(([key, value]) => {
-      if (value) {
-        if (value instanceof Date) {
-          formData.append(key, value.toISOString());
-        } else {
-          formData.append(key, value as string);
-        }
-      }
-    });
-
     try {
-        const result = await createStudent(formData);
+        const result = await createStudent(values);
         
         if (result.error) {
             throw new Error(result.error as string);

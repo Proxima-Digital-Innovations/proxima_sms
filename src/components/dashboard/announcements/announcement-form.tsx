@@ -28,6 +28,7 @@ const formSchema = z.object({
   id: z.string().optional(),
   title: z.string().min(3, 'Title must be at least 3 characters long.'),
   content: z.string().min(10, 'Content must be at least 10 characters long.'),
+  notifyParents: z.boolean().default(false).optional(),
 });
 
 type AnnouncementFormValues = z.infer<typeof formSchema>;
@@ -172,6 +173,30 @@ export function AnnouncementForm({ initialData, onFormSubmit }: AnnouncementForm
             </FormItem>
             )}
         />
+        
+        <FormField
+            control={form.control}
+            name="notifyParents"
+            render={({ field }) => (
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                    <FormLabel className="text-base">Notify Parents</FormLabel>
+                    <p className="text-sm text-muted-foreground">
+                        Automatically send this announcement to all parents/guardians via email.
+                    </p>
+                </div>
+                <FormControl>
+                    <input 
+                      type="checkbox" 
+                      className="h-5 w-5 accent-primary" 
+                      checked={field.value} 
+                      onChange={field.onChange} 
+                    />
+                </FormControl>
+            </FormItem>
+            )}
+        />
+
         <div className="flex justify-end gap-2 pt-4">
           <Button type="button" variant="ghost" onClick={() => onFormSubmit(false)}>Cancel</Button>
           <Button type="submit" disabled={isSubmitting}>

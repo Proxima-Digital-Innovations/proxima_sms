@@ -43,3 +43,7 @@ next-env.d.ts
 # firebase
 firebase-debug.log
 firestore-debug.log
+logs/
+*.log
+replace_colors.js
+nsis_setup.exe

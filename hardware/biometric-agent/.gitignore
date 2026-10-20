@@ -1,0 +1,14 @@
+bin/
+obj/
+dist/
+dist_bundle/
+dist_bundle_final/
+publish/
+sqlite_extract/
+sqlite_stub_extract/
+*.exe
+*.zip
+*.stackdump
+*.json
+commands_log.txt
+oncomplete_full.txt

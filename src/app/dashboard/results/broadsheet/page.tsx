@@ -50,43 +50,27 @@ export default function BroadsheetPage() {
                 return;
             }
 
-            const scoresData = (result as any).scoresData || [];
-            const classStudents = (result as any).students || [];
+            const data = result.broadsheet || [];
             
-            setStudents(classStudents);
-            
-            // Get unique subjects
-            const subjects = Array.from(new Set(scoresData.map((s: any) => s.subject))).sort() as string[];
-
-            // Build broadsheet
-            const rows: BroadsheetRow[] = classStudents.map((student: any) => {
-                const studentScores = scoresData.filter((s: any) => s.studentId === student.id);
+            const rows: BroadsheetRow[] = data.map((item: any) => {
                 const row: BroadsheetRow = {
-                    studentId: student.studentId,
-                    studentName: `${student.firstName} ${student.lastName}`,
-                    total: 0,
-                    average: 0,
-                    position: 0
+                    studentId: item.student.studentId || '-',
+                    studentName: `${item.student.firstName} ${item.student.lastName}`,
+                    total: item.totalScore || 0,
+                    average: item.average || 0,
+                    position: item.rank || '-'
                 };
 
-                subjects.forEach((subject: any) => {
-                    const score = studentScores.find((s: any) => s.subject === subject);
-                    row[subject] = score ? score.totalScore : 0;
-                    row.total += score ? score.totalScore : 0;
-                });
-
-                row.average = subjects.length > 0 ? Math.round(row.total / subjects.length) : 0;
+                if (item.subjects && Array.isArray(item.subjects)) {
+                    item.subjects.forEach((sub: any) => {
+                        row[sub.subjectName] = sub.total ?? '-';
+                    });
+                }
                 return row;
             });
 
-            // Calculate positions
-            const sortedRows = [...rows].sort((a, b) => b.total - a.total);
-            sortedRows.forEach((row, index) => {
-                row.position = index + 1;
-            });
-
-            setBroadsheetData(sortedRows);
-            setScores(scoresData);
+            setBroadsheetData(rows);
+            setScores([]);
         } catch (error) {
             console.error('Error generating broadsheet:', error);
             toast({ variant: 'destructive', title: 'Error', description: 'Failed to generate broadsheet.' });

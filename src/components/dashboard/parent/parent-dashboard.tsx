@@ -5,7 +5,7 @@ import {
   CalendarCheck,
   Megaphone,
   FileText,
-  DollarSign
+  Wallet
 } from 'lucide-react';
 import {
   Card,

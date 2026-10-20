@@ -112,7 +112,7 @@ export default function TransactionsPage() {
     const formatDate = (timestamp: any) => {
         if (!timestamp) return '-';
         const date = new Date(timestamp);
-        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        return date.toLocaleDateString('en-NG', { year: 'numeric', month: 'short', day: 'numeric' });
     };
 
     return (

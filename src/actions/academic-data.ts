@@ -101,14 +101,33 @@ export async function updateClassConfiguration(id: string, data: { teacherId: st
 export async function getDepartmentsData() {
     try {
         const departments = await prisma.department.findMany({
-            orderBy: { name: 'asc' }
+            orderBy: { name: 'asc' },
+            include: {
+                users: {
+                    select: { id: true }
+                },
+                subjects: {
+                    select: { id: true }
+                }
+            }
         });
+
+        const hodIds = departments.map(d => d.hodId).filter(Boolean) as string[];
+        const hodUsers = hodIds.length > 0 ? await prisma.user.findMany({
+            where: { id: { in: hodIds } },
+            select: { id: true, firstName: true, lastName: true }
+        }) : [];
+        const hodMap = new Map(hodUsers.map(u => [u.id, `${u.firstName} ${u.lastName}`.trim()]));
+
         return { 
             success: true, 
             data: departments.map(d => ({
-                ...d,
-                hodName: d.hodId ? 'Assigned' : 'Unassigned',
-                staffCount: 0 // Stub
+                id: d.id,
+                name: d.name,
+                hodId: d.hodId,
+                hodName: d.hodId ? (hodMap.get(d.hodId) || 'Assigned') : undefined,
+                teacherCount: d.users.length,
+                studentCount: d.subjects.length,
             }))
         };
     } catch (error: any) {

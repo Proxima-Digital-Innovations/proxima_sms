@@ -130,7 +130,7 @@ export default function QuestionDetailPage() {
     return notFound();
   }
   
-  const canReview = role === 'ExamOfficer' && question.status === 'Pending Review';
+  const canReview = role === 'EXAM_OFFICER' && question.status === 'Pending Review';
 
   return (
     <div className="space-y-8">

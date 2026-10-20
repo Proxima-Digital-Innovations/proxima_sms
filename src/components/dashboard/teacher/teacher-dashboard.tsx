@@ -70,11 +70,12 @@ export function TeacherDashboard() {
     try {
       const response = await getDashboardStats('TEACHER', user.uid);
       if (response.success && response.data) {
+          const d: any = response.data;
           setStats({
-            pendingPlans: response.data.classesCount || 0, // Mock mapping
-            approvedPlans: response.data.studentsCount || 0,
-            rejectedPlans: 0,
-            pendingExams: response.data.announcements?.length || 0,
+            pendingPlans: d.pendingPlans || 0,
+            approvedPlans: d.approvedPlans || 0,
+            rejectedPlans: d.rejectedPlans || 0,
+            pendingExams: d.pendingExams || 0,
           });
       }
       setRecentNotes([]);

@@ -85,10 +85,25 @@ export default function SuperAdminDashboard() {
   };
 
   const openEditModal = (school: any) => {
+    let activeModules: string[] = ["CORE"];
+    if (Array.isArray(school.activeModules)) {
+      activeModules = school.activeModules;
+    } else if (typeof school.activeModules === "string") {
+      try {
+        activeModules = JSON.parse(school.activeModules);
+      } catch {
+        activeModules = ["CORE"];
+      }
+    }
+
+    const expiresAtStr = school.expiresAt && !isNaN(new Date(school.expiresAt).getTime())
+      ? new Date(school.expiresAt).toISOString().split('T')[0]
+      : '';
+
     setSelectedSchool({
         ...school,
-        activeModules: school.activeModules ? JSON.parse(school.activeModules) : ["CORE"],
-        expiresAt: new Date(school.expiresAt).toISOString().split('T')[0]
+        activeModules,
+        expiresAt: expiresAtStr
     });
     setIsEditModalOpen(true);
   };
@@ -97,10 +112,14 @@ export default function SuperAdminDashboard() {
       e.preventDefault();
       setIsSubmitting(true);
       try {
+          const expiryDate = selectedSchool.expiresAt
+            ? new Date(selectedSchool.expiresAt).toISOString()
+            : new Date(Date.now() + 365 * 86400000).toISOString();
+
           const res = await updateSchoolLicense({
-              licenseStatus: selectedSchool.licenseStatus,
-              expiresAt: new Date(selectedSchool.expiresAt).toISOString(),
-              activeModules: selectedSchool.activeModules
+              licenseStatus: selectedSchool.licenseStatus || 'ACTIVE',
+              expiresAt: expiryDate,
+              activeModules: selectedSchool.activeModules || ["CORE"]
           });
           if (res.success) {
               toast({ title: 'Success', description: 'License updated successfully' });
@@ -133,8 +152,8 @@ export default function SuperAdminDashboard() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-800">Platform Command</h1>
-            <p className="text-slate-500 text-sm mt-1">Manage all tenant schools and licenses</p>
+            <h1 className="text-2xl font-semibold text-foreground">Platform Command</h1>
+            <p className="text-muted-foreground text-sm mt-1">Manage all tenant schools and licenses</p>
           </div>
           <div className="flex items-center gap-3">
             <Button 
@@ -157,8 +176,8 @@ export default function SuperAdminDashboard() {
             <div key={i} className="standard-card">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{s.label}</p>
-                  <p className="text-3xl font-bold mt-2 text-slate-800">{isLoading ? '-' : s.value}</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{s.label}</p>
+                  <p className="text-3xl font-bold mt-2 text-foreground">{isLoading ? '-' : s.value}</p>
                 </div>
                 <div className={`p-3 rounded-lg ${s.bg}`}>
                   <s.icon className={`w-6 h-6 ${s.color}`} />
@@ -170,8 +189,8 @@ export default function SuperAdminDashboard() {
 
         {/* Schools List */}
         <div className="data-table-container">
-          <div className="border-b border-gray-200 p-4 bg-slate-50">
-             <h2 className="text-lg font-semibold tracking-tight text-slate-800">Manage Tenants</h2>
+          <div className="border-b border-border p-4 bg-background">
+             <h2 className="text-lg font-semibold tracking-tight text-foreground">Manage Tenants</h2>
           </div>
           <div className="p-0">
             {isLoading ? (
@@ -182,7 +201,7 @@ export default function SuperAdminDashboard() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-gray-200 bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                    <tr className="border-b border-border bg-muted/40 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                       <th className="px-6 py-4">School Name</th>
                       <th className="px-6 py-4">Subdomain</th>
                       <th className="px-6 py-4">Status</th>
@@ -193,38 +212,40 @@ export default function SuperAdminDashboard() {
                   <tbody>
                     {schools.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-6 py-10 text-center text-slate-500">
+                        <td colSpan={5} className="px-6 py-10 text-center text-muted-foreground">
                           No schools found. Create one to get started.
                         </td>
                       </tr>
                     ) : (
                       schools.map((school) => (
-                        <tr key={school.id} className="border-b border-gray-100 hover:bg-slate-50 transition-colors">
+                        <tr key={school.id} className="border-b border-border hover:bg-muted/30 transition-colors">
                           <td className="px-6 py-4">
-                            <div className="font-semibold text-slate-800">{school.name}</div>
-                            <div className="text-[10px] text-slate-500">{school.slug}</div>
+                            <div className="font-semibold text-foreground">{school.name}</div>
+                            <div className="text-[10px] text-muted-foreground">{school.slug}</div>
                           </td>
                           <td className="px-6 py-4">
-                            <code className="text-xs font-mono text-slate-600 bg-slate-100 px-2 py-1 rounded-md border border-slate-200">
+                            <code className="text-xs font-mono text-muted-foreground bg-muted px-2 py-1 rounded-md border border-border">
                               {school.subdomain}.proximahub.com
                             </code>
                           </td>
                           <td className="px-6 py-4">
                             <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider ${
-                              school.licenseStatus === 'ACTIVE' ? 'bg-green-100 text-green-700' :
-                              school.licenseStatus === 'TRIAL' ? 'bg-amber-100 text-amber-700' :
-                              'bg-red-100 text-red-700'
+                              school.licenseStatus === 'ACTIVE' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' :
+                              school.licenseStatus === 'TRIAL' ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20' :
+                              'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20'
                             }`}>
                               {school.licenseStatus}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-sm font-medium text-slate-600">
-                            {new Date(school.expiresAt).toLocaleDateString()}
+                          <td className="px-6 py-4 text-sm font-medium text-muted-foreground">
+                            {school.expiresAt && !isNaN(new Date(school.expiresAt).getTime())
+                              ? new Date(school.expiresAt).toLocaleDateString()
+                              : 'Never'}
                           </td>
                           <td className="px-6 py-4 text-right">
-                            <button onClick={() => openEditModal(school)} className="text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors">Manage License</button>
-                            <span className="mx-2 text-slate-300">|</span>
-                            <button className="text-xs font-semibold text-red-600 hover:text-red-800 transition-colors">Suspend</button>
+                            <button onClick={() => openEditModal(school)} className="text-xs font-semibold text-primary hover:underline transition-colors">Manage License</button>
+                            <span className="mx-2 text-muted-foreground">|</span>
+                            <button className="text-xs font-semibold text-destructive hover:underline transition-colors">Suspend</button>
                           </td>
                         </tr>
                       ))
@@ -238,34 +259,34 @@ export default function SuperAdminDashboard() {
 
         {/* Create School Modal */}
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-fade-in">
-            <div className="bg-white p-8 rounded-xl shadow-xl w-full max-w-lg relative animate-slide-down">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-fade-in">
+            <div className="bg-card border border-border text-card-foreground p-8 rounded-xl shadow-xl w-full max-w-lg relative animate-slide-down">
               <button 
-                onClick={() => setIsModalOpen(false)}
-                className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition-colors"
+                onClick={() => setIsModalOpen(false)} 
+                className="absolute top-6 right-6 text-muted-foreground hover:text-foreground transition-colors"
               >
                 <X className="w-6 h-6" />
               </button>
               
-              <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2 text-slate-800">
-                <School className="text-blue-600 w-6 h-6" /> Add New School
+              <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2 text-foreground">
+                <School className="text-primary w-6 h-6" /> Add New School
               </h2>
               
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase">School Name *</label>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase">School Name *</label>
                   <input 
                     name="name" 
                     value={formData.name} 
                     onChange={handleInputChange} 
                     required 
                     placeholder="e.g. King's College"
-                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 mt-1 outline-none text-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" 
+                    className="w-full bg-background border border-input rounded-lg px-4 py-3 mt-1 outline-none text-foreground focus:border-primary focus:ring-1 focus:ring-primary" 
                   />
                 </div>
                 
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase">Subdomain *</label>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase">Subdomain *</label>
                   <div className="relative mt-1">
                     <input 
                       name="subdomain" 
@@ -273,19 +294,19 @@ export default function SuperAdminDashboard() {
                       onChange={handleInputChange} 
                       required 
                       placeholder="kingscollege"
-                      className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-40 py-3 outline-none text-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono" 
+                      className="w-full bg-background border border-input rounded-lg pl-4 pr-40 py-3 outline-none text-foreground focus:border-primary focus:ring-1 focus:ring-primary font-mono" 
                     />
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-mono pointer-events-none">
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-mono pointer-events-none">
                       .proximahub.com
                     </div>
                   </div>
-                  <p className="text-[10px] text-gray-500 mt-1">Only lowercase letters, numbers, and hyphens.</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">Only lowercase letters, numbers, and hyphens.</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase">Primary Color *</label>
-                    <div className="flex items-center mt-1 gap-3 bg-white border border-gray-300 rounded-lg px-4 py-3 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase">Primary Color *</label>
+                    <div className="flex items-center mt-1 gap-3 bg-background border border-input rounded-lg px-4 py-3 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
                       <input 
                         type="color" 
                         name="primaryColor" 
@@ -297,15 +318,15 @@ export default function SuperAdminDashboard() {
                         name="primaryColor" 
                         value={formData.primaryColor} 
                         onChange={handleInputChange} 
-                        className="bg-transparent border-none outline-none text-slate-800 w-full uppercase font-mono text-sm" 
+                        className="bg-transparent border-none outline-none text-foreground w-full uppercase font-mono text-sm" 
                         pattern="^#[0-9A-Fa-f]{6}$"
                       />
                     </div>
                   </div>
                   
                   <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase">Secondary Color *</label>
-                    <div className="flex items-center mt-1 gap-3 bg-white border border-gray-300 rounded-lg px-4 py-3 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase">Secondary Color *</label>
+                    <div className="flex items-center mt-1 gap-3 bg-background border border-input rounded-lg px-4 py-3 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
                       <input 
                         type="color" 
                         name="secondaryColor" 
@@ -317,7 +338,7 @@ export default function SuperAdminDashboard() {
                         name="secondaryColor" 
                         value={formData.secondaryColor} 
                         onChange={handleInputChange} 
-                        className="bg-transparent border-none outline-none text-slate-800 w-full uppercase font-mono text-sm" 
+                        className="bg-transparent border-none outline-none text-foreground w-full uppercase font-mono text-sm" 
                         pattern="^#[0-9A-Fa-f]{6}$"
                       />
                     </div>
@@ -325,7 +346,7 @@ export default function SuperAdminDashboard() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase">Trial Period (Days) *</label>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase">Trial Period (Days) *</label>
                   <input 
                     type="number" 
                     name="trialDays" 
@@ -333,15 +354,15 @@ export default function SuperAdminDashboard() {
                     value={formData.trialDays} 
                     onChange={handleInputChange} 
                     required 
-                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 mt-1 outline-none text-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" 
+                    className="w-full bg-background border border-input rounded-lg px-4 py-3 mt-1 outline-none text-foreground focus:border-primary focus:ring-1 focus:ring-primary" 
                   />
                 </div>
 
-                <div className="flex gap-3 pt-4 border-t border-gray-100">
+                <div className="flex gap-3 pt-4 border-t border-border">
                   <button 
                     type="button" 
                     onClick={() => setIsModalOpen(false)} 
-                    className="flex-1 py-3 border border-gray-300 rounded-lg font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                    className="flex-1 py-3 border border-input rounded-lg font-medium text-foreground hover:bg-muted transition-colors"
                   >
                     Cancel
                   </button>
@@ -364,36 +385,36 @@ export default function SuperAdminDashboard() {
 
         {/* Edit License Modal */}
         {isEditModalOpen && selectedSchool && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-fade-in">
-            <div className="bg-white p-8 rounded-xl shadow-xl w-full max-w-lg relative animate-slide-down">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-fade-in">
+            <div className="bg-card border border-border text-card-foreground p-8 rounded-xl shadow-xl w-full max-w-lg relative animate-slide-down">
               <button 
-                onClick={() => setIsEditModalOpen(false)}
-                className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition-colors"
+                onClick={() => setIsEditModalOpen(false)} 
+                className="absolute top-6 right-6 text-muted-foreground hover:text-foreground transition-colors"
               >
                 <X className="w-6 h-6" />
               </button>
               
-              <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2 text-slate-800">
-                <Settings2 className="text-blue-600 w-6 h-6" /> Manage License
+              <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2 text-foreground">
+                <Settings2 className="text-primary w-6 h-6" /> Manage License
               </h2>
               
               <form onSubmit={handleEditSubmit} className="space-y-5">
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase">School Name</label>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase">School Name</label>
                   <input 
                     value={selectedSchool.name} 
-                    disabled
-                    className="w-full bg-slate-50 border border-gray-200 rounded-lg px-4 py-3 mt-1 outline-none text-slate-500" 
+                    disabled 
+                    className="w-full bg-muted border border-input rounded-lg px-4 py-3 mt-1 outline-none text-muted-foreground" 
                   />
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase">Status</label>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase">Status</label>
                     <select 
                         value={selectedSchool.licenseStatus}
                         onChange={(e) => setSelectedSchool({...selectedSchool, licenseStatus: e.target.value})}
-                        className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 mt-1 outline-none text-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none"
+                        className="w-full bg-background border border-input rounded-lg px-4 py-3 mt-1 outline-none text-foreground focus:border-primary focus:ring-1 focus:ring-primary appearance-none"
                     >
                         <option value="TRIAL">TRIAL</option>
                         <option value="ACTIVE">ACTIVE</option>
@@ -403,38 +424,38 @@ export default function SuperAdminDashboard() {
                     </div>
 
                     <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase flex items-center gap-1"><CalendarDays className="w-3 h-3"/> Expiry Date</label>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1"><CalendarDays className="w-3 h-3"/> Expiry Date</label>
                     <input 
                         type="date"
                         value={selectedSchool.expiresAt}
                         onChange={(e) => setSelectedSchool({...selectedSchool, expiresAt: e.target.value})}
-                        className="w-full bg-white border border-gray-300 rounded-lg px-4 py-[11px] mt-1 outline-none text-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                        className="w-full bg-background border border-input rounded-lg px-4 py-[11px] mt-1 outline-none text-foreground focus:border-primary focus:ring-1 focus:ring-primary"
                     />
                     </div>
                 </div>
 
                 <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase mb-2 block">Active Modules</label>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">Active Modules</label>
                     <div className="grid grid-cols-2 gap-2">
                         {['CORE', 'FINANCE', 'LMS', 'CMS', 'BAMS'].map(mod => (
-                            <label key={mod} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${selectedSchool.activeModules.includes(mod) ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200 hover:border-gray-300'}`}>
+                            <label key={mod} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${selectedSchool.activeModules.includes(mod) ? 'bg-primary/10 border-primary/40' : 'bg-card border-border hover:border-muted-foreground/40'}`}>
                                 <input 
                                     type="checkbox" 
-                                    className="accent-blue-600 w-4 h-4" 
+                                    className="accent-primary w-4 h-4" 
                                     checked={selectedSchool.activeModules.includes(mod)}
                                     onChange={() => toggleModule(mod)}
                                 />
-                                <span className="text-sm font-semibold text-slate-800">{mod}</span>
+                                <span className="text-sm font-semibold text-foreground">{mod}</span>
                             </label>
                         ))}
                     </div>
                 </div>
                 
-                <div className="flex gap-3 pt-4 border-t border-gray-100">
+                <div className="flex gap-3 pt-4 border-t border-border">
                   <button 
                     type="button" 
                     onClick={() => setIsEditModalOpen(false)} 
-                    className="flex-1 py-3 border border-gray-300 rounded-lg font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                    className="flex-1 py-3 border border-input rounded-lg font-medium text-foreground hover:bg-muted transition-colors"
                   >
                     Cancel
                   </button>

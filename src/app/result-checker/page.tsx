@@ -87,8 +87,8 @@ export default function ResultCheckerPage() {
                                     <span className="font-bold">4.</span>
                                     <span>Input the unique Token.</span>
                                 </li>
-                                <li className="flex gap-2 text-red-600">
-                                    <span className="font-bold">⚠️</span>
+                                <li className="flex items-start gap-2 text-destructive">
+                                    <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                                     <span>Each token is valid for <strong>five uses only</strong> and can be used to check results for the specified student, session, and term.</span>
                                 </li>
                             </ol>

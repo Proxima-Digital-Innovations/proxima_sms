@@ -37,13 +37,11 @@ const formSchema = z.object({
   paperType: z.string().optional(),
   class: z.string().min(1, { message: 'Please select a class.' }),
   subject: z.string().min(1, { message: 'Please select a subject.' }),
-  file: z
-    .instanceof(FileList)
-    .refine((files) => files?.length >= 1, 'File is required.'),
+  file: z.any().refine((files) => files?.length >= 1, 'File is required.'),
 });
 
 const resubmissionSchema = formSchema.extend({
-  file: z.instanceof(FileList).optional(),
+  file: z.any().optional(),
 });
 
 

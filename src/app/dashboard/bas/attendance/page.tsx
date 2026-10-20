@@ -6,8 +6,18 @@ import { useRole } from '@/context/role-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
-import { CalendarDays, Clock, TrendingUp, Award, Fingerprint } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { CalendarDays, Clock, TrendingUp, Award, Fingerprint, CheckCircle2, LogOut, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -27,177 +37,224 @@ const itemVariants = {
 };
 
 export default function MyAttendancePage() {
-    const [logs, setLogs] = useState<any[]>([]);
-    const [monthlyStats, setMonthlyStats] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+  const [logs, setLogs] = useState<any[]>([]);
+  const [monthlyStats, setMonthlyStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-    const { user } = useRole();
+  const { user } = useRole();
 
-    useEffect(() => {
-        const fetchData = async () => {
-            if (!user?.uid) { setLoading(false); return; }
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!user?.uid) { setLoading(false); return; }
 
-            const result = await getMyAttendanceLogs(user.uid);
-            if (result.success) {
-                setLogs(result.data || []);
-                setMonthlyStats(result.monthlyStats);
-            }
-            setLoading(false);
-        };
-        fetchData();
-    }, [user?.uid]);
+      const result = await getMyAttendanceLogs(user.uid);
+      if (result.success) {
+        setLogs(result.data || []);
+        setMonthlyStats(result.monthlyStats);
+      }
+      setLoading(false);
+    };
+    fetchData();
+  }, [user?.uid]);
 
-    return (
-        <div className="min-h-screen bg-slate-950 pb-12 -mt-6 -mx-6">
-            
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center px-8 py-5 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-20 shadow-sm gap-4">
-                <div className="flex items-center gap-4">
-                    <div className="p-2.5 bg-blue-600/20 border border-blue-500/30 rounded-xl shadow-[0_0_15px_rgba(59,130,246,0.15)]">
-                        <Fingerprint className="text-blue-400 w-5 h-5" />
-                    </div>
-                    <div>
-                        <h1 className="text-xl font-bold text-white tracking-tight">My Attendance</h1>
-                        <p className="text-xs text-slate-400 font-medium">Your personal biometric attendance logs and monthly statistics.</p>
-                    </div>
-                </div>
-            </div>
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+  
+  const paginatedLogs = logs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const totalPages = Math.ceil(logs.length / pageSize);
 
-            <div className="px-8 py-8 max-w-[1400px] mx-auto space-y-8">
-                {/* Monthly Stats */}
-                <motion.div 
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                    className="grid gap-4 md:grid-cols-4"
-                >
-                    <StatCard 
-                        icon={<CalendarDays className="h-4 w-4" />} 
-                        iconColor="text-blue-400" 
-                        iconBg="bg-blue-500/10"
-                        title="Days Present" 
-                        value={monthlyStats?.totalDays || 0} 
-                        sub="This month" 
-                        loading={loading} 
-                    />
-                    <StatCard 
-                        icon={<Clock className="h-4 w-4" />} 
-                        iconColor="text-emerald-400" 
-                        iconBg="bg-emerald-500/10"
-                        title="Total Hours" 
-                        value={`${monthlyStats?.totalHours || 0}h`} 
-                        sub={`Avg ${monthlyStats?.avgHoursPerDay || 0}h/day`} 
-                        loading={loading} 
-                    />
-                    <StatCard 
-                        icon={<Award className="h-4 w-4" />} 
-                        iconColor="text-amber-400" 
-                        iconBg="bg-amber-500/10"
-                        title="Punctuality" 
-                        value={`${monthlyStats?.punctuality || 0}%`} 
-                        sub="On-time arrivals" 
-                        valueColor={(monthlyStats?.punctuality || 0) >= 90 ? 'text-emerald-400' : (monthlyStats?.punctuality || 0) >= 70 ? 'text-amber-400' : 'text-rose-400'}
-                        loading={loading} 
-                    />
-                    <StatCard 
-                        icon={<TrendingUp className="h-4 w-4" />} 
-                        iconColor="text-purple-400" 
-                        iconBg="bg-purple-500/10"
-                        title="Avg Hours/Day" 
-                        value={`${monthlyStats?.avgHoursPerDay || 0}h`} 
-                        sub="Working average" 
-                        loading={loading} 
-                    />
-                </motion.div>
-
-                {/* Attendance Table */}
-                <motion.div 
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                >
-                    <motion.div variants={itemVariants}>
-                        <Card className="bg-slate-900/50 border-slate-800 shadow-xl overflow-hidden">
-                            <CardHeader className="border-b border-slate-800/50 bg-slate-900/40 pb-5">
-                                <CardTitle className="text-lg font-bold text-white">Recent Attendance Logs</CardTitle>
-                                <CardDescription className="text-slate-400 mt-1">Your last 50 biometric records.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="p-0">
-                                {loading ? (
-                                    <div className="flex h-64 items-center justify-center">
-                                        <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-500 border-r-transparent" />
-                                    </div>
-                                ) : logs.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center py-20 text-slate-500">
-                                        <div className="w-16 h-16 bg-slate-900 rounded-full flex items-center justify-center mb-4">
-                                            <Clock className="h-8 w-8 text-slate-600" />
-                                        </div>
-                                        <p className="text-sm font-medium text-slate-400">No attendance records found.</p>
-                                    </div>
-                                ) : (
-                                    <div className="overflow-x-auto">
-                                        <Table>
-                                            <TableHeader className="bg-slate-900/80 border-b border-slate-800">
-                                                <TableRow className="hover:bg-transparent border-none">
-                                                    <TableHead className="pl-6 text-slate-400 font-bold uppercase tracking-wider text-[10px] h-10">Date</TableHead>
-                                                    <TableHead className="text-slate-400 font-bold uppercase tracking-wider text-[10px] h-10">Time In</TableHead>
-                                                    <TableHead className="text-slate-400 font-bold uppercase tracking-wider text-[10px] h-10">Time Out</TableHead>
-                                                    <TableHead className="text-slate-400 font-bold uppercase tracking-wider text-[10px] h-10">Duration</TableHead>
-                                                    <TableHead className="pr-6 text-slate-400 font-bold uppercase tracking-wider text-[10px] h-10">Status</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {logs.map((log) => (
-                                                    <TableRow key={log.id} className="border-b border-slate-800/50 hover:bg-slate-800/20 transition-colors">
-                                                        <TableCell className="pl-6 font-medium text-white">{log.date}</TableCell>
-                                                        <TableCell className="font-mono text-sm text-slate-300">{log.timeIn || '-'}</TableCell>
-                                                        <TableCell className="font-mono text-sm text-slate-300">{log.timeOut || '-'}</TableCell>
-                                                        <TableCell className="text-slate-300 font-medium">{log.duration}</TableCell>
-                                                        <TableCell className="pr-6">
-                                                            {log.type === 1 ? (
-                                                                <Badge variant="outline" className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${log.isLate ? 'bg-rose-950/40 text-rose-400 border-rose-800/50' : 'bg-emerald-950/40 text-emerald-400 border-emerald-800/50'}`}>
-                                                                    {log.isLate ? 'Late' : 'On Time'}
-                                                                </Badge>
-                                                            ) : (
-                                                                <Badge variant="outline" className="bg-amber-950/40 text-amber-400 border-amber-800/50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">Clock Out</Badge>
-                                                            )}
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </motion.div>
-                </motion.div>
-            </div>
+  return (
+    <div className="space-y-6 w-full max-w-full min-w-0">
+      {/* Header Card */}
+      <motion.div 
+        initial={{ opacity: 0, y: -16 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-background p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-border backdrop-blur-sm shadow-sm w-full min-w-0"
+      >
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shrink-0">
+            <Fingerprint className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">My Attendance</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+              Your personal biometric clock-in records and monthly punctuality score.
+            </p>
+          </div>
         </div>
-    );
+
+        <Button asChild variant="outline" size="sm" className="rounded-xl border-border hover:bg-muted">
+          <Link href="/dashboard/bas/dashboard">
+            <ArrowLeft className="w-4 h-4 mr-1.5" /> Back to Terminal Stream
+          </Link>
+        </Button>
+      </motion.div>
+
+      {/* Monthly Stats */}
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full min-w-0"
+      >
+        <StatCard 
+          icon={<CalendarDays className="h-4 w-4" />} 
+          iconColor="text-blue-600 dark:text-blue-400" 
+          iconBg="bg-blue-500/10"
+          title="Days Present" 
+          value={monthlyStats?.totalDays || 0} 
+          sub="This month" 
+          loading={loading} 
+        />
+        <StatCard 
+          icon={<Clock className="h-4 w-4" />} 
+          iconColor="text-emerald-600 dark:text-emerald-400" 
+          iconBg="bg-emerald-500/10"
+          title="Total Hours" 
+          value={`${monthlyStats?.totalHours || 0}h`} 
+          sub={`Avg ${monthlyStats?.avgHoursPerDay || 0}h/day`} 
+          loading={loading} 
+        />
+        <StatCard 
+          icon={<Award className="h-4 w-4" />} 
+          iconColor="text-amber-600 dark:text-amber-400" 
+          iconBg="bg-amber-500/10"
+          title="Punctuality" 
+          value={`${monthlyStats?.punctuality || 0}%`} 
+          sub="On-time arrivals" 
+          valueColor={(monthlyStats?.punctuality || 0) >= 90 ? 'text-emerald-600 dark:text-emerald-400' : (monthlyStats?.punctuality || 0) >= 70 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'}
+          loading={loading} 
+        />
+        <StatCard 
+          icon={<TrendingUp className="h-4 w-4" />} 
+          iconColor="text-purple-600 dark:text-purple-400" 
+          iconBg="bg-purple-500/10"
+          title="Avg Hours / Day" 
+          value={`${monthlyStats?.avgHoursPerDay || 0}h`} 
+          sub="Working average" 
+          loading={loading} 
+        />
+      </motion.div>
+
+      {/* Attendance Table */}
+      <motion.div variants={containerVariants} initial="hidden" animate="visible">
+        <motion.div variants={itemVariants}>
+          <Card className="bg-background border-border shadow-none rounded-3xl overflow-hidden backdrop-blur-sm">
+            <CardHeader className="border-b border-border bg-background p-6">
+              <CardTitle className="text-xl font-bold text-foreground">Recent Clock-in Logs</CardTitle>
+              <CardDescription className="text-muted-foreground text-xs sm:text-sm">
+                Your last 50 verified biometric terminal records.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              {loading ? (
+                <div className="flex h-64 items-center justify-center">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-r-transparent" />
+                </div>
+              ) : logs.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-muted-foreground text-center px-4">
+                  <div className="w-14 h-14 bg-muted/60 border border-border rounded-2xl flex items-center justify-center mb-3">
+                    <Clock className="h-7 w-7 text-muted-foreground" />
+                  </div>
+                  <p className="text-base font-bold text-foreground">No attendance records found</p>
+                  <p className="text-xs text-muted-foreground mt-1">Check in at any campus kiosk to record your presence.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto w-full min-w-0">
+                  <Table>
+                    <TableHeader className="bg-muted/30">
+                      <TableRow className="border-border hover:bg-transparent">
+                        <TableHead className="pl-6 font-bold text-muted-foreground py-3.5">Date</TableHead>
+                        <TableHead className="font-bold text-muted-foreground py-3.5">Clock In</TableHead>
+                        <TableHead className="font-bold text-muted-foreground py-3.5">Clock Out</TableHead>
+                        <TableHead className="font-bold text-muted-foreground py-3.5">Duration</TableHead>
+                        <TableHead className="pr-6 text-right font-bold text-muted-foreground py-3.5">Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedLogs.map((log) => (
+                        <TableRow key={log.id} className="border-border hover:bg-muted/40 transition-colors">
+                          <TableCell className="pl-6 font-medium text-foreground py-3.5">{log.date}</TableCell>
+                          <TableCell className="font-mono text-xs text-foreground py-3.5">{log.timeIn || '—'}</TableCell>
+                          <TableCell className="font-mono text-xs text-foreground py-3.5">{log.timeOut || '—'}</TableCell>
+                          <TableCell className="text-xs font-semibold text-foreground py-3.5">{log.duration || '—'}</TableCell>
+                          <TableCell className="pr-6 text-right py-3.5">
+                            {log.type === 1 ? (
+                              <Badge variant="outline" className={`font-semibold text-xs ${log.isLate ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'}`}>
+                                {log.isLate ? 'Late' : 'On Time'}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 font-semibold text-xs">
+                                <LogOut className="w-3 h-3 mr-1" /> Clock Out
+                              </Badge>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+            {totalPages > 1 && (
+              <div className="p-4 border-t border-border bg-background flex justify-center">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        className={currentPage <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                    {[...Array(totalPages)].map((_, i) => (
+                      <PaginationItem key={i}>
+                        <PaginationLink 
+                          onClick={() => setCurrentPage(i + 1)}
+                          isActive={currentPage === i + 1}
+                          className="cursor-pointer"
+                        >
+                          {i + 1}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext 
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        className={currentPage >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </Card>
+        </motion.div>
+      </motion.div>
+    </div>
+  );
 }
 
-function StatCard({ icon, iconColor, iconBg, title, value, sub, loading, valueColor = "text-white" }: any) {
-    return (
-        <motion.div variants={itemVariants}>
-            <Card className="bg-slate-900/50 border-slate-800 shadow-xl overflow-hidden group">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-xs font-medium text-slate-400 uppercase tracking-wider">{title}</CardTitle>
-                    <div className={`p-2 rounded-lg ${iconBg} ${iconColor} group-hover:scale-110 transition-transform duration-300`}>
-                        {icon}
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    {loading ? (
-                        <div className="h-8 bg-slate-800 rounded animate-pulse w-1/2 mt-1" />
-                    ) : (
-                        <>
-                            <div className={`text-2xl font-bold font-mono ${valueColor}`}>{value}</div>
-                            <p className="text-xs text-slate-500 mt-1 font-medium">{sub}</p>
-                        </>
-                    )}
-                </CardContent>
-            </Card>
-        </motion.div>
-    );
+function StatCard({ icon, iconColor, iconBg, title, value, sub, loading, valueColor = "text-foreground" }: any) {
+  return (
+    <motion.div variants={itemVariants}>
+      <Card className="bg-background border-border shadow-none rounded-2xl p-4 overflow-hidden group hover:border-primary/40 transition-all">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</span>
+          <div className={`p-2 rounded-xl ${iconBg} ${iconColor}`}>
+            {icon}
+          </div>
+        </div>
+        <div className="mt-3">
+          {loading ? (
+            <div className="h-8 bg-muted rounded animate-pulse w-1/2" />
+          ) : (
+            <>
+              <div className={`text-2xl sm:text-3xl font-extrabold font-mono ${valueColor}`}>{value}</div>
+              <p className="text-xs text-muted-foreground mt-1 font-medium">{sub}</p>
+            </>
+          )}
+        </div>
+      </Card>
+    </motion.div>
+  );
 }

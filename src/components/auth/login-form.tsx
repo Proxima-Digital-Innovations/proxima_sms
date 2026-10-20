@@ -24,6 +24,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 const formSchema = z.object({
   identifier: z.string().min(1, { message: 'Enter a valid email address or Staff ID.' }),
   password: z.string().min(1, { message: 'Password is required.' }),
+  rememberMe: z.boolean().default(false),
 });
 
 export function LoginForm({ schoolSlug }: { schoolSlug?: string }) {
@@ -38,6 +39,7 @@ export function LoginForm({ schoolSlug }: { schoolSlug?: string }) {
     defaultValues: {
       identifier: searchParams.get('identifier') || '',
       password: searchParams.get('password') || '',
+      rememberMe: false,
     },
   });
 
@@ -47,6 +49,7 @@ export function LoginForm({ schoolSlug }: { schoolSlug?: string }) {
       const result = await signIn('credentials', {
         identifier: values.identifier,
         password: values.password,
+        rememberMe: values.rememberMe ? 'true' : 'false',
         redirect: false,
       });
 
@@ -92,7 +95,7 @@ export function LoginForm({ schoolSlug }: { schoolSlug?: string }) {
                   <Input 
                     placeholder="Enter your email, username, or ID" 
                     {...field} 
-                    className="h-11 rounded-xl bg-slate-50/50 border-slate-200 focus-visible:ring-1 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all text-sm px-4 shadow-sm"
+                    className="h-11 rounded-xl bg-background border-border focus-visible:ring-1 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all text-sm px-4 shadow-sm"
                   />
                 </FormControl>
                 <FormMessage className="text-[11px]" />
@@ -117,10 +120,34 @@ export function LoginForm({ schoolSlug }: { schoolSlug?: string }) {
                     type="password" 
                     placeholder="Enter your password" 
                     {...field} 
-                    className="h-11 rounded-xl bg-slate-50/50 border-slate-200 focus-visible:ring-1 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all text-sm px-4 shadow-sm"
+                    className="h-11 rounded-xl bg-background border-border focus-visible:ring-1 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all text-sm px-4 shadow-sm"
                   />
                 </FormControl>
                 <FormMessage className="text-[11px]" />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="rememberMe"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 pt-2">
+                <FormControl>
+                  <div className="flex items-center h-5">
+                    <input
+                      type="checkbox"
+                      checked={field.value}
+                      onChange={field.onChange}
+                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 transition-all cursor-pointer"
+                    />
+                  </div>
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel className="text-[13px] font-medium text-slate-700 cursor-pointer">
+                    Remember me for 30 days
+                  </FormLabel>
+                </div>
               </FormItem>
             )}
           />

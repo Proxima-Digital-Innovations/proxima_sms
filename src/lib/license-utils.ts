@@ -4,9 +4,22 @@ import { PUBLIC_KEY } from './license-keys';
 
 export type LicenseStatus = 'ACTIVE' | 'EXPIRED' | 'INVALID' | 'UNACTIVATED';
 
+export interface LicensePayload {
+  schoolName: string;
+  maxStudents: number;
+  tier: string;
+  features?: string[];
+  billingFrequency?: 'PER_TERM' | 'PER_SESSION';
+  discountPercent?: number;
+  termName?: string;
+  sessionName?: string;
+  expiresAt: string;
+  issuedAt: string;
+}
+
 export interface LicenseValidationResult {
   status: LicenseStatus;
-  payload: any | null;
+  payload: LicensePayload | null;
   message: string;
 }
 

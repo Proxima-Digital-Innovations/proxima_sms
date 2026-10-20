@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { createSecureAction } from '@/lib/secure-action';
 import { AnnouncementService } from '@/lib/services/announcement-service';
 import { prisma } from '@/lib/prisma';
+import { sendEmailToGuardians } from '@/lib/services/email-service';
 
 const service = new AnnouncementService();
 
@@ -12,6 +13,7 @@ const announcementSchema = z.object({
   id: z.string().optional(),
   title: z.string().min(3, 'Title must be at least 3 characters long.'),
   content: z.string().min(10, 'Content must be at least 10 characters long.'),
+  notifyParents: z.boolean().optional(),
 });
 
 export async function getAnnouncements() {
@@ -65,6 +67,16 @@ export const saveAnnouncement = createSecureAction(
   announcementSchema,
   async (data, session) => {
     await service.saveAnnouncement(session, data);
+    
+    // If user checked 'notifyParents', send email to all guardians
+    if (data.notifyParents) {
+      // In a background or non-blocking way, or wait for it.
+      await sendEmailToGuardians({
+        subject: `New Announcement: ${data.title}`,
+        body: data.content
+      });
+    }
+
     revalidatePath('/dashboard/announcements');
     return { success: true };
   }

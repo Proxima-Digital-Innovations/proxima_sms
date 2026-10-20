@@ -38,12 +38,20 @@ export async function addQuizQuestion(
   }
 }
 
+import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
+
 /**
  * Submit a quiz attempt and AUTO-GRADE
  */
 export async function submitQuizAttempt(quizId: string, studentId: string, studentAnswers: Record<string, string>) {
   try {
-    const result = await service.submitQuizAttempt(quizId, studentId, studentAnswers);
+    const session = await auth();
+    const resolvedStudentId = (studentId && studentId !== 'mock-student-id')
+      ? studentId
+      : (session?.user?.id || (await prisma.student.findFirst())?.id || 'student');
+
+    const result = await service.submitQuizAttempt(quizId, resolvedStudentId, studentAnswers);
     revalidatePath("/student/lms");
     return { success: true, attempt: result.attempt, score: result.score };
   } catch (error: any) {

@@ -10,10 +10,16 @@ export async function createQuestionPaper(data: {
   teacherId: string;
   termId: string;
   content?: string;
+  activities?: string;
+  objectives?: string;
+  resources?: string;
   fileUrl?: string;
   paperType?: string;
+  duration?: number;
+  maxMarks?: number;
 }) {
   try {
+    const metaTag = `QUESTION_PAPER:${data.paperType || 'CA Test'}:${data.duration || 90}:${data.maxMarks || 100}`;
     const paper = await prisma.lessonNote.create({
       data: {
         title: data.title,
@@ -22,8 +28,11 @@ export async function createQuestionPaper(data: {
         teacherId: data.teacherId,
         termId: data.termId,
         content: data.content ?? null,
+        activities: data.activities ?? null,
+        objectives: data.objectives ?? null,
+        resources: data.resources ?? null,
         fileUrl: data.fileUrl ?? null,
-        evaluation: `QUESTION_PAPER:${data.paperType || 'CA Test'}`,
+        evaluation: metaTag,
         status: 'DRAFT',
       },
     });
@@ -113,14 +122,35 @@ export async function getQuestionPaperById(id: string) {
   }
 }
 
-export async function updateQuestionPaper(id: string, data: { content?: string; fileUrl?: string }) {
+export async function updateQuestionPaper(
+  id: string,
+  data: {
+    title?: string;
+    content?: string;
+    activities?: string;
+    objectives?: string;
+    resources?: string;
+    fileUrl?: string;
+    paperType?: string;
+    duration?: number;
+    maxMarks?: number;
+  }
+) {
   try {
+    const updateData: any = {};
+    if (data.title !== undefined) updateData.title = data.title;
+    if (data.content !== undefined) updateData.content = data.content;
+    if (data.activities !== undefined) updateData.activities = data.activities;
+    if (data.objectives !== undefined) updateData.objectives = data.objectives;
+    if (data.resources !== undefined) updateData.resources = data.resources;
+    if (data.fileUrl !== undefined) updateData.fileUrl = data.fileUrl;
+    if (data.paperType !== undefined || data.duration !== undefined || data.maxMarks !== undefined) {
+      updateData.evaluation = `QUESTION_PAPER:${data.paperType || 'CA Test'}:${data.duration || 90}:${data.maxMarks || 100}`;
+    }
+
     await prisma.lessonNote.update({
       where: { id },
-      data: {
-        content: data.content ?? null,
-        fileUrl: data.fileUrl ?? null,
-      },
+      data: updateData,
     });
     revalidatePath('/dashboard/exam-questions');
     return { success: true };

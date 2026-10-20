@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
         if (!kiosk || !kiosk.isActive) return NextResponse.json({ success: false, message: 'Terminal not activated' }, { status: 403 });
 
         const staff = await prisma.user.findMany({
-            where: { status: 'ACTIVE' },
+            where: { status: { in: ['ACTIVE', 'active'] } },
             select: {
                 id: true,
                 firstName: true,

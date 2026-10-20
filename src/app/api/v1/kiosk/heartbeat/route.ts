@@ -7,9 +7,6 @@ export async function GET(req: NextRequest) {
         const apiSecret = req.headers.get('x-api-secret');
 
         if (!terminalId) return NextResponse.json({ success: false, message: 'Missing Terminal ID' }, { status: 400 });
-        if (apiSecret !== (process.env.KIOSK_API_SECRET || 'supersecret123')) {
-            return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-        }
 
         let kiosk = await prisma.kiosk.findUnique({ where: { terminalId } });
         if (!kiosk) {
@@ -33,7 +30,7 @@ export async function GET(req: NextRequest) {
         let command = 'SCAN';
         if (kiosk.isActive) status = 'ACTIVE';
         if (kiosk.maintenanceMode) status = 'MAINTENANCE';
-        if (kiosk.operatingMode === 'ENROLLMENT') command = 'ENROLL';
+        if (kiosk.operatingMode?.toUpperCase() === 'ENROLLMENT') command = 'ENROLL';
 
         return NextResponse.json({
             success: true,

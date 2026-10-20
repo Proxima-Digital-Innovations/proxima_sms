@@ -2,11 +2,14 @@
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { STAFF_FILTER } from '@/lib/dal/staff-repository';
+
+import { getFinancialSummary, getRevenueVsExpenseData } from './report-actions';
 
 export async function getAdminDashboardStats() {
     try {
-        const totalStudents = await prisma.student.count({ where: { status: 'ACTIVE' } });
-        const totalStaff = await prisma.user.count({ where: { status: 'active' } });
+        const totalStudents = await prisma.student.count({ where: { status: { in: ['ACTIVE', 'Active'] } } });
+        const totalStaff = await prisma.user.count({ where: STAFF_FILTER });
         const activeClasses = await prisma.class.count();
 
         const currentTerm = await prisma.term.findFirst({
@@ -14,28 +17,19 @@ export async function getAdminDashboardStats() {
             select: { id: true }
         });
 
-        let totalRevenue = 0;
+        // Use the centralized financial logic so main dashboard and finance dashboard are perfectly in sync
+        const finSummary = await getFinancialSummary();
+        const revExpData = await getRevenueVsExpenseData();
+        const totalRevenue = finSummary.totalRevenue;
+
         let pendingPayments = 0;
-
         if (currentTerm) {
-            const receipts = await prisma.paymentReceipt.aggregate({
-                _sum: { amount: true },
-                where: { invoice: { termId: currentTerm.id } }
-            });
-            totalRevenue = receipts._sum.amount || 0;
-
             const pending = await prisma.invoice.aggregate({
                 _sum: { balance: true },
                 where: { termId: currentTerm.id, status: { not: 'PAID' } }
             });
             pendingPayments = pending._sum.balance || 0;
         } else {
-            // Fallback to all time if no active term
-            const receipts = await prisma.paymentReceipt.aggregate({
-                _sum: { amount: true }
-            });
-            totalRevenue = receipts._sum.amount || 0;
-            
             const pending = await prisma.invoice.aggregate({
                 _sum: { balance: true },
                 where: { status: { not: 'PAID' } }
@@ -54,29 +48,9 @@ export async function getAdminDashboardStats() {
             time: log.createdAt.toISOString(),
             type: 'system'
         }));
-
-        const allReceipts = await prisma.paymentReceipt.findMany({
-            select: { amount: true, date: true }
-        });
         
-        const monthlyRevenue = Array(6).fill(0).map((_, i) => {
-            const d = new Date();
-            d.setMonth(d.getMonth() - (5 - i));
-            return {
-                name: d.toLocaleString('default', { month: 'short' }),
-                total: 0,
-                monthIndex: d.getMonth(),
-                year: d.getFullYear()
-            };
-        });
-
-        allReceipts.forEach(r => {
-            const d = new Date(r.date);
-            const m = monthlyRevenue.find(mr => mr.monthIndex === d.getMonth() && mr.year === d.getFullYear());
-            if (m) m.total += r.amount;
-        });
-        
-        const chartRevenueData = monthlyRevenue.map(m => ({ name: m.name, total: m.total }));
+        // Map the standardized revenue chart data to the format expected by the main dashboard
+        const chartRevenueData = revExpData.map(d => ({ name: d.name, total: d.Revenue }));
 
         const attendanceData = [
             { name: 'Mon', present: 0, absent: 0 },

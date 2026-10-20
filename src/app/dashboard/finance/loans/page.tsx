@@ -98,21 +98,21 @@ export default function LoansAdvancesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 pb-12 -mt-6 -mx-6">
+    <div className="min-h-screen bg-background pb-12 -mt-6 -mx-6">
       
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center px-8 py-5 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-20 shadow-sm gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center px-8 py-5 bg-background backdrop-blur-md border-b border-border sticky top-0 z-20 shadow-sm gap-4">
         <div className="flex items-center gap-4">
           <div className="p-2.5 bg-violet-600/20 border border-violet-500/30 rounded-xl shadow-[0_0_15px_rgba(139,92,246,0.15)]">
             <Wallet className="text-violet-400 w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">Staff Loans & Advances</h1>
-            <p className="text-xs text-slate-400 font-medium">Manage employee loans, salary advances, and monthly deductions.</p>
+            <h1 className="text-xl font-bold text-foreground tracking-tight">Staff Loans & Advances</h1>
+            <p className="text-xs text-muted-foreground font-medium">Manage employee loans, salary advances, and monthly deductions.</p>
           </div>
         </div>
         <div className="flex gap-3 w-full md:w-auto">
-          <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white h-9 flex-1 md:flex-none">
+          <Button variant="outline" className="border-border text-foreground hover:bg-muted hover:text-foreground h-9 flex-1 md:flex-none">
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
@@ -132,9 +132,9 @@ export default function LoansAdvancesPage() {
           animate="show"
         >
           <motion.div variants={itemVariants}>
-            <Card className="bg-slate-900/50 border-slate-800 shadow-xl overflow-hidden group">
+            <Card className="bg-background border-border shadow-xl overflow-hidden group">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-slate-400 uppercase tracking-wider">
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
                   Total Outstanding
                 </CardTitle>
                 <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:scale-110 transition-transform">
@@ -142,8 +142,8 @@ export default function LoansAdvancesPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-white font-mono">{formatCurrency(totalOutstanding)}</div>
-                <p className="text-xs text-slate-500 mt-1">
+                <div className="text-2xl font-bold text-foreground font-mono">{formatCurrency(totalOutstanding)}</div>
+                <p className="text-xs text-muted-foreground mt-1">
                   From <span className="text-emerald-400 font-semibold">{activeLoans.length}</span> active loans
                 </p>
               </CardContent>
@@ -151,46 +151,46 @@ export default function LoansAdvancesPage() {
           </motion.div>
           
           <motion.div variants={itemVariants}>
-            <Card className="bg-slate-900/50 border-slate-800 shadow-xl overflow-hidden group">
+            <Card className="bg-background border-border shadow-xl overflow-hidden group">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-slate-400 uppercase tracking-wider">Active Loans</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Active Loans</CardTitle>
                 <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400 group-hover:scale-110 transition-transform">
                   <Clock className="h-4 w-4" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-white">{activeLoans.length}</div>
-                <p className="text-xs text-slate-500 mt-1">Currently in repayment</p>
+                <div className="text-2xl font-bold text-foreground">{activeLoans.length}</div>
+                <p className="text-xs text-muted-foreground mt-1">Currently in repayment</p>
               </CardContent>
             </Card>
           </motion.div>
           
           <motion.div variants={itemVariants}>
-            <Card className="bg-slate-900/50 border-slate-800 shadow-xl overflow-hidden group">
+            <Card className="bg-background border-border shadow-xl overflow-hidden group">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-slate-400 uppercase tracking-wider">Pending Approvals</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Pending Approvals</CardTitle>
                 <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400 group-hover:scale-110 transition-transform">
                   <Clock className="h-4 w-4" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-white">{pendingLoans.length}</div>
-                <p className="text-xs text-slate-500 mt-1">Awaiting HR/Finance review</p>
+                <div className="text-2xl font-bold text-foreground">{pendingLoans.length}</div>
+                <p className="text-xs text-muted-foreground mt-1">Awaiting HR/Finance review</p>
               </CardContent>
             </Card>
           </motion.div>
           
           <motion.div variants={itemVariants}>
-            <Card className="bg-slate-900/50 border-slate-800 shadow-xl overflow-hidden group">
+            <Card className="bg-background border-border shadow-xl overflow-hidden group">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-slate-400 uppercase tracking-wider">Total Approved</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Total Approved</CardTitle>
                 <div className="p-2 rounded-lg bg-violet-500/10 text-violet-400 group-hover:scale-110 transition-transform">
                   <CheckCircle2 className="h-4 w-4" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-white font-mono">{formatCurrency(totalApproved)}</div>
-                <p className="text-xs text-slate-500 mt-1">All time approved</p>
+                <div className="text-2xl font-bold text-foreground font-mono">{formatCurrency(totalApproved)}</div>
+                <p className="text-xs text-muted-foreground mt-1">All time approved</p>
               </CardContent>
             </Card>
           </motion.div>
@@ -198,31 +198,31 @@ export default function LoansAdvancesPage() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
           <Tabs defaultValue="active" className="space-y-6">
-            <TabsList className="bg-slate-900 border border-slate-800">
-              <TabsTrigger value="active" className="data-[state=active]:bg-slate-800 data-[state=active]:text-white text-slate-400">Active & Pending</TabsTrigger>
-              <TabsTrigger value="completed" className="data-[state=active]:bg-slate-800 data-[state=active]:text-white text-slate-400">Completed</TabsTrigger>
+            <TabsList className="bg-background border border-border">
+              <TabsTrigger value="active" className="data-[state=active]:bg-muted data-[state=active]:text-foreground text-muted-foreground">Active & Pending</TabsTrigger>
+              <TabsTrigger value="completed" className="data-[state=active]:bg-muted data-[state=active]:text-foreground text-muted-foreground">Completed</TabsTrigger>
             </TabsList>
 
             <TabsContent value="active" className="space-y-4 outline-none">
-              <Card className="bg-slate-900/50 border-slate-800 shadow-xl overflow-hidden">
-                <CardHeader className="border-b border-slate-800/50 bg-slate-900/40 pb-5">
+              <Card className="bg-background border-border shadow-xl overflow-hidden">
+                <CardHeader className="border-b border-border bg-background pb-5">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                      <CardTitle className="text-lg font-bold text-white">Current Loans & Advances</CardTitle>
-                      <CardDescription className="text-slate-400 mt-1">
+                      <CardTitle className="text-lg font-bold text-foreground">Current Loans & Advances</CardTitle>
+                      <CardDescription className="text-muted-foreground mt-1">
                         Track repayment progress for active employee loans.
                       </CardDescription>
                     </div>
                     <div className="flex w-full md:w-auto items-center space-x-2">
                       <div className="relative flex-1 md:w-64">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
                           type="search"
                           placeholder="Search by employee..."
-                          className="pl-8 bg-slate-950 border-slate-800 text-slate-200 placeholder:text-slate-600 focus-visible:ring-violet-500 h-9"
+                          className="pl-8 bg-background border-border text-foreground placeholder:text-slate-600 focus-visible:ring-violet-500 h-9"
                         />
                       </div>
-                      <Button variant="outline" size="icon" className="border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-white h-9 w-9">
+                      <Button variant="outline" size="icon" className="border-border text-muted-foreground hover:bg-muted hover:text-foreground h-9 w-9">
                         <Filter className="h-4 w-4" />
                       </Button>
                     </div>
@@ -231,15 +231,15 @@ export default function LoansAdvancesPage() {
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
                     <Table>
-                      <TableHeader className="bg-slate-900/80 border-b border-slate-800">
+                      <TableHeader className="bg-background border-b border-border">
                         <TableRow className="hover:bg-transparent border-none">
-                          <TableHead className="pl-6 text-slate-400 font-bold uppercase tracking-wider text-[10px] h-10">Ref ID</TableHead>
-                          <TableHead className="text-slate-400 font-bold uppercase tracking-wider text-[10px] h-10">Employee</TableHead>
-                          <TableHead className="text-slate-400 font-bold uppercase tracking-wider text-[10px] h-10">Type</TableHead>
-                          <TableHead className="text-slate-400 font-bold uppercase tracking-wider text-[10px] h-10">Amount</TableHead>
-                          <TableHead className="w-[200px] text-slate-400 font-bold uppercase tracking-wider text-[10px] h-10">Repayment Progress</TableHead>
-                          <TableHead className="text-slate-400 font-bold uppercase tracking-wider text-[10px] h-10">Next Deduction</TableHead>
-                          <TableHead className="text-slate-400 font-bold uppercase tracking-wider text-[10px] h-10 pr-6">Status</TableHead>
+                          <TableHead className="pl-6 text-muted-foreground font-bold uppercase tracking-wider text-[10px] h-10">Ref ID</TableHead>
+                          <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] h-10">Employee</TableHead>
+                          <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] h-10">Type</TableHead>
+                          <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] h-10">Amount</TableHead>
+                          <TableHead className="w-[200px] text-muted-foreground font-bold uppercase tracking-wider text-[10px] h-10">Repayment Progress</TableHead>
+                          <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] h-10">Next Deduction</TableHead>
+                          <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] h-10 pr-6">Status</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -248,7 +248,7 @@ export default function LoansAdvancesPage() {
                              <TableCell colSpan={7} className="h-48 text-center">
                                <div className="flex flex-col items-center justify-center space-y-3">
                                  <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
-                                 <p className="text-sm font-medium text-slate-400">Loading loans data...</p>
+                                 <p className="text-sm font-medium text-muted-foreground">Loading loans data...</p>
                                </div>
                              </TableCell>
                            </TableRow>
@@ -256,10 +256,10 @@ export default function LoansAdvancesPage() {
                            <TableRow className="hover:bg-transparent border-none">
                              <TableCell colSpan={7} className="h-48 text-center">
                                <div className="flex flex-col items-center justify-center space-y-3">
-                                 <div className="w-12 h-12 bg-slate-900 rounded-full flex items-center justify-center">
+                                 <div className="w-12 h-12 bg-background rounded-full flex items-center justify-center">
                                      <Wallet className="h-6 w-6 text-slate-600" />
                                  </div>
-                                 <p className="text-sm font-medium text-slate-400">No active or pending loans found.</p>
+                                 <p className="text-sm font-medium text-muted-foreground">No active or pending loans found.</p>
                                </div>
                              </TableCell>
                            </TableRow>
@@ -273,29 +273,29 @@ export default function LoansAdvancesPage() {
                               initial="hidden" 
                               animate="show" 
                               key={loan.id} 
-                              className="border-b border-slate-800/50 hover:bg-slate-800/20 transition-colors group"
+                              className="border-b border-border hover:bg-muted transition-colors group"
                             >
-                                    <TableCell className="font-mono text-slate-400 pl-6">
+                                    <TableCell className="font-mono text-muted-foreground pl-6">
                                       #{loan.id.slice(0, 6).toUpperCase()}
                                     </TableCell>
                                     <TableCell>
                                       <div>
-                                        <div className="font-semibold text-white">{loan.employee}</div>
-                                        <div className="text-xs text-slate-500">
+                                        <div className="font-semibold text-foreground">{loan.employee}</div>
+                                        <div className="text-xs text-muted-foreground">
                                           {loan.role}
                                         </div>
                                       </div>
                                     </TableCell>
                                     <TableCell>
-                                      <Badge variant="outline" className="bg-slate-900/50 text-slate-300 border-slate-700 font-normal">
+                                      <Badge variant="outline" className="bg-background text-foreground border-border font-normal">
                                         {loan.type}
                                       </Badge>
                                     </TableCell>
-                                    <TableCell className="font-mono font-medium text-slate-200">{formatCurrency(loan.amount)}</TableCell>
+                                    <TableCell className="font-mono font-medium text-foreground">{formatCurrency(loan.amount)}</TableCell>
                                     <TableCell>
                                       <div className="flex flex-col gap-1.5 w-full pr-4">
                                         <div className="flex justify-between items-end mb-1">
-                                            <span className="text-[10px] font-medium text-slate-400">
+                                            <span className="text-[10px] font-medium text-muted-foreground">
                                               {formatCurrency(loan.paid)} paid
                                             </span>
                                             <span className="text-[10px] font-bold text-violet-400">
@@ -331,23 +331,23 @@ export default function LoansAdvancesPage() {
             </TabsContent>
 
             <TabsContent value="completed" className="space-y-4 outline-none">
-              <Card className="bg-slate-900/50 border-slate-800 shadow-xl overflow-hidden">
-                <CardHeader className="border-b border-slate-800/50 bg-slate-900/40 pb-5">
-                  <CardTitle className="text-lg font-bold text-white">Completed Loans</CardTitle>
-                  <CardDescription className="text-slate-400 mt-1">
+              <Card className="bg-background border-border shadow-xl overflow-hidden">
+                <CardHeader className="border-b border-border bg-background pb-5">
+                  <CardTitle className="text-lg font-bold text-foreground">Completed Loans</CardTitle>
+                  <CardDescription className="text-muted-foreground mt-1">
                     History of fully repaid employee loans and advances.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
                     <Table>
-                      <TableHeader className="bg-slate-900/80 border-b border-slate-800">
+                      <TableHeader className="bg-background border-b border-border">
                         <TableRow className="hover:bg-transparent border-none">
-                          <TableHead className="pl-6 text-slate-400 font-bold uppercase tracking-wider text-[10px] h-10">Ref ID</TableHead>
-                          <TableHead className="text-slate-400 font-bold uppercase tracking-wider text-[10px] h-10">Employee</TableHead>
-                          <TableHead className="text-slate-400 font-bold uppercase tracking-wider text-[10px] h-10">Type</TableHead>
-                          <TableHead className="text-slate-400 font-bold uppercase tracking-wider text-[10px] h-10">Total Paid</TableHead>
-                          <TableHead className="pr-6 text-slate-400 font-bold uppercase tracking-wider text-[10px] h-10">Status</TableHead>
+                          <TableHead className="pl-6 text-muted-foreground font-bold uppercase tracking-wider text-[10px] h-10">Ref ID</TableHead>
+                          <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] h-10">Employee</TableHead>
+                          <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] h-10">Type</TableHead>
+                          <TableHead className="text-muted-foreground font-bold uppercase tracking-wider text-[10px] h-10">Total Paid</TableHead>
+                          <TableHead className="pr-6 text-muted-foreground font-bold uppercase tracking-wider text-[10px] h-10">Status</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -356,7 +356,7 @@ export default function LoansAdvancesPage() {
                              <TableCell colSpan={5} className="h-48 text-center">
                                <div className="flex flex-col items-center justify-center space-y-3">
                                  <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
-                                 <p className="text-sm font-medium text-slate-400">Loading loans data...</p>
+                                 <p className="text-sm font-medium text-muted-foreground">Loading loans data...</p>
                                </div>
                              </TableCell>
                            </TableRow>
@@ -364,10 +364,10 @@ export default function LoansAdvancesPage() {
                            <TableRow className="hover:bg-transparent border-none">
                              <TableCell colSpan={5} className="h-48 text-center">
                                <div className="flex flex-col items-center justify-center space-y-3">
-                                 <div className="w-12 h-12 bg-slate-900 rounded-full flex items-center justify-center">
+                                 <div className="w-12 h-12 bg-background rounded-full flex items-center justify-center">
                                      <CheckCircle2 className="h-6 w-6 text-slate-600" />
                                  </div>
-                                 <p className="text-sm font-medium text-slate-400">No completed loans found.</p>
+                                 <p className="text-sm font-medium text-muted-foreground">No completed loans found.</p>
                                </div>
                              </TableCell>
                            </TableRow>
@@ -375,28 +375,28 @@ export default function LoansAdvancesPage() {
                            <React.Fragment>
                             {mappedLoans.filter((l: any) => l.status === "Completed").map(
                               (loan: any, index: number) => (
-                                <motion.tr variants={itemVariants} key={index} className="border-b border-slate-800/50 hover:bg-slate-800/20 transition-colors">
-                                  <TableCell className="font-mono text-slate-400 pl-6">
+                                <motion.tr variants={itemVariants} key={index} className="border-b border-border hover:bg-muted transition-colors">
+                                  <TableCell className="font-mono text-muted-foreground pl-6">
                                     #{loan.id.slice(0, 6).toUpperCase()}
                                   </TableCell>
                                   <TableCell>
                                     <div>
-                                      <div className="font-semibold text-white">{loan.employee}</div>
-                                      <div className="text-xs text-slate-500">
+                                      <div className="font-semibold text-foreground">{loan.employee}</div>
+                                      <div className="text-xs text-muted-foreground">
                                         {loan.role}
                                       </div>
                                     </div>
                                   </TableCell>
                                   <TableCell>
-                                    <Badge variant="outline" className="bg-slate-900/50 text-slate-300 border-slate-700 font-normal">
+                                    <Badge variant="outline" className="bg-background text-foreground border-border font-normal">
                                       {loan.type}
                                     </Badge>
                                   </TableCell>
-                                  <TableCell className="font-mono font-medium text-slate-200">{formatCurrency(loan.amount)}</TableCell>
+                                  <TableCell className="font-mono font-medium text-foreground">{formatCurrency(loan.amount)}</TableCell>
                                   <TableCell className="pr-6">
                                     <Badge
                                       variant="outline"
-                                      className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-slate-800/50 text-slate-400 border-slate-700"
+                                      className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-muted text-muted-foreground border-border"
                                     >
                                       {loan.status}
                                     </Badge>

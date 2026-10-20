@@ -7,15 +7,17 @@ import { Badge } from '@/components/ui/badge';
 import { getMemoDetails, processMemo, getStaffList } from '@/actions/memo-actions';
 import { useToast } from '@/hooks/use-toast';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { CheckCircle2, XCircle, Forward, Clock, ArrowLeft } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
-export default function MemoDetailsPage({ params }: { params: { id: string } }) {
-  const { data: session } = useSession();
+export default function MemoDetailsPage() {
   const router = useRouter();
+  const routeParams = useParams();
+  const memoId = routeParams?.id as string;
+  const { data: session } = useSession();
   const { toast } = useToast();
 
   const [memo, setMemo] = useState<any>(null);
@@ -29,8 +31,9 @@ export default function MemoDetailsPage({ params }: { params: { id: string } }) 
 
   useEffect(() => {
     async function loadData() {
+      if (!memoId) return;
       setIsLoading(true);
-      const res = await getMemoDetails(params.id);
+      const res = await getMemoDetails(memoId);
       if (res.success) setMemo(res.memo);
       
       const staffRes = await getStaffList();
@@ -39,10 +42,11 @@ export default function MemoDetailsPage({ params }: { params: { id: string } }) 
       setIsLoading(false);
     }
     loadData();
-  }, [params.id]);
+  }, [memoId]);
 
   const handleAction = async (action: 'APPROVED' | 'REJECTED' | 'KIV' | 'FORWARDED') => {
-    if (!session?.user?.id) return;
+    const userId = (session?.user as any)?.id;
+    if (!userId) return;
     if (action === 'FORWARDED' && !forwardToId) {
       toast({ title: 'Validation', description: 'Select a staff member to forward to.', variant: 'destructive' });
       return;
@@ -51,8 +55,8 @@ export default function MemoDetailsPage({ params }: { params: { id: string } }) 
     setIsProcessing(true);
     try {
       const res = await processMemo({
-        memoId: params.id,
-        actorId: session.user.id,
+        memoId,
+        actorId: userId,
         action,
         notes: actionNotes || `Memo marked as ${action}`,
         nextHandlerId: action === 'FORWARDED' ? forwardToId : undefined
@@ -75,7 +79,7 @@ export default function MemoDetailsPage({ params }: { params: { id: string } }) 
   if (!memo) return <div className="p-10 text-center">Memo not found.</div>;
 
   const isCurrentHandler = memo.currentHandlerId === session?.user?.id && memo.status === 'PENDING';
-  let metadata = null;
+  let metadata: any = null;
   if (memo.metadata) {
     try { metadata = JSON.parse(memo.metadata); } catch(e){}
   }
@@ -89,7 +93,7 @@ export default function MemoDetailsPage({ params }: { params: { id: string } }) 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <Card>
-            <CardHeader className="border-b bg-slate-50">
+            <CardHeader className="border-b bg-background">
               <div className="flex justify-between items-start">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
@@ -130,7 +134,7 @@ export default function MemoDetailsPage({ params }: { params: { id: string } }) 
               )}
 
               <div>
-                <h4 className="text-sm font-semibold text-slate-500 mb-2">Memo Content</h4>
+                <h4 className="text-sm font-semibold text-muted-foreground mb-2">Memo Content</h4>
                 <div className="bg-white border rounded-md p-4 min-h-[200px] whitespace-pre-wrap text-sm">
                   {memo.content}
                 </div>
@@ -146,11 +150,11 @@ export default function MemoDetailsPage({ params }: { params: { id: string } }) 
             <CardContent>
               <div className="space-y-4">
                 {memo.history.map((h: any) => (
-                  <div key={h.id} className="flex gap-4 text-sm border-l-2 border-slate-200 pl-4 py-1">
-                    <div className="text-slate-500 whitespace-nowrap">{format(new Date(h.createdAt), 'MMM d, h:mm a')}</div>
+                  <div key={h.id} className="flex gap-4 text-sm border-l-2 border-border pl-4 py-1">
+                    <div className="text-muted-foreground whitespace-nowrap">{format(new Date(h.createdAt), 'MMM d, h:mm a')}</div>
                     <div>
                       <span className="font-medium">{h.actor.firstName} {h.actor.lastName}</span> 
-                      <span className="mx-2 text-slate-500">→</span>
+                      <span className="mx-2 text-muted-foreground">→</span>
                       <Badge variant="outline">{h.action}</Badge>
                       {h.notes && <p className="text-slate-600 mt-1 italic">"{h.notes}"</p>}
                     </div>
@@ -168,17 +172,17 @@ export default function MemoDetailsPage({ params }: { params: { id: string } }) 
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
               <div>
-                <span className="block text-slate-500">Sender</span>
+                <span className="block text-muted-foreground">Sender</span>
                 <span className="font-medium">{memo.sender.firstName} {memo.sender.lastName}</span>
               </div>
               <div>
-                <span className="block text-slate-500">Current Handler</span>
+                <span className="block text-muted-foreground">Current Handler</span>
                 {memo.currentHandler ? (
                    <span className="font-medium">{memo.currentHandler.firstName} {memo.currentHandler.lastName}</span>
-                ) : <span className="italic text-slate-400">None</span>}
+                ) : <span className="italic text-muted-foreground">None</span>}
               </div>
               <div>
-                <span className="block text-slate-500">Date Raised</span>
+                <span className="block text-muted-foreground">Date Raised</span>
                 <span>{format(new Date(memo.createdAt), 'PPP')}</span>
               </div>
             </CardContent>
@@ -193,7 +197,7 @@ export default function MemoDetailsPage({ params }: { params: { id: string } }) 
               <CardContent className="pt-4 space-y-4">
                 
                 <div className="space-y-2">
-                  <label className="text-xs font-medium text-slate-500">Action Notes / Remarks</label>
+                  <label className="text-xs font-medium text-muted-foreground">Action Notes / Remarks</label>
                   <Textarea 
                     value={actionNotes} 
                     onChange={e => setActionNotes(e.target.value)} 
@@ -231,7 +235,7 @@ export default function MemoDetailsPage({ params }: { params: { id: string } }) 
                 </Button>
 
                 <div className="pt-4 border-t space-y-2">
-                  <label className="text-xs font-medium text-slate-500">Or Forward to another Handler</label>
+                  <label className="text-xs font-medium text-muted-foreground">Or Forward to another Handler</label>
                   <div className="flex gap-2">
                     <Select value={forwardToId} onValueChange={setForwardToId}>
                       <SelectTrigger className="w-full"><SelectValue placeholder="Select Staff" /></SelectTrigger>

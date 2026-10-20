@@ -11,6 +11,7 @@ type RoleContextType = {
   role: string | null;
   activeModules: string[];
   rbacPermissions: string[];
+  requiresPasswordChange: boolean;
   setRole: (role: string) => void;
   logout: () => void;
   isLoading: boolean;
@@ -84,6 +85,7 @@ export const RoleProvider = ({ children }: { children: React.ReactNode }) => {
         role: currentRole,
         activeModules: (session?.user as any)?.activeModules || [],
         rbacPermissions: (session?.user as any)?.rbacPermissions || [],
+        requiresPasswordChange: (session?.user as any)?.requiresPasswordChange || false,
         setRole,
         logout,
         isLoading,

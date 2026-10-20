@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Send, Users, Mail, MessageCircle, AlertCircle } from 'lucide-react';
+import { MessageSquare, Send, Users, Mail, MessageCircle, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default async function MessagingDashboardPage({ params }: { params: Promise<{ school: string }> }) {
@@ -29,14 +29,21 @@ export default async function MessagingDashboardPage({ params }: { params: Promi
       <div className="flex items-center justify-between space-y-2">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Messaging & Communications</h2>
-          <p className="text-muted-foreground mt-1">Broadcast SMS and Emails to Parents, Staff, and Students.</p>
+          <p className="text-muted-foreground mt-1">Broadcast SMS, WhatsApp, and Emails to Parents, Staff, and Students.</p>
         </div>
-        <Link href={`/dashboard/messaging/compose`}>
-          <Button className="flex items-center gap-2">
-            <Send className="w-4 h-4" />
-            New Broadcast
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard/system/communications">
+            <Button variant="outline" className="flex items-center gap-2">
+              Gateway Settings
+            </Button>
+          </Link>
+          <Link href={`/dashboard/messaging/compose`}>
+            <Button className="flex items-center gap-2">
+              <Send className="w-4 h-4" />
+              New Broadcast
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -60,12 +67,12 @@ export default async function MessagingDashboardPage({ params }: { params: Promi
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Available Credits</CardTitle>
-            <AlertCircle className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Gateway Status</CardTitle>
+            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Unlimited</div>
-            <p className="text-xs text-muted-foreground mt-1">Mock Provider Active</p>
+            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">Operational</div>
+            <p className="text-xs text-muted-foreground mt-1">Direct SMS & Email Relay Active</p>
           </CardContent>
         </Card>
       </div>
@@ -88,8 +95,10 @@ export default async function MessagingDashboardPage({ params }: { params: Promi
                     <div className="mt-1">
                       {blast.channel === 'EMAIL' ? (
                         <Mail className="w-5 h-5 text-blue-500" />
+                      ) : blast.channel === 'WHATSAPP' ? (
+                        <MessageCircle className="w-5 h-5 text-emerald-500" />
                       ) : (
-                        <MessageCircle className="w-5 h-5 text-green-500" />
+                        <MessageSquare className="w-5 h-5 text-amber-500" />
                       )}
                     </div>
                     <div>

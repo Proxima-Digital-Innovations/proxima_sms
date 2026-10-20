@@ -80,15 +80,15 @@ export function SLTAssignments() {
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <Card className="shadow-md border-slate-200/60 overflow-hidden relative group">
+      <Card className="shadow-md border-border overflow-hidden relative group">
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/30 to-transparent z-0 pointer-events-none" />
-        <CardHeader className="bg-slate-50/50 border-b border-slate-100 pb-4 relative z-10">
-          <CardTitle className="text-lg font-bold text-slate-800">Head of Department Assignments</CardTitle>
-          <CardDescription className="font-medium text-slate-500">Assign a leader to each academic department.</CardDescription>
+        <CardHeader className="bg-background border-b border-slate-100 pb-4 relative z-10">
+          <CardTitle className="text-lg font-bold text-foreground">Head of Department Assignments</CardTitle>
+          <CardDescription className="font-medium text-muted-foreground">Assign a leader to each academic department.</CardDescription>
         </CardHeader>
         <CardContent className="p-0 relative z-10">
           <Table>
-            <TableHeader className="bg-slate-50/50">
+            <TableHeader className="bg-background">
               <TableRow>
                 <TableHead className="font-semibold text-slate-600 pl-6">Department</TableHead>
                 <TableHead className="font-semibold text-slate-600 pr-6">Head of Department (HOD)</TableHead>
@@ -96,7 +96,7 @@ export function SLTAssignments() {
             </TableHeader>
             <TableBody>
               {departments.map(dept => (
-                <TableRow key={dept.id} className="hover:bg-slate-50/50 transition-colors">
+                <TableRow key={dept.id} className="hover:bg-background transition-colors">
                   <TableCell className="font-semibold text-slate-900 pl-6">{dept.name}</TableCell>
                   <TableCell className="pr-6 py-4">
                     {isUpdating === `hod-${dept.id}` ? (
@@ -106,7 +106,7 @@ export function SLTAssignments() {
                         </div>
                     ) : (
                         <Select onValueChange={(newHodId) => handleHodChange(dept.id, newHodId)} value={dept.hodId || ''}>
-                            <SelectTrigger className="w-full bg-white border-slate-200 focus:ring-indigo-500 font-medium text-slate-700 h-10 shadow-sm">
+                            <SelectTrigger className="w-full bg-white border-border focus:ring-indigo-500 font-medium text-slate-700 h-10 shadow-sm">
                                 <SelectValue placeholder="Assign HOD" />
                             </SelectTrigger>
                             <SelectContent>
@@ -124,7 +124,7 @@ export function SLTAssignments() {
               ))}
               {departments.length === 0 && !isLoading && (
                  <TableRow>
-                    <TableCell colSpan={2} className="h-32 text-center text-slate-500 font-medium">No departments found.</TableCell>
+                    <TableCell colSpan={2} className="h-32 text-center text-muted-foreground font-medium">No departments found.</TableCell>
                  </TableRow>
               )}
             </TableBody>
@@ -132,15 +132,15 @@ export function SLTAssignments() {
         </CardContent>
       </Card>
       
-      <Card className="shadow-md border-slate-200/60 overflow-hidden relative group">
+      <Card className="shadow-md border-border overflow-hidden relative group">
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/30 to-transparent z-0 pointer-events-none" />
-        <CardHeader className="bg-slate-50/50 border-b border-slate-100 pb-4 relative z-10">
-          <CardTitle className="text-lg font-bold text-slate-800">Teacher Department Assignments</CardTitle>
-          <CardDescription className="font-medium text-slate-500">Assign each teacher to their respective department.</CardDescription>
+        <CardHeader className="bg-background border-b border-slate-100 pb-4 relative z-10">
+          <CardTitle className="text-lg font-bold text-foreground">Teacher Department Assignments</CardTitle>
+          <CardDescription className="font-medium text-muted-foreground">Assign each teacher to their respective department.</CardDescription>
         </CardHeader>
         <CardContent className="p-0 relative z-10">
           <Table>
-            <TableHeader className="bg-slate-50/50">
+            <TableHeader className="bg-background">
               <TableRow>
                 <TableHead className="font-semibold text-slate-600 pl-6">Teacher</TableHead>
                 <TableHead className="font-semibold text-slate-600 pr-6">Department</TableHead>
@@ -148,7 +148,7 @@ export function SLTAssignments() {
             </TableHeader>
             <TableBody>
               {teachers.map(teacher => (
-                <TableRow key={teacher.id} className="hover:bg-slate-50/50 transition-colors">
+                <TableRow key={teacher.id} className="hover:bg-background transition-colors">
                   <TableCell className="font-semibold text-slate-900 pl-6">{teacher.name}</TableCell>
                   <TableCell className="pr-6 py-4">
                      {isUpdating === `teacher-${teacher.id}` ? (
@@ -158,11 +158,11 @@ export function SLTAssignments() {
                         </div>
                     ) : (
                         <Select onValueChange={(deptName) => handleDepartmentChange(teacher.id, deptName)} value={teacher.department || ''}>
-                            <SelectTrigger className="w-full bg-white border-slate-200 focus:ring-emerald-500 font-medium text-slate-700 h-10 shadow-sm">
+                            <SelectTrigger className="w-full bg-white border-border focus:ring-emerald-500 font-medium text-slate-700 h-10 shadow-sm">
                                 <SelectValue placeholder="Assign Department" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="remove" className="text-slate-500 font-medium italic">Unassigned</SelectItem>
+                                <SelectItem value="remove" className="text-muted-foreground font-medium italic">Unassigned</SelectItem>
                                 {departments.map(dept => (
                                     <SelectItem key={dept.id} value={dept.name} className="font-medium text-slate-700">
                                         {dept.name}
@@ -176,7 +176,7 @@ export function SLTAssignments() {
               ))}
               {teachers.length === 0 && !isLoading && (
                  <TableRow>
-                    <TableCell colSpan={2} className="h-32 text-center text-slate-500 font-medium">No teachers found.</TableCell>
+                    <TableCell colSpan={2} className="h-32 text-center text-muted-foreground font-medium">No teachers found.</TableCell>
                  </TableRow>
               )}
             </TableBody>

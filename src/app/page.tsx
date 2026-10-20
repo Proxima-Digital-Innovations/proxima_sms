@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 export default function PlatformLoginPage() {
   return (
     <LoginLayout
-      schoolName="Proxima Hub"
+      schoolName="Proxima SMS"
       tagline="Centralized Management System"
     >
       <div className="space-y-6">
@@ -18,7 +18,7 @@ export default function PlatformLoginPage() {
         </Suspense>
 
         <div className="pt-4 border-t border-slate-100">
-           <Link href="/super-admin" className="text-xs font-bold text-slate-400 hover:text-slate-900 transition-colors block text-center uppercase tracking-widest">
+           <Link href="/super-admin" className="text-xs font-bold text-muted-foreground hover:text-slate-900 transition-colors block text-center uppercase tracking-widest">
              Platform Administrator
            </Link>
         </div>

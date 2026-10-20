@@ -152,7 +152,7 @@ export function AssignRolesDialog({ user, isOpen, onOpenChange, onSuccess }: Ass
                     </div>
                   ) : (
                     filteredRoles.map((role) => (
-                      <div key={role.id} className="flex items-start space-x-3 p-3 rounded-md border bg-slate-50 hover:bg-slate-100 transition-colors">
+                      <div key={role.id} className="flex items-start space-x-3 p-3 rounded-md border bg-background hover:bg-slate-100 transition-colors">
                         <Checkbox 
                           id={`role-${role.id}`} 
                           checked={selectedRoleIds.includes(role.id)}

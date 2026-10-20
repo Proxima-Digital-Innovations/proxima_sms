@@ -27,7 +27,7 @@ type ImportResult = {
     invalidRecords: any[];
 } | null;
 
-export function BulkStudentUploadDialog({ onUploadComplete }: { onUploadComplete: () => void }) {
+export function BulkStudentUploadDialog({ onUploadComplete }: { onUploadComplete?: () => void }) {
   const [fileName, setFileName] = useState<string | null>(null);
   const [studentData, setStudentData] = useState<any[]>([]);
   const [isParsing, setIsParsing] = useState(false);
@@ -37,9 +37,8 @@ export function BulkStudentUploadDialog({ onUploadComplete }: { onUploadComplete
   const { toast } = useToast();
   
   const handleDownloadTemplate = () => {
-    // Simplified headers
     const headers = [
-      "firstName", "lastName", "class", "guardianName", "guardianContact", "guardianEmail"
+      "firstName", "lastName", "middleName", "gender", "class", "guardianName", "guardianContact", "guardianEmail"
     ];
     
     const workbook = XLSX.utils.book_new();
@@ -49,6 +48,8 @@ export function BulkStudentUploadDialog({ onUploadComplete }: { onUploadComplete
       {
         firstName: "Fatima",
         lastName: "Abubakar",
+        middleName: "Zahra",
+        gender: "Female",
         class: "JSS 1",
         guardianName: "Amina Abubakar",
         guardianContact: "08023456789",
@@ -57,11 +58,23 @@ export function BulkStudentUploadDialog({ onUploadComplete }: { onUploadComplete
       {
         firstName: "Muhammad",
         lastName: "Sani",
+        middleName: "Ali",
+        gender: "Male",
         class: "Primary 6",
         guardianName: "Hadiza Sani",
         guardianContact: "08098765432",
         guardianEmail: "h.sani@example.com"
       },
+      {
+        firstName: "Chinedu",
+        lastName: "Okonkwo",
+        middleName: "Emeka",
+        gender: "Male",
+        class: "SSS 2 Science",
+        guardianName: "Grace Okonkwo",
+        guardianContact: "08011223344",
+        guardianEmail: "g.okonkwo@example.com"
+      }
     ];
 
     XLSX.utils.sheet_add_json(worksheet, exampleData, { origin: 'A2', skipHeader: true });
@@ -136,7 +149,7 @@ export function BulkStudentUploadDialog({ onUploadComplete }: { onUploadComplete
         });
 
         if (result.errorCount === 0) {
-            onUploadComplete();
+            onUploadComplete?.();
         }
     } catch (error: any) {
          toast({
@@ -183,7 +196,7 @@ export function BulkStudentUploadDialog({ onUploadComplete }: { onUploadComplete
                                 {importResult.invalidRecords.map((record, index) => (
                                     <TableRow key={index}>
                                         <TableCell>{record.firstName || 'N/A'} {record.lastName || ''}</TableCell>
-                                        <TableCell><Badge variant="outline">{record.error}</Badge></TableCell>
+                                        <TableCell><Badge variant="outline">{record.error || record.reason || 'Failed'}</Badge></TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
@@ -196,7 +209,7 @@ export function BulkStudentUploadDialog({ onUploadComplete }: { onUploadComplete
   }
 
   return (
-    <DialogContent className="max-w-3xl">
+    <DialogContent className="max-w-3xl border-border bg-background text-foreground max-h-[90vh] overflow-y-auto w-[95vw] p-4 sm:p-6">
       <DialogHeader>
         <DialogTitle>Bulk Student Upload</DialogTitle>
         <DialogDescription>

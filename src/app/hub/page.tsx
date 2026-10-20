@@ -22,59 +22,59 @@ export default async function HubDashboardPage() {
         <div className="space-y-8 max-w-6xl">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight text-slate-900">Hub Dashboard</h1>
-                <p className="text-slate-500 mt-2">
-                    Overview of your global Proxima ERP SaaS infrastructure.
+                <p className="text-muted-foreground mt-2">
+                    Overview of your global Proxima SMS SaaS infrastructure.
                 </p>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                <Card className="border-slate-200 shadow-sm">
+                <Card className="border-border shadow-sm">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium text-slate-600">Total Tenants (Schools)</CardTitle>
                         <Building2 className="h-4 w-4 text-blue-600" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold text-slate-900">{totalSchools}</div>
-                        <p className="text-xs text-slate-500 mt-1">Active deployments</p>
+                        <p className="text-xs text-muted-foreground mt-1">Active deployments</p>
                     </CardContent>
                 </Card>
 
-                <Card className="border-slate-200 shadow-sm">
+                <Card className="border-border shadow-sm">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium text-slate-600">Total Students</CardTitle>
                         <GraduationCap className="h-4 w-4 text-emerald-600" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold text-slate-900">{totalStudents}</div>
-                        <p className="text-xs text-slate-500 mt-1">Across all schools</p>
+                        <p className="text-xs text-muted-foreground mt-1">Across all schools</p>
                     </CardContent>
                 </Card>
 
-                <Card className="border-slate-200 shadow-sm">
+                <Card className="border-border shadow-sm">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium text-slate-600">Total Staff</CardTitle>
                         <Users className="h-4 w-4 text-indigo-600" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold text-slate-900">{totalTeachers}</div>
-                        <p className="text-xs text-slate-500 mt-1">Teachers and Admins</p>
+                        <p className="text-xs text-muted-foreground mt-1">Teachers and Admins</p>
                     </CardContent>
                 </Card>
 
-                <Card className="border-slate-200 shadow-sm">
+                <Card className="border-border shadow-sm">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium text-slate-600">Total System Users</CardTitle>
                         <Users className="h-4 w-4 text-slate-600" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold text-slate-900">{totalUsers}</div>
-                        <p className="text-xs text-slate-500 mt-1">Registered accounts</p>
+                        <p className="text-xs text-muted-foreground mt-1">Registered accounts</p>
                     </CardContent>
                 </Card>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">
-                <Card className="border-slate-200 shadow-sm">
+                <Card className="border-border shadow-sm">
                     <CardHeader>
                         <CardTitle>Recent Deployments</CardTitle>
                         <CardDescription>The latest schools added to your infrastructure.</CardDescription>
@@ -85,7 +85,7 @@ export default async function HubDashboardPage() {
                                 <div key={school.id} className="flex items-center justify-between border-b border-slate-100 pb-4 last:border-0 last:pb-0">
                                     <div>
                                         <p className="font-medium text-slate-900">{school.name}</p>
-                                        <p className="text-sm text-slate-500">Tenant ID: {school.name}</p>
+                                        <p className="text-sm text-muted-foreground">Tenant ID: {school.name}</p>
                                     </div>
                                     <Link 
                                         href={`/${school.name}/dashboard`} 
@@ -97,7 +97,7 @@ export default async function HubDashboardPage() {
                                 </div>
                             ))}
                             {recentSchools.length === 0 && (
-                                <p className="text-sm text-slate-500">No schools deployed yet.</p>
+                                <p className="text-sm text-muted-foreground">No schools deployed yet.</p>
                             )}
                         </div>
                     </CardContent>
