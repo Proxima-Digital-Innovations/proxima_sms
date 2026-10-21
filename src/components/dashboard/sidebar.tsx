@@ -24,47 +24,95 @@ import { getSchoolInfo } from '@/actions/school-actions';
 import { useSidebar } from '@/components/ui/sidebar';
 
 // Navigation translation key mapper
-const NAV_TRANSLATION_MAP: Record<string, string> = {
-    'Dashboard': 'dashboard',
-    'Main': 'mainNavigation',
-    'Academics': 'academics',
-    'Enter Scores': 'enterScores',
-    'Review Scores': 'reviewScores',
-    'Mid-Term Results': 'midtermResults',
-    'Tahfeez Scores': 'tahfeezTracker',
-    'Generate Results': 'generateResults',
-    'View Results': 'viewResults',
-    'Lesson Plans': 'lessonPlans',
-    'Lesson Approvals': 'lessonPlans',
-    'Question Bank': 'examQuestions',
-    'Review Questions': 'examQuestions',
-    'Finance': 'finance',
-    'Invoices': 'invoices',
-    'Payments': 'payments',
-    'System Fee Structure': 'feeStructures',
-    'Fee Structures': 'feeStructures',
-    'Payroll': 'payroll',
-    'Reconciliation': 'generalLedger',
-    'General Ledger': 'generalLedger',
-    'Chart of Accounts': 'chartOfAccounts',
-    'Financial Reports': 'financialReports',
-    'Management': 'administration',
-    'Oversight': 'administration',
-    'Infrastructure': 'administration',
-    'Students': 'students',
-    'Manage Students': 'studentDirectory',
-    'Student Directory': 'studentDirectory',
-    'Manage Staff': 'staffManagement',
-    'Departments': 'classesAndSubjects',
-    'Classes & Subjects': 'classesAndSubjects',
-    'Grading System': 'gradingSystem',
-    'Biometrics (BAS)': 'attendance',
-    'Attendance': 'attendance',
-    'Roles & Permissions': 'rolesPermissions',
-    'roles': 'rolesPermissions',
-    'System': 'administration',
-    'School Profile': 'schoolInfo',
-    'License': 'licenseCapacity',
+const ARABIC_NAV_DICT: Record<string, string> = {
+    // Navigation Groups
+    'Main': 'الرئيسية',
+    'Management': 'الإدارة والتشغيل',
+    'Finance': 'المالية والحسابات',
+    'Academics': 'الشؤون الأكاديمية',
+    'Infrastructure': 'النظام والبنية التحتية',
+    'Communication': 'التواصل والمراسلات',
+    'Oversight': 'الإشراف والمتابعة',
+    'Department': 'إدارة القسم',
+    'Examinations': 'الامتحانات والتقييم',
+    'My Work': 'مهامي اليومية',
+    'My Child': 'سجل أبنائي',
+    'Additional Access': 'صلاحيات مخصصة',
+
+    // Main Navigation Links & Sublinks
+    'Dashboard': 'لوحة التحكم العامة',
+    'Profile': 'الملف الشخصي',
+    'Notifications': 'الإشعارات والتنبيهات',
+    'Messaging': 'الرسائل والمحادثات',
+    'Announcements': 'التعاميم والإعلانات',
+    'Reports & Analytics': 'التقارير والإحصائيات',
+    'System Config': 'إعدادات النظام',
+    'School Info': 'بيانات وهوية المدرسة',
+    'Grading': 'نظام الدرجات والتقييم',
+    'Academic Year': 'العام والفصول الدراسية',
+    'AI Settings': 'إعدادات الذكاء الاصطناعي',
+    'Roles': 'الأدوار والصلاحيات',
+    'Classes & Subjects': 'الفصول والمواد الدراسية',
+    'Subscription': 'الاشتراك وسعة الطلاب',
+    'Maintenance': 'الصيانة والنسخ الاحتياطي',
+    'Manage Staff': 'سجل وإدارة الكادر',
+    'Manage Students': 'سجل ودليل الطلاب',
+    'Departments': 'الأقسام الأكاديمية',
+    'Database': 'المحرك وقاعدة البيانات',
+    'Logs & Security': 'سجلات الأمان والتدقيق',
+    'Lesson Approvals': 'اعتماد خطط الدروس',
+    'Dept. Analytics': 'إحصائيات القسم',
+    'Academic Oversight': 'الرقابة الأكاديمية',
+    'Lesson Plans': 'خطط الدروس والتحضير',
+    'Question Bank': 'بنك أسئلة الامتحانات',
+    'Bulk Upload': 'الرفع الجماعي للدرجات',
+    'Enter Scores': 'رصد درجات الاختبارات',
+    'Review Scores': 'تدقيق ومراجعة الدرجات',
+    'Tahfeez Scores': 'متابعة حفظ القرآن الكريم',
+    'Mid-Term Results': 'نتائج منتصف الفصل (الميدتيرم)',
+    'Behavioural Assessment': 'التقييم السلوكي والمواظبة',
+    'My Students': 'قائمة طلابي',
+    'Take Attendance': 'تسجيل الحضور اليومي',
+    'Review Questions': 'مراجعة نماذج الأسئلة',
+    'Generate Results': 'معالجة وترتيب النتائج',
+    'View Results': 'شهادات وبطاقات الدرجات',
+    'Timetable': 'الجدول المدرسي الحصص',
+    'Exam Registration': 'أرقام جلوس الامتحانات',
+    'Seating Plans': 'مخططات توزيع اللجان',
+    'System Fee Structure': 'هيكل الرسوم الدراسية',
+    'Invoices': 'الرسوم والفواتير المدرسية',
+    'Payments': 'إيصالات وسندات القبض',
+    'Expenses': 'المصروفات المدرسية',
+    'Payroll': 'مسير رواتب الموظفين',
+    'Reconciliation': 'دفتر الأستاذ والتسوية',
+    'General Ledger': 'دفتر الأستاذ العام',
+    'Chart of Accounts': 'شجرة ودليل الحسابات',
+    'Financial Reports': 'القوائم والتقارير المالية',
+    'Results': 'النتائج والشهادات',
+    'My Results': 'نتائجي الدراسية',
+    'Assignments': 'الواجبات المدرسية',
+    'Quizzes': 'الاختبارات القصيرة',
+    'Grading System': 'نظام احتساب التقديرات',
+    'Biometrics (BAS)': 'نظام البصمة والحضور (BAS)',
+    'My Attendance': 'سجل حضوري الشخصي',
+    'Enrolled Staff': 'الموظفون المسجلون بالبصمة',
+    'Shifts & Rules': 'ورديات ومواعيد الدوام',
+    'Reports': 'تقارير الحضور والانصراف',
+    'Kiosks': 'أجهزة البصمة الذكية',
+    'Holidays': 'العطل المدرسية الرسمية',
+};
+
+const ROLE_DISPLAY_NAMES: Record<string, { en: string; ar: string }> = {
+    'SUPER_ADMIN': { en: 'Super Admin', ar: 'المشرف العام' },
+    'ADMIN': { en: 'Administrator', ar: 'مدير النظام' },
+    'TEACHER': { en: 'Teacher', ar: 'معلم' },
+    'PARENT': { en: 'Parent', ar: 'ولي أمر' },
+    'STUDENT': { en: 'Student', ar: 'طالب' },
+    'ACCOUNTANT': { en: 'Accountant', ar: 'المحاسب المالي' },
+    'EXAM_OFFICER': { en: 'Exam Officer', ar: 'مسؤول الامتحانات' },
+    'HOD': { en: 'Head of Department', ar: 'رئيس القسم' },
+    'SLT': { en: 'School Leadership', ar: 'إدارة المدرسة' },
+    'STAFF': { en: 'Staff Member', ar: 'كادر وظيفي' },
 };
 
 export default function DashboardSidebar() {
@@ -144,9 +192,8 @@ export default function DashboardSidebar() {
     };
 
     const translateLabel = (text: string) => {
-        const key = NAV_TRANSLATION_MAP[text];
-        if (key) {
-            return t(key as any, text);
+        if (language === 'ar') {
+            return ARABIC_NAV_DICT[text] || text;
         }
         return text;
     };
@@ -279,7 +326,7 @@ export default function DashboardSidebar() {
                                                         )}
                                                         title={collapsed ? translatedLinkLabel : undefined}
                                                     >
-                                                        <span className="flex items-center space-x-3 rtl:space-x-reverse min-w-0">
+                                                        <span className="flex items-center gap-3 min-w-0">
                                                             <IconComponent className={cn(
                                                                 "h-5 w-5 shrink-0 transition-colors",
                                                                 hasActiveChild ? "text-emerald-400" : "text-slate-400 group-hover:text-slate-200"
@@ -321,7 +368,7 @@ export default function DashboardSidebar() {
                                                                                     : "text-slate-500 hover:text-slate-300 hover:bg-slate-900/40"
                                                                             )}
                                                                         >
-                                                                            <span className="truncate">{sub.label}</span>
+                                                                            <span className="truncate">{translateLabel(sub.label)}</span>
                                                                         </Link>
                                                                     );
                                                                 })}
@@ -348,7 +395,7 @@ export default function DashboardSidebar() {
                                                 )}
                                                 title={collapsed ? translatedLinkLabel : undefined}
                                             >
-                                                <span className="flex items-center space-x-3 rtl:space-x-reverse min-w-0">
+                                                <span className="flex items-center gap-3 min-w-0">
                                                     <IconComponent className={cn(
                                                         "h-5 w-5 shrink-0 transition-colors",
                                                         isExactActive ? "text-emerald-400" : "text-slate-400 group-hover:text-slate-200"
@@ -404,10 +451,10 @@ export default function DashboardSidebar() {
                                     </div>
                                     <div className="flex flex-col min-w-0">
                                         <p className="text-xs font-semibold text-slate-200 truncate">
-                                            {user?.name || 'Administrator'}
+                                            {user?.name || (language === 'ar' ? 'مدير النظام' : 'Administrator')}
                                         </p>
                                         <span className="text-[10px] font-mono text-emerald-400/90 truncate">
-                                            {role || 'STAFF'}
+                                            {ROLE_DISPLAY_NAMES[role as string]?.[language] || role || 'STAFF'}
                                         </span>
                                     </div>
                                 </div>

@@ -54,6 +54,26 @@ const PAGE_TITLE_KEYS: { [key: string]: string } = {
     '/dashboard/system/school-info': 'schoolInfo',
     '/dashboard/system/license': 'licenseCapacity',
     '/dashboard/profile': 'profile',
+    '/dashboard/users': 'staffManagement',
+    '/dashboard/db': 'database',
+    '/dashboard/logs': 'logsAndSecurity',
+    '/dashboard/notifications': 'notifications',
+    '/dashboard/messaging': 'messaging',
+    '/dashboard/announcements': 'announcements',
+    '/dashboard/analytics': 'reportsAndAnalytics',
+};
+
+const ROLE_DISPLAY_NAMES: Record<string, { en: string; ar: string }> = {
+  'SUPER_ADMIN': { en: 'Super Admin', ar: 'المشرف العام' },
+  'ADMIN': { en: 'Administrator', ar: 'مدير النظام' },
+  'TEACHER': { en: 'Teacher', ar: 'معلم' },
+  'PARENT': { en: 'Parent', ar: 'ولي أمر' },
+  'STUDENT': { en: 'Student', ar: 'طالب' },
+  'ACCOUNTANT': { en: 'Accountant', ar: 'المحاسب المالي' },
+  'EXAM_OFFICER': { en: 'Exam Officer', ar: 'مسؤول الامتحانات' },
+  'HOD': { en: 'Head of Department', ar: 'رئيس القسم' },
+  'SLT': { en: 'School Leadership', ar: 'إدارة المدرسة' },
+  'STAFF': { en: 'Staff Member', ar: 'كادر وظيفي' },
 };
 
 export function DashboardHeader() {
@@ -62,6 +82,9 @@ export function DashboardHeader() {
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
+
+  const displayRole = ROLE_DISPLAY_NAMES[role as string]?.[language] || role;
+  const displayName = user?.name || displayRole;
 
   const formatSegment = (s: string) => {
     if ((s.length >= 24 && s.length <= 36 && !s.includes('-') && !s.includes(' ')) || 
@@ -116,12 +139,12 @@ export function DashboardHeader() {
       </div>
 
       {/* Global Search Bar - Desktop */}
-      <div className="ml-auto hidden md:flex items-center relative max-w-md w-full mx-4">
+      <div className="ms-auto hidden md:flex items-center relative max-w-md w-full mx-4">
         <GlobalSearch />
       </div>
 
       {/* Header Actions: Language Switcher, Term Badge, Notifications, User Menu */}
-      <div className="ml-auto md:ml-0 flex items-center gap-2 sm:gap-3 shrink-0">
+      <div className="ms-auto md:ms-0 flex items-center gap-2 sm:gap-3 shrink-0">
         {/* Mobile Search Button */}
         <div className="md:hidden">
           <GlobalSearch compact />
@@ -148,17 +171,17 @@ export function DashboardHeader() {
               className="flex items-center gap-2 rounded-full pl-2 pr-3 py-1 bg-background hover:bg-accent border border-border h-9 transition-colors"
             >
               <Avatar className="h-6 w-6 border border-border">
-                <AvatarImage src={user?.personalInfo?.profilePicture || undefined} alt={user?.name || role || ''} />
+                <AvatarImage src={user?.personalInfo?.profilePicture || undefined} alt={displayName} />
                 <AvatarFallback className="text-[10px] font-bold bg-emerald-600 text-white">{userInitials}</AvatarFallback>
               </Avatar>
-              <span className="hidden lg:inline text-sm font-medium text-foreground">{user?.name || role}</span>
+              <span className="hidden lg:inline text-sm font-medium text-foreground">{displayName}</span>
               <ChevronDown className="hidden h-3 w-3 lg:inline text-muted-foreground" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-lg border-border bg-popover text-popover-foreground">
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{user?.name || role}</p>
+                <p className="text-sm font-medium leading-none">{displayName}</p>
                 <p className="text-xs leading-none text-muted-foreground">{user?.email || 'admin@proximahub.com'}</p>
               </div>
             </DropdownMenuLabel>

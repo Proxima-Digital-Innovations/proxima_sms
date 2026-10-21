@@ -105,6 +105,12 @@ export interface TranslationDictionary {
   rolesPermissions: string;
   schoolInfo: string;
   licenseCapacity: string;
+  database: string;
+  logsAndSecurity: string;
+  notifications: string;
+  messaging: string;
+  announcements: string;
+  reportsAndAnalytics: string;
 }
 
 export const translations: Record<Language, TranslationDictionary> = {
@@ -205,6 +211,12 @@ export const translations: Record<Language, TranslationDictionary> = {
     rolesPermissions: 'Roles & Access Control',
     schoolInfo: 'School Profile & Branding',
     licenseCapacity: 'Subscription & Student Limit',
+    database: 'Database Engine & Health',
+    logsAndSecurity: 'Audit Logs & Security',
+    notifications: 'Notifications & Alerts',
+    messaging: 'Internal Messaging',
+    announcements: 'Announcements & Memos',
+    reportsAndAnalytics: 'Reports & Analytics',
   },
   ar: {
     schoolPortal: 'بروكسيما لإدارة المدارس',
@@ -303,5 +315,11 @@ export const translations: Record<Language, TranslationDictionary> = {
     rolesPermissions: 'الأدوار والصلاحيات',
     schoolInfo: 'بيانات وهوية المدرسة',
     licenseCapacity: 'الاشتراك وسعة الطلاب',
+    database: 'محرك وقاعدة البيانات',
+    logsAndSecurity: 'سجلات التدقيق والأمان',
+    notifications: 'الإشعارات والتنبيهات',
+    messaging: 'الرسائل الداخلية',
+    announcements: 'التعاميم والإعلانات',
+    reportsAndAnalytics: 'التقارير والإحصائيات العامة',
   },
 };

@@ -14,10 +14,7 @@ import {
   Mail, 
   ShieldCheck, 
   ExternalLink, 
-  Sparkles,
-  KeyRound,
   IdCard,
-  Building,
   CheckCircle2
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,6 +22,19 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
+
+const ROLE_DISPLAY_NAMES: Record<string, { en: string; ar: string }> = {
+  'SUPER_ADMIN': { en: 'Super Admin', ar: 'المشرف العام' },
+  'ADMIN': { en: 'Administrator', ar: 'مدير النظام' },
+  'TEACHER': { en: 'Teacher', ar: 'معلم' },
+  'PARENT': { en: 'Parent', ar: 'ولي أمر' },
+  'STUDENT': { en: 'Student', ar: 'طالب' },
+  'ACCOUNTANT': { en: 'Accountant', ar: 'المحاسب المالي' },
+  'EXAM_OFFICER': { en: 'Exam Officer', ar: 'مسؤول الامتحانات' },
+  'HOD': { en: 'Head of Department', ar: 'رئيس القسم' },
+  'SLT': { en: 'School Leadership', ar: 'إدارة المدرسة' },
+  'STAFF': { en: 'Staff Member', ar: 'كادر وظيفي' },
+};
 
 export default function ProfilePage() {
   const { user, role } = useRole();
@@ -58,6 +68,9 @@ export default function ProfilePage() {
     ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
     : role?.substring(0, 2).toUpperCase() || '..';
 
+  const displayRole = ROLE_DISPLAY_NAMES[role as string]?.[language] || role || 'STAFF';
+  const displayName = user?.name || (language === 'ar' ? 'مدير النظام' : 'Administrator');
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 animate-in fade-in duration-300">
       {/* Header Profile Hero Card */}
@@ -81,10 +94,10 @@ export default function ProfilePage() {
           <div className="flex-1 space-y-2">
             <div className="flex flex-wrap items-center justify-center md:justify-start rtl:md:justify-start gap-3">
               <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white">
-                {user?.name || 'Administrator'}
+                {displayName}
               </h1>
               <Badge className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs px-3 py-1 font-semibold rounded-full">
-                {role || 'STAFF'}
+                {displayRole}
               </Badge>
               <Badge variant="outline" className="border-slate-700 text-slate-300 text-xs px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -93,8 +106,8 @@ export default function ProfilePage() {
             </div>
 
             <p className="text-sm text-slate-400 flex items-center justify-center md:justify-start rtl:md:justify-start gap-2">
-              <Mail className="h-3.5 w-3.5 text-emerald-400" />
-              {user?.email || 'admin@proximahub.com'}
+              <Mail className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+              <span className="ltr-only font-mono">{user?.email || 'admin@proximahub.com'}</span>
             </p>
 
             {user?.id && (
@@ -103,7 +116,7 @@ export default function ProfilePage() {
                   asChild 
                   variant="outline" 
                   size="sm" 
-                  className="rounded-xl border-slate-700 bg-slate-900/60 text-slate-200 hover:bg-slate-800 hover:text-white hover:border-emerald-500/40 text-xs h-9"
+                  className="rounded-xl border-slate-700 bg-slate-900/60 text-slate-200 hover:bg-slate-800 hover:text-white hover:border-emerald-500/40 text-xs h-9 cursor-pointer"
                 >
                   <Link href={`/dashboard/users/${user.id}`}>
                     <ExternalLink className="mr-1.5 h-3.5 w-3.5 rtl:ml-1.5 rtl:mr-0 text-emerald-400" />
@@ -123,7 +136,7 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <CardTitle className="text-lg font-bold flex items-center gap-2 text-foreground">
-                  <Globe className="h-5 w-5 text-emerald-500" />
+                  <Globe className="h-5 w-5 text-emerald-500 shrink-0" />
                   {t('languagePreference')}
                 </CardTitle>
                 <CardDescription className="text-xs">
@@ -146,7 +159,7 @@ export default function ProfilePage() {
               }`}
             >
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-xl font-bold">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-xl font-bold shrink-0">
                   🇺🇸
                 </div>
                 <div>
@@ -162,7 +175,7 @@ export default function ProfilePage() {
                 </div>
               </div>
               {language === 'en' && (
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white shrink-0">
                   <Check className="h-4 w-4 stroke-[3]" />
                 </div>
               )}
@@ -178,11 +191,11 @@ export default function ProfilePage() {
               }`}
             >
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-xl font-bold">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-xl font-bold shrink-0">
                   🇸🇦
                 </div>
                 <div>
-                  <div className="font-semibold text-sm text-foreground flex items-center gap-2 font-arabic">
+                  <div className="font-semibold text-sm text-foreground flex items-center gap-2">
                     {t('arabic')}
                     {language === 'ar' && (
                       <span className="text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full">
@@ -194,7 +207,7 @@ export default function ProfilePage() {
                 </div>
               </div>
               {language === 'ar' && (
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white shrink-0">
                   <Check className="h-4 w-4 stroke-[3]" />
                 </div>
               )}
@@ -208,8 +221,8 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <CardTitle className="text-lg font-bold flex items-center gap-2 text-foreground">
-                  <Sun className="h-5 w-5 text-amber-500 dark:hidden" />
-                  <Moon className="h-5 w-5 text-indigo-400 hidden dark:inline" />
+                  <Sun className="h-5 w-5 text-amber-500 dark:hidden shrink-0" />
+                  <Moon className="h-5 w-5 text-indigo-400 hidden dark:inline shrink-0" />
                   {t('appearance')}
                 </CardTitle>
                 <CardDescription className="text-xs">
@@ -232,7 +245,7 @@ export default function ProfilePage() {
                     : 'border-border hover:border-slate-400 dark:hover:border-slate-700 bg-card'
                 }`}
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/10 text-amber-500">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/10 text-amber-500 shrink-0">
                   <Sun className="h-5 w-5" />
                 </div>
                 <div className="font-semibold text-sm text-foreground">{t('lightMode')}</div>
@@ -250,7 +263,7 @@ export default function ProfilePage() {
                     : 'border-border hover:border-slate-400 dark:hover:border-slate-700 bg-card'
                 }`}
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-400">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-400 shrink-0">
                   <Moon className="h-5 w-5" />
                 </div>
                 <div className="font-semibold text-sm text-foreground">{t('darkMode')}</div>
@@ -266,7 +279,7 @@ export default function ProfilePage() {
         <Card className="rounded-2xl border-border bg-card shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-bold flex items-center gap-2 text-foreground">
-              <IdCard className="h-4 w-4 text-emerald-500" />
+              <IdCard className="h-4 w-4 text-emerald-500 shrink-0" />
               {t('personalInfo')}
             </CardTitle>
             <CardDescription className="text-xs">
@@ -276,16 +289,16 @@ export default function ProfilePage() {
           <CardContent className="space-y-3 text-sm">
             <div className="flex items-center justify-between py-2 border-b border-border">
               <span className="text-muted-foreground">{t('fullName')}</span>
-              <span className="font-semibold text-foreground">{user?.name || 'Administrator'}</span>
+              <span className="font-semibold text-foreground">{displayName}</span>
             </div>
             <div className="flex items-center justify-between py-2 border-b border-border">
               <span className="text-muted-foreground">{t('emailAddress')}</span>
-              <span className="font-mono text-xs text-foreground">{user?.email || 'admin@proximahub.com'}</span>
+              <span className="font-mono text-xs text-foreground ltr-only">{user?.email || 'admin@proximahub.com'}</span>
             </div>
             <div className="flex items-center justify-between py-2 border-b border-border">
               <span className="text-muted-foreground">{t('assignedRole')}</span>
               <Badge variant="outline" className="font-medium text-xs">
-                {role || 'ADMIN'}
+                {displayRole}
               </Badge>
             </div>
             <div className="flex items-center justify-between py-2">
@@ -302,7 +315,7 @@ export default function ProfilePage() {
         <Card className="rounded-2xl border-border bg-card shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-bold flex items-center gap-2 text-foreground">
-              <ShieldCheck className="h-4 w-4 text-emerald-500" />
+              <ShieldCheck className="h-4 w-4 text-emerald-500 shrink-0" />
               {t('security')}
             </CardTitle>
             <CardDescription className="text-xs">
@@ -313,19 +326,23 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between py-2 border-b border-border">
               <div>
                 <div className="font-medium text-foreground">{t('biometricBasPin')}</div>
-                <div className="text-xs text-muted-foreground">Used for clocking in on smart kiosks</div>
+                <div className="text-xs text-muted-foreground">
+                  {language === 'ar' ? 'يُستخدم لتسجيل الحضور عبر أجهزة البصمة الذكية' : 'Used for clocking in on smart kiosks'}
+                </div>
               </div>
               <Badge variant="outline" className="font-mono text-xs bg-slate-100 dark:bg-slate-800">
-                Active
+                {language === 'ar' ? 'مفعل' : 'Active'}
               </Badge>
             </div>
             <div className="flex items-center justify-between py-2">
               <div>
                 <div className="font-medium text-foreground">{t('accountSettings')}</div>
-                <div className="text-xs text-muted-foreground">Managed by system administrator</div>
+                <div className="text-xs text-muted-foreground">
+                  {language === 'ar' ? 'يتم التحكم بالصلاحيات بواسطة مدير النظام' : 'Managed by system administrator'}
+                </div>
               </div>
               <Badge variant="secondary" className="text-xs">
-                Verified
+                {language === 'ar' ? 'موثق' : 'Verified'}
               </Badge>
             </div>
           </CardContent>
