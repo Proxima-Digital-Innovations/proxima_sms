@@ -172,3 +172,31 @@
 .animate-slide-down {
   animation: slideDown 0.3s ease-out;
 }
+
+/* Custom dark scrollbar matching health_med */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.5);
+}
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.25) transparent;
+}
+
+/* RTL Support */
+[dir="rtl"] {
+  direction: rtl;
+}
+[dir="rtl"] .ltr-only {
+  direction: ltr;
+}

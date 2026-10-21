@@ -49,7 +49,7 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
   midtermScores: { icon: 'ClipboardCheck', label: 'Mid-Term Results', path: '/dashboard/midterm' },
   behaviouralAssessment: { icon: 'Heart', label: 'Behavioural Assessment', path: '/dashboard/behavioural' },
   myStudents: { icon: 'UsersRound', label: 'My Students', path: '/dashboard/performance' },
-  attendance: { icon: 'CalendarCheck', label: 'Take Attendance', path: '/dashboard/teacher/attendance' },
+  attendance: { icon: 'CalendarCheck', label: 'Take Attendance', path: '/dashboard/bas/attendance' },
   reviewQuestions: { icon: 'FileQuestion', label: 'Review Questions', path: '/dashboard/exam-questions', requiredModule: 'CBT' },
   generateResults: { icon: 'CheckSquare', label: 'Generate Results', path: '/dashboard/results/generate' },
   viewResults: { icon: 'Award', label: 'View Results', path: '/dashboard/results/view' },

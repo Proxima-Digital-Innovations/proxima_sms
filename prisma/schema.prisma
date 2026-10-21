@@ -57,6 +57,7 @@ model User {
   department          Department? @relation(fields: [departmentId], references: [id])
   status              String      @default("active")
   avatarUrl           String?
+  preferredLanguage   String      @default("en")
 
   // Demographic & Employment Details
   gender              String?

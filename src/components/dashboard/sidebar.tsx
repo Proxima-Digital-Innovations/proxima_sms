@@ -5,35 +5,94 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useRole } from '@/context/role-context';
-import { Menu, ChevronDown, Rocket, Lock, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useLanguage } from '@/context/language-context';
+import { 
+    Menu, 
+    ChevronDown, 
+    ChevronRight,
+    Rocket, 
+    X,
+    LogOut,
+    UserCircle,
+    Globe,
+    Sparkles
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getFilteredNavConfig, allNavLinks, iconMap } from '@/lib/auth-guard';
 import { getSchoolInfo } from '@/actions/school-actions';
 import { useSidebar } from '@/components/ui/sidebar';
 
-export default function Sidebar() {
+// Navigation translation key mapper
+const NAV_TRANSLATION_MAP: Record<string, string> = {
+    'Dashboard': 'dashboard',
+    'Main': 'mainNavigation',
+    'Academics': 'academics',
+    'Enter Scores': 'enterScores',
+    'Review Scores': 'reviewScores',
+    'Mid-Term Results': 'midtermResults',
+    'Tahfeez Scores': 'tahfeezTracker',
+    'Generate Results': 'generateResults',
+    'View Results': 'viewResults',
+    'Lesson Plans': 'lessonPlans',
+    'Lesson Approvals': 'lessonPlans',
+    'Question Bank': 'examQuestions',
+    'Review Questions': 'examQuestions',
+    'Finance': 'finance',
+    'Invoices': 'invoices',
+    'Payments': 'payments',
+    'System Fee Structure': 'feeStructures',
+    'Fee Structures': 'feeStructures',
+    'Payroll': 'payroll',
+    'Reconciliation': 'generalLedger',
+    'General Ledger': 'generalLedger',
+    'Chart of Accounts': 'chartOfAccounts',
+    'Financial Reports': 'financialReports',
+    'Management': 'administration',
+    'Oversight': 'administration',
+    'Infrastructure': 'administration',
+    'Students': 'students',
+    'Manage Students': 'studentDirectory',
+    'Student Directory': 'studentDirectory',
+    'Manage Staff': 'staffManagement',
+    'Departments': 'classesAndSubjects',
+    'Classes & Subjects': 'classesAndSubjects',
+    'Grading System': 'gradingSystem',
+    'Biometrics (BAS)': 'attendance',
+    'Attendance': 'attendance',
+    'Roles & Permissions': 'rolesPermissions',
+    'roles': 'rolesPermissions',
+    'System': 'administration',
+    'School Profile': 'schoolInfo',
+    'License': 'licenseCapacity',
+};
+
+export default function DashboardSidebar() {
     const pathname = usePathname();
-    const { role, rbacPermissions, activeModules } = useRole();
-    const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
+    const { role, rbacPermissions, activeModules, user, logout } = useRole();
+    const { t, language, isRtl, setLanguage } = useLanguage();
+    const [openGroup, setOpenGroup] = useState<string | null>(null);
     const [schoolName, setSchoolName] = useState<string>('Proxima SMS');
     const [schoolLogo, setSchoolLogo] = useState<string | null>(null);
     const { openMobile, setOpenMobile, state, setOpen } = useSidebar();
     
-    const collapsed = state === "collapsed";
+    const collapsed = state === 'collapsed';
 
-    // Auto-close mobile drawer when route changes
+    // Auto-close mobile drawer on route change
     useEffect(() => {
         setOpenMobile(false);
     }, [pathname, setOpenMobile]);
 
     useEffect(() => {
         async function fetchSchool() {
-            const res = await getSchoolInfo();
-            if (res.success && res.data) {
-                if (res.data.name) setSchoolName(res.data.name);
-                if (res.data.logoUrl) setSchoolLogo(res.data.logoUrl);
+            try {
+                const res = await getSchoolInfo();
+                if (res.success && res.data) {
+                    if (res.data.name) setSchoolName(res.data.name);
+                    if (res.data.logoUrl) setSchoolLogo(res.data.logoUrl);
+                }
+            } catch (e) {
+                // Keep default
             }
         }
         fetchSchool();
@@ -41,12 +100,10 @@ export default function Sidebar() {
 
     const baseNavConfig = getFilteredNavConfig(role as string, activeModules || []);
     
-    // Compute dynamic nav config from RBAC permissions
+    // Add dynamic links based on granular RBAC
     const dynamicNavConfig = [...baseNavConfig];
-    
     if (rbacPermissions && rbacPermissions.length > 0) {
         const additionalLinks: (keyof typeof allNavLinks)[] = [];
-        
         if (rbacPermissions.some(p => p.startsWith('manage:roles'))) additionalLinks.push('roles');
         if (rbacPermissions.some(p => p.includes(':attendance') || p.includes(':kiosk'))) additionalLinks.push('bas');
         if (rbacPermissions.some(p => p.includes(':staff'))) additionalLinks.push('manageStaff');
@@ -54,10 +111,8 @@ export default function Sidebar() {
         if (rbacPermissions.some(p => p.includes(':academics'))) additionalLinks.push('classesAndSubjects', 'gradingSystem');
         
         if (additionalLinks.length > 0) {
-            // Deduplicate links already in baseNavConfig
             const existingLinks = new Set(baseNavConfig.flatMap(g => g.links));
             const newLinks = additionalLinks.filter(l => !existingLinks.has(l));
-            
             if (newLinks.length > 0) {
                 dynamicNavConfig.push({
                     group: 'Additional Access',
@@ -67,228 +122,323 @@ export default function Sidebar() {
         }
     }
 
-    const currentNavConfig = dynamicNavConfig;
-
+    // Auto-expand group containing current route
     useEffect(() => {
-        // Expand all groups by default
-        if (currentNavConfig.length > 0 && expandedGroups.length === 0) {
-            setExpandedGroups(currentNavConfig.map(g => g.group));
+        for (const g of dynamicNavConfig) {
+            const match = g.links.some(linkKey => {
+                const link = allNavLinks[linkKey as string];
+                if (!link) return false;
+                if (pathname === link.path) return true;
+                if (link.subLinks?.some(sub => pathname === sub.path)) return true;
+                return false;
+            });
+            if (match) {
+                setOpenGroup(g.group);
+                break;
+            }
         }
-    }, [currentNavConfig, expandedGroups.length]);
+    }, [pathname]);
 
-    const toggleGroup = (group: string) => {
-        setExpandedGroups(prev => 
-            prev.includes(group) 
-                ? prev.filter(g => g !== group)
-                : [...prev, group]
-        );
+    const toggleGroup = (groupName: string) => {
+        setOpenGroup(prev => prev === groupName ? null : groupName);
+    };
+
+    const translateLabel = (text: string) => {
+        const key = NAV_TRANSLATION_MAP[text];
+        if (key) {
+            return t(key as any, text);
+        }
+        return text;
     };
 
     return (
         <>
-            {/* Mobile Backdrop */}
-            {openMobile && (
-                <div 
-                    className="fixed inset-0 z-30 bg-black/50 lg:hidden" 
-                    onClick={() => setOpenMobile(false)} 
-                />
-            )}
+            {/* Mobile Backdrop Overlay matching health_med */}
+            <div 
+                className={cn(
+                    "fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300",
+                    openMobile ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+                )}
+                onClick={() => setOpenMobile(false)}
+                aria-hidden="true"
+            />
+
+            {/* Aside Drawer with health_med dark slate aesthetic */}
             <aside 
                 className={cn(
-                    "fixed left-0 top-0 z-40 h-screen transition-transform duration-300 ease-in-out flex flex-col",
-                    "bg-muted text-foreground shadow-xl border-r border-border",
-                    collapsed ? "w-[80px]" : "w-72",
-                    openMobile ? "translate-x-0" : "-translate-x-full",
-                    "lg:translate-x-0"
+                    "fixed top-0 z-50 h-screen flex flex-col font-sans transition-all duration-300 ease-in-out shadow-2xl lg:shadow-none",
+                    "bg-slate-950 text-white",
+                    isRtl 
+                        ? "right-0 border-l border-slate-800/80" 
+                        : "left-0 border-r border-slate-800/80",
+                    collapsed ? "w-[80px]" : "w-[270px]",
+                    openMobile 
+                        ? "translate-x-0" 
+                        : (isRtl ? "translate-x-full lg:translate-x-0" : "-translate-x-full lg:translate-x-0")
                 )}
             >
-                {/* Proxima SMS Branding */}
-            <div className={cn("flex items-center h-16 px-4 border-b border-border shrink-0", collapsed ? "justify-center" : "justify-between")}>
-                <Link 
-                    href="/dashboard" 
-                    onClick={() => setOpenMobile(false)}
-                    className="flex items-center gap-3 overflow-hidden"
-                >
-                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-card border border-border/80 p-0.5 shrink-0 overflow-hidden">
-                        {schoolLogo ? (
-                            <Image
-                                src={schoolLogo}
-                                alt={schoolName}
-                                width={32}
-                                height={32}
-                                className="w-full h-full object-contain"
-                                unoptimized
-                            />
-                        ) : (
-                            <div className="flex items-center justify-center w-full h-full bg-primary rounded-md text-primary-foreground">
-                                <Rocket className="w-4 h-4" />
+                {/* Brand Header matching health_med h-[72px] */}
+                <div className={cn(
+                    "h-[72px] px-5 border-b border-slate-800/60 flex items-center justify-between bg-slate-900/40 flex-shrink-0",
+                    collapsed && "justify-center px-2"
+                )}>
+                    <Link 
+                        href="/dashboard" 
+                        onClick={() => setOpenMobile(false)}
+                        className="flex items-center gap-3 overflow-hidden"
+                    >
+                        <div className="w-10 h-10 flex items-center justify-center flex-shrink-0 rounded-lg bg-slate-900 border border-slate-800/80 p-1">
+                            {schoolLogo ? (
+                                <Image
+                                    src={schoolLogo}
+                                    alt={schoolName}
+                                    width={36}
+                                    height={36}
+                                    className="w-full h-full object-contain rounded-md"
+                                    unoptimized
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                    <Rocket className="w-5 h-5 text-emerald-400" />
+                                </div>
+                            )}
+                        </div>
+                        {!collapsed && (
+                            <div className="flex flex-col overflow-hidden">
+                                <h2 className="text-sm font-bold text-slate-100 truncate w-36 tracking-tight">
+                                    {schoolName}
+                                </h2>
+                                <p className="text-[9px] font-bold tracking-[0.2em] text-emerald-500/80 uppercase">
+                                    {language === 'ar' ? 'نظام بروكسيما' : 'Proxima SMS'}
+                                </p>
                             </div>
                         )}
-                    </div>
-                    {!collapsed && (
-                        <div className="flex flex-col">
-                            <span className="text-sm font-bold tracking-tight text-foreground line-clamp-1">{schoolName}</span>
-                            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Education Portal</span>
+                    </Link>
+
+                    {/* Desktop Collapse Toggle */}
+                    <button 
+                        type="button"
+                        onClick={() => setOpen(collapsed)}
+                        className="hidden lg:flex p-1.5 text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 rounded-lg transition-colors focus:outline-none"
+                        title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                    >
+                        <Menu className="w-4 h-4" />
+                    </button>
+
+                    {/* Mobile Close Button */}
+                    <button
+                        type="button"
+                        onClick={() => setOpenMobile(false)}
+                        className="lg:hidden p-1.5 text-slate-400 hover:text-white hover:bg-slate-800/80 rounded-lg transition-colors focus:outline-none"
+                        aria-label="Close navigation"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                {/* Navigation Menu List with Custom Slim Scrollbar */}
+                <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto custom-scrollbar">
+                    {dynamicNavConfig.map((group) => {
+                        const isGroupActive = openGroup === group.group;
+                        const translatedGroupTitle = translateLabel(group.group);
+
+                        return (
+                            <div key={group.group} className="space-y-1">
+                                {!collapsed && (
+                                    <div className="text-[10px] font-bold tracking-widest text-slate-500 px-2 py-1 uppercase flex items-center justify-between">
+                                        <span>{translatedGroupTitle}</span>
+                                        {group.group === 'Academics' && (
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                        )}
+                                    </div>
+                                )}
+
+                                <div className="space-y-1">
+                                    {group.links.map((linkKey) => {
+                                        const link = allNavLinks[linkKey as string];
+                                        if (!link) return null;
+                                        const IconComponent = iconMap[link.icon] || Rocket;
+                                        const translatedLinkLabel = translateLabel(link.label);
+
+                                        // Sublinks (e.g. BAS / Attendance)
+                                        if (link.subLinks && link.subLinks.length > 0) {
+                                            const hasActiveChild = link.subLinks.some(sub => pathname === sub.path);
+                                            const isSubMenuOpen = openGroup === link.label || hasActiveChild;
+
+                                            return (
+                                                <div key={linkKey} className="space-y-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleGroup(link.label)}
+                                                        className={cn(
+                                                            "group flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 w-full",
+                                                            hasActiveChild 
+                                                                ? "bg-emerald-500/10 text-emerald-400 shadow-sm border border-emerald-500/20" 
+                                                                : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-100",
+                                                            collapsed && "justify-center px-2"
+                                                        )}
+                                                        title={collapsed ? translatedLinkLabel : undefined}
+                                                    >
+                                                        <span className="flex items-center space-x-3 rtl:space-x-reverse min-w-0">
+                                                            <IconComponent className={cn(
+                                                                "h-5 w-5 shrink-0 transition-colors",
+                                                                hasActiveChild ? "text-emerald-400" : "text-slate-400 group-hover:text-slate-200"
+                                                            )} />
+                                                            {!collapsed && (
+                                                                <span className="truncate">{translatedLinkLabel}</span>
+                                                            )}
+                                                        </span>
+                                                        {!collapsed && (
+                                                            <ChevronDown className={cn(
+                                                                "h-4 w-4 shrink-0 text-slate-500 transition-transform duration-200",
+                                                                isSubMenuOpen && "rotate-180 text-emerald-400"
+                                                            )} />
+                                                        )}
+                                                    </button>
+
+                                                    <AnimatePresence>
+                                                        {!collapsed && isSubMenuOpen && (
+                                                            <motion.div
+                                                                initial={{ height: 0, opacity: 0 }}
+                                                                animate={{ height: "auto", opacity: 1 }}
+                                                                exit={{ height: 0, opacity: 0 }}
+                                                                className={cn(
+                                                                    "space-y-1 overflow-hidden",
+                                                                    isRtl ? "mr-4 pr-2 border-r border-slate-800" : "ml-4 pl-2 border-l border-slate-800"
+                                                                )}
+                                                            >
+                                                                {link.subLinks.map(sub => {
+                                                                    const isChildActive = pathname === sub.path;
+                                                                    return (
+                                                                        <Link
+                                                                            key={sub.path}
+                                                                            href={sub.path}
+                                                                            onClick={() => setOpenMobile(false)}
+                                                                            className={cn(
+                                                                                "group flex items-center px-3 py-2 text-xs font-medium transition-all duration-200 w-full rounded-md",
+                                                                                isChildActive
+                                                                                    ? "text-emerald-400 bg-slate-900 font-semibold"
+                                                                                    : "text-slate-500 hover:text-slate-300 hover:bg-slate-900/40"
+                                                                            )}
+                                                                        >
+                                                                            <span className="truncate">{sub.label}</span>
+                                                                        </Link>
+                                                                    );
+                                                                })}
+                                                            </motion.div>
+                                                        )}
+                                                    </AnimatePresence>
+                                                </div>
+                                            );
+                                        }
+
+                                        // Standard Link
+                                        const isExactActive = pathname === link.path;
+                                        return (
+                                            <Link
+                                                key={linkKey}
+                                                href={link.path}
+                                                onClick={() => setOpenMobile(false)}
+                                                className={cn(
+                                                    "group flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 w-full",
+                                                    isExactActive
+                                                        ? "bg-emerald-500/10 text-emerald-400 shadow-sm border border-emerald-500/20 font-semibold"
+                                                        : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-100",
+                                                    collapsed && "justify-center px-2"
+                                                )}
+                                                title={collapsed ? translatedLinkLabel : undefined}
+                                            >
+                                                <span className="flex items-center space-x-3 rtl:space-x-reverse min-w-0">
+                                                    <IconComponent className={cn(
+                                                        "h-5 w-5 shrink-0 transition-colors",
+                                                        isExactActive ? "text-emerald-400" : "text-slate-400 group-hover:text-slate-200"
+                                                    )} />
+                                                    {!collapsed && (
+                                                        <span className="truncate">{translatedLinkLabel}</span>
+                                                    )}
+                                                </span>
+                                                {!collapsed && isExactActive && (
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                                )}
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </nav>
+
+                {/* User & Language Footer Card matching health_med sleek footer */}
+                <div className={cn(
+                    "p-3 border-t border-slate-800/80 bg-slate-900/50 shrink-0",
+                    collapsed && "p-2"
+                )}>
+                    {collapsed ? (
+                        <div className="flex flex-col items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
+                                className="w-8 h-8 rounded-lg bg-slate-800/80 flex items-center justify-center text-xs font-bold text-emerald-400 hover:bg-slate-800"
+                                title={language === 'en' ? 'Switch to Arabic' : 'Switch to English'}
+                            >
+                                {language === 'en' ? 'ع' : 'EN'}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={logout}
+                                className="w-8 h-8 rounded-lg text-rose-400 hover:bg-rose-500/10 flex items-center justify-center"
+                                title="Sign Out"
+                            >
+                                <LogOut className="w-4 h-4" />
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {/* User Profile Mini Bar */}
+                            <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-slate-950/60 border border-slate-800/60">
+                                <div className="flex items-center gap-2.5 overflow-hidden">
+                                    <div className="relative w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-xs font-bold text-emerald-400 shrink-0">
+                                        {user?.name ? user.name.slice(0, 2).toUpperCase() : 'PR'}
+                                        <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-slate-950" />
+                                    </div>
+                                    <div className="flex flex-col min-w-0">
+                                        <p className="text-xs font-semibold text-slate-200 truncate">
+                                            {user?.name || 'Administrator'}
+                                        </p>
+                                        <span className="text-[10px] font-mono text-emerald-400/90 truncate">
+                                            {role || 'STAFF'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={logout}
+                                    className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-md transition-colors"
+                                    title={t('signOut')}
+                                >
+                                    <LogOut className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            {/* Language Switcher Pill */}
+                            <button
+                                type="button"
+                                onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
+                                className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-emerald-400 bg-slate-950/40 hover:bg-emerald-500/10 border border-slate-800/60 hover:border-emerald-500/30 transition-all"
+                            >
+                                <span className="flex items-center gap-2">
+                                    <Globe className="w-3.5 h-3.5 text-emerald-400" />
+                                    <span>{language === 'en' ? 'العربية (Arabic)' : 'English'}</span>
+                                </span>
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-emerald-400">
+                                    {language.toUpperCase()}
+                                </span>
+                            </button>
                         </div>
                     )}
-                </Link>
-                {/* Desktop collapse button */}
-                <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="shrink-0 hidden lg:flex hover:bg-primary/10 hover:text-primary"
-                    onClick={() => setOpen(collapsed)}
-                >
-                    <Menu className="w-4 h-4" />
-                </Button>
-                {/* Mobile close drawer button */}
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="shrink-0 lg:hidden hover:bg-muted text-muted-foreground hover:text-foreground"
-                    onClick={() => setOpenMobile(false)}
-                    aria-label="Close navigation"
-                >
-                    <X className="w-5 h-5" />
-                </Button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto py-4 px-3 space-y-3 no-scrollbar">
-                {currentNavConfig.map((group) => {
-                    const isExpanded = expandedGroups.includes(group.group);
-                    
-                    return (
-                        <div key={group.group} className="mb-2">
-                            {!collapsed && (
-                                <button
-                                    onClick={() => toggleGroup(group.group)}
-                                    className="w-full flex items-center justify-between px-2 py-1.5 mb-1 group-btn rounded-md hover:bg-accent/50 transition-colors"
-                                >
-                                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                        {group.group}
-                                    </span>
-                                    <ChevronDown className={cn(
-                                        "w-4 h-4 text-muted-foreground transition-transform duration-200",
-                                        isExpanded ? "rotate-180" : ""
-                                    )} />
-                                </button>
-                            )}
-                            
-                            <AnimatePresence initial={false}>
-                                {(isExpanded || collapsed) && (
-                                    <motion.div 
-                                        initial={!collapsed ? { height: 0, opacity: 0 } : undefined}
-                                        animate={!collapsed ? { height: "auto", opacity: 1 } : undefined}
-                                        exit={!collapsed ? { height: 0, opacity: 0 } : undefined}
-                                        className="space-y-1 overflow-hidden"
-                                    >
-                                        {group.links.map((linkKey) => {
-                                             const link = allNavLinks[linkKey as string];
-                                             if (!link) return null;
-                                             const IconComponent = iconMap[link.icon];
-                                             
-                                             // Handle sublinks
-                                             if (link.subLinks && link.subLinks.length > 0) {
-                                                 const hasActiveChild = link.subLinks.some(child => pathname === child.path);
-                                                 const isItemExpanded = expandedGroups.includes(link.label) || hasActiveChild;
-                                                 
-                                                 return (
-                                                     <div key={linkKey} className="space-y-1">
-                                                         <button
-                                                             onClick={() => toggleGroup(link.label)}
-                                                             className={cn(
-                                                                 "w-full flex items-center gap-3 p-2 rounded-lg transition-colors group mb-1",
-                                                                 hasActiveChild ? "bg-accent text-accent-foreground font-semibold" : "text-foreground hover:bg-accent hover:text-accent-foreground",
-                                                                 collapsed && "justify-center"
-                                                             )}
-                                                             title={collapsed ? link.label : undefined}
-                                                         >
-                                                             {IconComponent && <IconComponent className={cn("w-5 h-5 shrink-0", hasActiveChild ? "text-primary" : "text-muted-foreground group-hover:text-primary")} />}
-                                                             {!collapsed && (
-                                                                 <>
-                                                                     <span className="text-sm font-medium flex-1 text-left">{link.label}</span>
-                                                                     <ChevronDown className={cn(
-                                                                         "w-4 h-4 transition-transform duration-200",
-                                                                         isItemExpanded ? "rotate-180" : ""
-                                                                     )} />
-                                                                 </>
-                                                             )}
-                                                         </button>
-                                                         
-                                                         <AnimatePresence>
-                                                             {!collapsed && isItemExpanded && (
-                                                                 <motion.div 
-                                                                     initial={{ height: 0, opacity: 0 }}
-                                                                     animate={{ height: "auto", opacity: 1 }}
-                                                                     exit={{ height: 0, opacity: 0 }}
-                                                                     className="ml-6 space-y-1 overflow-hidden"
-                                                                 >
-                                                                     {link.subLinks.map(subLink => {
-                                                                         const isChildActive = pathname === subLink.path;
-                                                                         return (
-                                                                             <Link 
-                                                                                 key={subLink.path} 
-                                                                                 href={subLink.path}
-                                                                                 onClick={() => setOpenMobile(false)}
-                                                                                 className={cn(
-                                                                                     "flex items-center p-2 rounded-md transition-all text-sm",
-                                                                                     isChildActive 
-                                                                                         ? "text-primary font-semibold bg-primary/10" 
-                                                                                         : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                                                                                 )}
-                                                                             >
-                                                                                 {subLink.label}
-                                                                             </Link>
-                                                                         );
-                                                                     })}
-                                                                 </motion.div>
-                                                             )}
-                                                         </AnimatePresence>
-                                                     </div>
-                                                 );
-                                             }
- 
-                                             // Normal link
-                                             const isActiveExact = pathname === link.path;
-                                             return (
-                                                     <Link 
-                                                     key={linkKey} 
-                                                     href={link.path}
-                                                     onClick={() => setOpenMobile(false)}
-                                                     className={cn(
-                                                         "flex items-center gap-3 p-2 rounded-lg transition-colors group mb-1",
-                                                         isActiveExact ? "bg-primary text-primary-foreground font-semibold shadow-sm" : "text-foreground hover:bg-accent hover:text-accent-foreground",
-                                                         collapsed && "justify-center"
-                                                     )}
-                                                     title={collapsed ? link.label : undefined}
-                                                 >
-                                                     {IconComponent && <IconComponent className={cn("w-5 h-5 shrink-0", isActiveExact ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary")} />}
-                                                     {!collapsed && <span className="text-sm font-medium">{link.label}</span>}
-                                                 </Link>
-                                             );
-                                         })}
-                                     </motion.div>
-                                 )}
-                             </AnimatePresence>
-                         </div>
-                     );
-                 })}
-             </div>
-            
-            {/* Powered By Footer in Sidebar */}
-            <div className={cn("p-4 border-t border-border shrink-0", collapsed ? "p-2" : "p-4")}>
-                {collapsed ? (
-                    <div className="flex items-center justify-center w-full">
-                        <span className="text-[10px] font-bold text-muted-foreground">PD</span>
-                    </div>
-                ) : (
-                    <p className="text-xs text-muted-foreground text-center">
-                        Powered by <span className="font-semibold text-foreground">Proxima Digital</span>
-                    </p>
-                )}
-            </div>
-
-        </aside>
+                </div>
+            </aside>
         </>
     );
 }

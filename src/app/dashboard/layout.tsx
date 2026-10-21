@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRouter, usePathname } from 'next/navigation';
@@ -8,10 +7,11 @@ import { DashboardHeader } from '@/components/dashboard/header';
 import DashboardSidebar from '@/components/dashboard/sidebar';
 import { SidebarProvider, useSidebar } from '@/components/ui/sidebar';
 import { useRole } from '@/context/role-context';
+import { useLanguage } from '@/context/language-context';
 import { cn } from '@/lib/utils';
 import { Loader2, ShieldAlert } from 'lucide-react';
 import { MaintenanceBanner } from '@/components/maintenance-banner';
-import { isPathAuthorized, navConfig } from '@/lib/auth-guard';
+import { isPathAuthorized } from '@/lib/auth-guard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SupportBot } from '@/components/dashboard/support-bot/SupportBot';
@@ -58,7 +58,12 @@ const AuthLoader = () => (
 
 function MainLayout({ children, isCheckingAuth, isAuthorized }: { children: React.ReactNode, isCheckingAuth: boolean, isAuthorized: boolean }) {
   const { state } = useSidebar();
+  const { isRtl } = useLanguage();
   const isCollapsed = state === "collapsed";
+
+  const marginClass = isRtl
+    ? (isCollapsed ? "lg:mr-[80px]" : "lg:mr-[270px]")
+    : (isCollapsed ? "lg:ml-[80px]" : "lg:ml-[270px]");
 
   return (
     <div className="flex h-full overflow-hidden print:h-auto print:overflow-visible">
@@ -67,8 +72,8 @@ function MainLayout({ children, isCheckingAuth, isAuthorized }: { children: Reac
       </div>
       <div 
         className={cn(
-          "flex flex-1 flex-col overflow-y-auto overflow-x-hidden relative transition-all duration-300 ease-in-out min-w-0 print:ml-0 print:w-full print:h-auto print:overflow-visible print:bg-white",
-          isCollapsed ? "lg:ml-[80px]" : "lg:ml-72"
+          "flex flex-1 flex-col overflow-y-auto overflow-x-hidden relative transition-all duration-300 ease-in-out min-w-0 print:ml-0 print:mr-0 print:w-full print:h-auto print:overflow-visible print:bg-white",
+          marginClass
         )}
       >
           <div className="print-hidden sticky top-0 z-20 bg-background/95 backdrop-blur border-b border-border">
