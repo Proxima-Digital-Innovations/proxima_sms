@@ -14,7 +14,7 @@ async function main() {
     const profile = await prisma.systemProfile.findFirst();
     console.log(`School / System Profile: ${profile?.name || 'Proxima SMS'}`);
     console.log(`School Email: ${profile?.email || 'N/A'}`);
-    console.log(`License Status: ${license ? `Tier ${license.tier}, Student Capacity: ${license.studentCapacity}, Active: ${license.isActive}` : 'No license record'}`);
+    console.log(`License Status: ${license ? `Tier ${license.tier}, Status: ${license.status}` : 'No license record'}`);
   } catch (err: any) {
     console.error('Error fetching license/profile:', err.message);
   }
@@ -28,7 +28,7 @@ async function main() {
     const gradingScales = await prisma.gradingScale.findMany({ include: { entries: true } });
 
     console.log(`Academic Sessions: ${sessions.length}`);
-    sessions.forEach(s => console.log(`  - Session: ${s.name} (Active: ${s.active}), Terms: ${s.terms.map(t => t.name).join(', ')}`));
+    sessions.forEach(s => console.log(`  - Session: ${s.name} (Active: ${s.isActive}), Terms: ${s.terms.map(t => t.name).join(', ')}`));
     console.log(`Classes count: ${classes.length} (e.g. ${classes.slice(0, 3).map(c => c.name).join(', ')})`);
     console.log(`Subjects count: ${subjects.length} (e.g. ${subjects.slice(0, 3).map(s => s.name).join(', ')})`);
     console.log(`Grading Scales configured: ${gradingScales.length}`);

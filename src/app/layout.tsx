@@ -55,7 +55,7 @@ export default async function RootLayout({
           {children}
           <Toaster />
         </AppProviders>
-        <Analytics />
+        {process.env.VERCEL && <Analytics />}
       </body>
     </html>
   );

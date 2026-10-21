@@ -111,8 +111,8 @@ async function runTests() {
     const sessionName = academic.sessions?.[0]?.name || '2024/2025';
 
     await test(`Continuous Assessment: getScoresByClassSubjectAndTerm(${academic.classes[0].name}, ${academic.subjects[0].name})`, async () => {
-      const res = await getScoresByClassSubjectAndTerm(classId, subjectId, termName, sessionName);
-      if (!res.success) throw new Error(res.message || 'Failed to fetch scores');
+      const res: any = await getScoresByClassSubjectAndTerm(classId, subjectId, termName, sessionName);
+      if (!res.success) throw new Error(res.message || res.error || 'Failed to fetch scores');
       console.log(`       CA scores loaded: ${res.scores?.length || 0}`);
       return res;
     });
@@ -140,17 +140,17 @@ async function runTests() {
     const classId = academic.classes[0].id;
     const termId = academic.terms[0].id;
     await test(`Result Processing: getResultPreflightCheck(${academic.classes[0].name})`, async () => {
-      const res = await getResultPreflightCheck(classId, termId);
+      const res: any = await getResultPreflightCheck(classId, termId);
       if (!res.success) throw new Error(res.error || 'Preflight check failed');
-      console.log(`       Eligible Students: ${res.studentCount}, Subjects: ${res.subjectCount}`);
+      console.log(`       Eligible Students: ${res.totalStudents || res.studentCount}, Subjects: ${res.stats?.totalSubjects || res.subjectCount}`);
       return res;
     });
 
     // 14. Broadsheet Data Generation
     await test(`Result Broadsheet: getBroadsheetData(${academic.classes[0].name})`, async () => {
-      const res = await getBroadsheetData(classId, termId);
-      if (!res.success) throw new Error(res.message || 'Broadsheet fetch failed');
-      console.log(`       Broadsheet Students: ${res.data?.students?.length || 0}`);
+      const res: any = await getBroadsheetData(classId, termId);
+      if (!res.success) throw new Error(res.message || res.error || 'Broadsheet fetch failed');
+      console.log(`       Broadsheet Students: ${res.broadsheet?.students?.length || res.data?.students?.length || 0}`);
       return res;
     });
   }

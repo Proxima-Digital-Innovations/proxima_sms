@@ -1,0 +1,273 @@
+[
+  {
+    "suite": "Multi-Role Portals",
+    "name": "Role Auth & BiDi [ADMIN]: admin@proximahub.com",
+    "status": "PASS",
+    "durationMs": 4245,
+    "details": "RTL Verified: true. Screenshots: role-admin-en.png, role-admin-ar.png",
+    "consoleErrors": [],
+    "screenshot": "role-admin-en.png"
+  },
+  {
+    "suite": "Multi-Role Portals",
+    "name": "Role Auth & BiDi [ACCOUNTANT]: accountant@school.edu",
+    "status": "PASS",
+    "durationMs": 3911,
+    "details": "RTL Verified: true. Screenshots: role-accountant-en.png, role-accountant-ar.png",
+    "consoleErrors": [],
+    "screenshot": "role-accountant-en.png"
+  },
+  {
+    "suite": "Multi-Role Portals",
+    "name": "Role Auth & BiDi [TEACHER]: teacher1@school.edu",
+    "status": "PASS",
+    "durationMs": 4062,
+    "details": "RTL Verified: true. Screenshots: role-teacher-en.png, role-teacher-ar.png",
+    "consoleErrors": [],
+    "screenshot": "role-teacher-en.png"
+  },
+  {
+    "suite": "Multi-Role Portals",
+    "name": "Role Auth & BiDi [EXAM_OFFICER]: exam@proxima.com",
+    "status": "PASS",
+    "durationMs": 3470,
+    "details": "RTL Verified: true. Screenshots: role-exam_officer-en.png, role-exam_officer-ar.png",
+    "consoleErrors": [],
+    "screenshot": "role-exam_officer-en.png"
+  },
+  {
+    "suite": "Multi-Role Portals",
+    "name": "Role Auth & BiDi [HOD]: hod.science@school.edu",
+    "status": "PASS",
+    "durationMs": 3800,
+    "details": "RTL Verified: true. Screenshots: role-hod-en.png, role-hod-ar.png",
+    "consoleErrors": [],
+    "screenshot": "role-hod-en.png"
+  },
+  {
+    "suite": "Multi-Role Portals",
+    "name": "Role Auth & BiDi [SLT]: slt@school.edu",
+    "status": "PASS",
+    "durationMs": 4167,
+    "details": "RTL Verified: true. Screenshots: role-slt-en.png, role-slt-ar.png",
+    "consoleErrors": [],
+    "screenshot": "role-slt-en.png"
+  },
+  {
+    "suite": "Multi-Role Portals",
+    "name": "Role Auth & BiDi [STUDENT]: student1@school.edu",
+    "status": "PASS",
+    "durationMs": 3516,
+    "details": "RTL Verified: true. Screenshots: role-student-en.png, role-student-ar.png",
+    "consoleErrors": [],
+    "screenshot": "role-student-en.png"
+  },
+  {
+    "suite": "Browser Page Verification",
+    "name": "Student Directory (/dashboard/students)",
+    "status": "PASS",
+    "durationMs": 1661,
+    "details": "Loaded successfully. Screenshot: dashboard_students.png. Title: \"Dashboard | Proxima SMS\". Numeric isolated elements: 3/3",
+    "consoleErrors": [],
+    "screenshot": "dashboard_students.png"
+  },
+  {
+    "suite": "Browser Page Verification",
+    "name": "Invoices & Billing (/dashboard/finance/invoices)",
+    "status": "PASS",
+    "durationMs": 2848,
+    "details": "Loaded successfully. Screenshot: dashboard_finance_invoices.png. Title: \"Proxima SMS Dashboard\". Numeric isolated elements: 2669/2669",
+    "consoleErrors": [],
+    "screenshot": "dashboard_finance_invoices.png"
+  },
+  {
+    "suite": "Browser Page Verification",
+    "name": "Payment Receipts (/dashboard/finance/payments)",
+    "status": "PASS",
+    "durationMs": 4486,
+    "details": "Loaded successfully. Screenshot: dashboard_finance_payments.png. Title: \"Payments - Finance | Proxima SMS\". Numeric isolated elements: 0/0",
+    "consoleErrors": [],
+    "screenshot": "dashboard_finance_payments.png"
+  },
+  {
+    "suite": "Browser Page Verification",
+    "name": "Payroll Management (/dashboard/finance/payroll)",
+    "status": "PASS",
+    "durationMs": 2002,
+    "details": "Loaded successfully. Screenshot: dashboard_finance_payroll.png. Title: \"Proxima SMS Dashboard\". Numeric isolated elements: 0/0",
+    "consoleErrors": [],
+    "screenshot": "dashboard_finance_payroll.png"
+  },
+  {
+    "suite": "Browser Page Verification",
+    "name": "General Ledger (/dashboard/finance/ledger)",
+    "status": "PASS",
+    "durationMs": 1230,
+    "details": "Loaded successfully. Screenshot: dashboard_finance_ledger.png. Title: \"Proxima SMS Dashboard\". Numeric isolated elements: 0/0",
+    "consoleErrors": [],
+    "screenshot": "dashboard_finance_ledger.png"
+  },
+  {
+    "suite": "Browser Page Verification",
+    "name": "Chart of Accounts (/dashboard/finance/chart-of-accounts)",
+    "status": "PASS",
+    "durationMs": 1222,
+    "details": "Loaded successfully. Screenshot: dashboard_finance_chart-of-accounts.png. Title: \"Proxima SMS Dashboard\". Numeric isolated elements: 0/0",
+    "consoleErrors": [],
+    "screenshot": "dashboard_finance_chart-of-accounts.png"
+  },
+  {
+    "suite": "Browser Page Verification",
+    "name": "BAS Biometrics Dashboard (/dashboard/bas/dashboard)",
+    "status": "PASS",
+    "durationMs": 1513,
+    "details": "Loaded successfully. Screenshot: dashboard_bas_dashboard.png. Title: \"Proxima SMS Dashboard\". Numeric isolated elements: 0/0",
+    "consoleErrors": [],
+    "screenshot": "dashboard_bas_dashboard.png"
+  },
+  {
+    "suite": "Browser Page Verification",
+    "name": "Daily Staff Attendance (/dashboard/bas/attendance)",
+    "status": "PASS",
+    "durationMs": 1250,
+    "details": "Loaded successfully. Screenshot: dashboard_bas_attendance.png. Title: \"Proxima SMS Dashboard\". Numeric isolated elements: 0/0",
+    "consoleErrors": [],
+    "screenshot": "dashboard_bas_attendance.png"
+  },
+  {
+    "suite": "Browser Page Verification",
+    "name": "Fleet & Logistics (/dashboard/fleet)",
+    "status": "PASS",
+    "durationMs": 1192,
+    "details": "Loaded successfully. Screenshot: dashboard_fleet.png. Title: \"Proxima SMS Dashboard\". Numeric isolated elements: 0/0",
+    "consoleErrors": [],
+    "screenshot": "dashboard_fleet.png"
+  },
+  {
+    "suite": "Browser Page Verification",
+    "name": "Recruitment ATS (/dashboard/recruitment)",
+    "status": "PASS",
+    "durationMs": 1216,
+    "details": "Loaded successfully. Screenshot: dashboard_recruitment.png. Title: \"Proxima SMS Dashboard\". Numeric isolated elements: 0/0",
+    "consoleErrors": [],
+    "screenshot": "dashboard_recruitment.png"
+  },
+  {
+    "suite": "Browser Page Verification",
+    "name": "Asset Management (/dashboard/inventory/assets)",
+    "status": "PASS",
+    "durationMs": 1190,
+    "details": "Loaded successfully. Screenshot: dashboard_inventory_assets.png. Title: \"Proxima SMS Dashboard\". Numeric isolated elements: 0/0",
+    "consoleErrors": [],
+    "screenshot": "dashboard_inventory_assets.png"
+  },
+  {
+    "suite": "Browser Page Verification",
+    "name": "Staff Management (/dashboard/users)",
+    "status": "PASS",
+    "durationMs": 1256,
+    "details": "Loaded successfully. Screenshot: dashboard_users.png. Title: \"Proxima SMS Dashboard\". Numeric isolated elements: 0/0",
+    "consoleErrors": [],
+    "screenshot": "dashboard_users.png"
+  },
+  {
+    "suite": "Browser Page Verification",
+    "name": "CA Score Entry Form (/dashboard/scores/enter)",
+    "status": "PASS",
+    "durationMs": 1192,
+    "details": "Loaded successfully. Screenshot: dashboard_scores_enter.png. Title: \"Proxima SMS Dashboard\". Numeric isolated elements: 0/0",
+    "consoleErrors": [],
+    "screenshot": "dashboard_scores_enter.png"
+  },
+  {
+    "suite": "Browser Page Verification",
+    "name": "Spreadsheet Gradebook (/dashboard/scores/gradebook)",
+    "status": "PASS",
+    "durationMs": 1175,
+    "details": "Loaded successfully. Screenshot: dashboard_scores_gradebook.png. Title: \"Proxima SMS Dashboard\". Numeric isolated elements: 0/0",
+    "consoleErrors": [],
+    "screenshot": "dashboard_scores_gradebook.png"
+  },
+  {
+    "suite": "Browser Page Verification",
+    "name": "Score Moderation Deck (/dashboard/scores)",
+    "status": "PASS",
+    "durationMs": 1236,
+    "details": "Loaded successfully. Screenshot: dashboard_scores.png. Title: \"Proxima SMS Dashboard\". Numeric isolated elements: 0/0",
+    "consoleErrors": [],
+    "screenshot": "dashboard_scores.png"
+  },
+  {
+    "suite": "Browser Page Verification",
+    "name": "Results Generation (/dashboard/results/generate)",
+    "status": "PASS",
+    "durationMs": 1218,
+    "details": "Loaded successfully. Screenshot: dashboard_results_generate.png. Title: \"Proxima SMS Dashboard\". Numeric isolated elements: 0/0",
+    "consoleErrors": [],
+    "screenshot": "dashboard_results_generate.png"
+  },
+  {
+    "suite": "Browser Page Verification",
+    "name": "View Results & Broadsheet (/dashboard/results/view)",
+    "status": "PASS",
+    "durationMs": 1210,
+    "details": "Loaded successfully. Screenshot: dashboard_results_view.png. Title: \"Proxima SMS Dashboard\". Numeric isolated elements: 0/0",
+    "consoleErrors": [],
+    "screenshot": "dashboard_results_view.png"
+  },
+  {
+    "suite": "Browser Page Verification",
+    "name": "Lesson Plans & Approvals (/dashboard/lesson-notes)",
+    "status": "PASS",
+    "durationMs": 1187,
+    "details": "Loaded successfully. Screenshot: dashboard_lesson-notes.png. Title: \"Proxima SMS Dashboard\". Numeric isolated elements: 0/0",
+    "consoleErrors": [],
+    "screenshot": "dashboard_lesson-notes.png"
+  },
+  {
+    "suite": "Browser Page Verification",
+    "name": "Exam Question Bank (/dashboard/exam-questions)",
+    "status": "PASS",
+    "durationMs": 1233,
+    "details": "Loaded successfully. Screenshot: dashboard_exam-questions.png. Title: \"Proxima SMS Dashboard\". Numeric isolated elements: 0/0",
+    "consoleErrors": [],
+    "screenshot": "dashboard_exam-questions.png"
+  },
+  {
+    "suite": "Browser Page Verification",
+    "name": "School Profile & Branding (/dashboard/system/school-info)",
+    "status": "PASS",
+    "durationMs": 1180,
+    "details": "Loaded successfully. Screenshot: dashboard_system_school-info.png. Title: \"Proxima SMS Dashboard\". Numeric isolated elements: 0/0",
+    "consoleErrors": [],
+    "screenshot": "dashboard_system_school-info.png"
+  },
+  {
+    "suite": "Transactional Pipelines",
+    "name": "Pipeline 1: Continuous Assessment -> TermGrade -> Broadsheet",
+    "status": "PASS",
+    "durationMs": 117,
+    "details": "Saved CA score for student Era (Score: 87/100, Grade: A1). Preflight passed, broadsheet aggregated."
+  },
+  {
+    "suite": "Transactional Pipelines",
+    "name": "Pipeline 2: Invoice Creation -> Payment Receipt -> Status Reconciliation",
+    "status": "PASS",
+    "durationMs": 220,
+    "details": "Created invoice ₦25,000 for Era, processed payment, verified PAID status, and cleaned test record."
+  },
+  {
+    "suite": "Transactional Pipelines",
+    "name": "Pipeline 3: Biometrics (BAS) Hardware & Shift Compliance",
+    "status": "PASS",
+    "durationMs": 24,
+    "details": "Active staff evaluated: 19. Active kiosks: 1. Configured shifts: 2."
+  },
+  {
+    "suite": "Transactional Pipelines",
+    "name": "Pipeline 4: Fleet Logistics, ATS Recruitment & Asset Depreciation",
+    "status": "PASS",
+    "durationMs": 15,
+    "details": "Fleet vehicles: 3, ATS postings: 1, Cataloged assets: 4."
+  }
+]

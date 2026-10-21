@@ -47,3 +47,4 @@ logs/
 *.log
 replace_colors.js
 nsis_setup.exe
+scripts/e2e-output/screenshots/

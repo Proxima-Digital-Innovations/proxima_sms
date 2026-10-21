@@ -5,6 +5,12 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { CommEngine } from "@/lib/services/comm-engine";
 
+function safeRevalidatePath(path: string) {
+  try {
+    revalidatePath(path);
+  } catch {}
+}
+
 export async function getFeeStructures() {
   return await prisma.feeStructure.findMany({
     include: { items: true },
@@ -41,7 +47,7 @@ export async function createFeeStructure(data: {
     include: { items: true },
   });
 
-  revalidatePath("/dashboard/finance/fee-structures");
+  safeRevalidatePath("/dashboard/finance/fee-structures");
   return feeStructure;
 }
 
@@ -78,7 +84,7 @@ export async function updateFeeStructure(id: string, data: {
     include: { items: true },
   });
 
-  revalidatePath("/dashboard/finance/fee-structures");
+  safeRevalidatePath("/dashboard/finance/fee-structures");
   return updated;
 }
 
@@ -114,7 +120,7 @@ export async function duplicateFeeStructure(id: string) {
     include: { items: true },
   });
 
-  revalidatePath("/dashboard/finance/fee-structures");
+  safeRevalidatePath("/dashboard/finance/fee-structures");
   return duplicate;
 }
 
@@ -123,14 +129,14 @@ export async function setFeeStructureStatus(id: string, status: "ACTIVE" | "DRAF
     where: { id },
     data: { status },
   });
-  revalidatePath("/dashboard/finance/fee-structures");
+  safeRevalidatePath("/dashboard/finance/fee-structures");
   return updated;
 }
 
 export async function deleteFeeStructure(id: string) {
   await prisma.feeItem.deleteMany({ where: { feeStructureId: id } });
   await prisma.feeStructure.delete({ where: { id } });
-  revalidatePath("/dashboard/finance/fee-structures");
+  safeRevalidatePath("/dashboard/finance/fee-structures");
 }
 
 export async function generateClassInvoices(feeStructureId: string) {
@@ -233,8 +239,8 @@ export async function generateClassInvoices(feeStructureId: string) {
     generatedCount++;
   }
 
-  revalidatePath("/dashboard/finance/invoices");
-  revalidatePath("/dashboard/finance/payments");
+  safeRevalidatePath("/dashboard/finance/invoices");
+  safeRevalidatePath("/dashboard/finance/payments");
   return { generatedCount, totalStudents: students.length };
 }
 
@@ -272,8 +278,8 @@ export async function createIndividualInvoice(data: {
     }
   });
 
-  revalidatePath("/dashboard/finance/invoices");
-  revalidatePath("/dashboard/finance/payments");
+  safeRevalidatePath("/dashboard/finance/invoices");
+  safeRevalidatePath("/dashboard/finance/payments");
   return { success: true, invoice };
 }
 
@@ -361,8 +367,8 @@ export async function voidInvoice(invoiceId: string, reason?: string) {
     }
   });
 
-  revalidatePath("/dashboard/finance/invoices");
-  revalidatePath("/dashboard/finance/payments");
+  safeRevalidatePath("/dashboard/finance/invoices");
+  safeRevalidatePath("/dashboard/finance/payments");
   return { success: true };
 }
 
@@ -387,7 +393,7 @@ export async function bulkVoidInvoices(invoiceIds: string[]) {
     }
   }
 
-  revalidatePath("/dashboard/finance/invoices");
+  safeRevalidatePath("/dashboard/finance/invoices");
   return { success: true, voidedCount, skippedCount };
 }
 
@@ -430,7 +436,7 @@ export async function bulkMarkInvoicesPaid(invoiceIds: string[], method = "CASH"
     }
   }
 
-  revalidatePath("/dashboard/finance/invoices");
+  safeRevalidatePath("/dashboard/finance/invoices");
   return { success: true, successCount, errorCount };
 }
 
@@ -518,8 +524,10 @@ export async function recordPayment(data: {
   // Resolve valid user ID for loggedById to satisfy foreign key constraint
   let userId = data.loggedById;
   if (!userId || userId === "system" || userId === "admin-id") {
-    const session = await auth();
-    userId = (session?.user as any)?.id;
+    try {
+      const session = await auth();
+      userId = (session?.user as any)?.id;
+    } catch {}
   }
 
   if (userId) {
@@ -566,9 +574,9 @@ export async function recordPayment(data: {
       }
     });
 
-    revalidatePath(`/dashboard/finance/invoices/${data.invoiceId}`);
-    revalidatePath("/dashboard/finance/invoices");
-    revalidatePath("/dashboard/finance/payments");
+    safeRevalidatePath(`/dashboard/finance/invoices/${data.invoiceId}`);
+    safeRevalidatePath("/dashboard/finance/invoices");
+    safeRevalidatePath("/dashboard/finance/payments");
     return { success: true, receipt };
   }
 
@@ -603,10 +611,10 @@ export async function recordPayment(data: {
     }),
   ]);
 
-  revalidatePath(`/dashboard/finance/invoices/${data.invoiceId}`);
-  revalidatePath("/dashboard/finance/invoices");
-  revalidatePath("/dashboard/finance/payments");
-  revalidatePath("/dashboard/finance/reports");
+  safeRevalidatePath(`/dashboard/finance/invoices/${data.invoiceId}`);
+  safeRevalidatePath("/dashboard/finance/invoices");
+  safeRevalidatePath("/dashboard/finance/payments");
+  safeRevalidatePath("/dashboard/finance/reports");
 
   // Asynchronously dispatch digital receipt notification to guardian
   try {
@@ -866,9 +874,9 @@ export async function verifyPendingPayment(receiptId: string, options?: { force?
       });
     }
 
-    revalidatePath("/dashboard/finance/payments");
-    revalidatePath("/dashboard/finance/invoices");
-    revalidatePath("/dashboard/finance/reports");
+    safeRevalidatePath("/dashboard/finance/payments");
+    safeRevalidatePath("/dashboard/finance/invoices");
+    safeRevalidatePath("/dashboard/finance/reports");
 
     return { success: true, message: "Payment successfully verified and posted to accounts." };
   } catch (error: any) {
@@ -911,8 +919,10 @@ export async function reversePayment(data: {
     // Resolve reversing actor user ID
     let actorId = data.reversedById;
     if (!actorId) {
-      const session = await auth();
-      actorId = (session?.user as any)?.id || null;
+      try {
+        const session = await auth();
+        actorId = (session?.user as any)?.id || null;
+      } catch {}
     }
 
     const invoice = receipt.invoice;
@@ -986,9 +996,9 @@ export async function reversePayment(data: {
       }
     }
 
-    revalidatePath("/dashboard/finance/payments");
-    revalidatePath("/dashboard/finance/invoices");
-    revalidatePath("/dashboard/finance/reports");
+    safeRevalidatePath("/dashboard/finance/payments");
+    safeRevalidatePath("/dashboard/finance/invoices");
+    safeRevalidatePath("/dashboard/finance/reports");
 
     return { success: true, message: "Payment successfully reversed and invoice balance restored." };
   } catch (error: any) {
