@@ -196,6 +196,7 @@
 /* RTL & Arabic Typography & BiDi Isolation */
 [dir="rtl"] {
   direction: rtl;
+  text-align: start;
   font-family: var(--font-cairo), 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Arial, sans-serif !important;
   letter-spacing: normal !important;
 }
@@ -204,7 +205,7 @@
   letter-spacing: normal;
 }
 
-/* Prevent English / Latin text, numbers, codes from reversing inside RTL */
+/* Isolate English codes, IDs, numbers, emails, passwords, and URLs so they never scramble */
 [dir="rtl"] :is(
   code, 
   kbd, 
@@ -216,21 +217,13 @@
   input[type="url"], 
   input[type="tel"],
   .ltr-only,
-  .ltr-text
+  .ltr-text,
+  .numeric-badge,
+  .currency-amount,
+  bdi
 ) {
   direction: ltr !important;
-  text-align: left !important;
   unicode-bidi: isolate;
-}
-
-/* Smart text flow: Latin/English paragraphs & headings maintain natural LTR, while Arabic flows RTL */
-[dir="rtl"] :is(p, span, td, th, h1, h2, h3, h4, h5, h6, label) {
-  unicode-bidi: plaintext;
-}
-
-/* Numeric stats, percentages, and currencies stay isolated without BiDi inversion */
-[dir="rtl"] :is(.numeric-badge, .currency-amount) {
-  direction: ltr;
   display: inline-block;
-  unicode-bidi: isolate;
+  text-align: left !important;
 }

@@ -36,6 +36,14 @@ const PAGE_TITLE_KEYS: { [key: string]: string } = {
     '/dashboard/results/broadsheet': 'resultsBroadsheet',
     '/dashboard/lesson-notes': 'lessonPlans',
     '/dashboard/exam-questions': 'examQuestions',
+    '/dashboard/behavioural': 'behaviouralAssessment',
+    '/dashboard/timetable': 'timetable',
+    '/dashboard/exam-registration': 'examRegistration',
+    '/dashboard/seating-plan': 'seatingPlans',
+    '/dashboard/recruitment': 'recruitment',
+    '/dashboard/fleet': 'fleet',
+    '/dashboard/inventory/assets': 'assets',
+    '/dashboard/inventory/items': 'inventory',
     '/dashboard/finance': 'finance',
     '/dashboard/finance/invoices': 'invoices',
     '/dashboard/finance/payments': 'payments',
@@ -61,6 +69,58 @@ const PAGE_TITLE_KEYS: { [key: string]: string } = {
     '/dashboard/messaging': 'messaging',
     '/dashboard/announcements': 'announcements',
     '/dashboard/analytics': 'reportsAndAnalytics',
+};
+
+const SEGMENT_ARABIC_MAP: Record<string, string> = {
+    'dashboard': 'لوحة التحكم',
+    'students': 'دليل الطلاب',
+    'admissions': 'القبول والتسجيل',
+    'promote': 'الترقية والترحيل',
+    'scores': 'الدرجات والتقييم',
+    'enter': 'رصد الدرجات',
+    'gradebook': 'دفتر الدرجات',
+    'midterm': 'الميدتيرم',
+    'tahfeez': 'حفظ القرآن',
+    'results': 'النتائج',
+    'view': 'عرض النتائج والشهادات',
+    'generate': 'معالجة النتائج',
+    'broadsheet': 'المسرد الشامل',
+    'lesson-notes': 'خطط الدروس',
+    'exam-questions': 'نماذج الأسئلة',
+    'behavioural': 'التقييم السلوكي',
+    'timetable': 'الجدول المدرسي',
+    'exam-registration': 'أرقام الجلوس',
+    'seating-plan': 'لجان الامتحانات',
+    'recruitment': 'التوظيف واستقطاب الكفاءات',
+    'fleet': 'إدارة النقل والأسطول',
+    'inventory': 'المستودع والمخزون',
+    'assets': 'الأصول الثابتة',
+    'items': 'الأصناف والمستلزمات',
+    'finance': 'المالية والحسابات',
+    'invoices': 'الرسوم والفواتير',
+    'payments': 'سندات وإيصالات القبض',
+    'fee-structures': 'هيكل الرسوم',
+    'payroll': 'مسير الرواتب',
+    'ledger': 'دفتر الأستاذ العام',
+    'chart-of-accounts': 'دليل الحسابات',
+    'reports': 'التقارير المالية',
+    'bas': 'نظام البصمة والحضور',
+    'attendance': 'سجل الحضور اليومي',
+    'kiosks': 'أجهزة البصمة الذكية',
+    'system': 'إعدادات النظام',
+    'classes-subjects': 'الفصول والمواد',
+    'academic-year': 'العام الدراسي',
+    'roles': 'الأدوار والصلاحيات',
+    'school-info': 'بيانات وهوية المدرسة',
+    'license': 'سعة الترخيص والاشتراك',
+    'profile': 'الملف الشخصي',
+    'users': 'سجل الكادر الوظيفي',
+    'db': 'قاعدة البيانات',
+    'logs': 'السجلات والأمان',
+    'notifications': 'الإشعارات والتنبيهات',
+    'messaging': 'الرسائل الداخلية',
+    'announcements': 'التعاميم والإعلانات',
+    'analytics': 'التقارير والإحصائيات',
 };
 
 const ROLE_DISPLAY_NAMES: Record<string, { en: string; ar: string }> = {
@@ -90,6 +150,12 @@ export function DashboardHeader() {
     if ((s.length >= 24 && s.length <= 36 && !s.includes('-') && !s.includes(' ')) || 
         (s.length === 36 && s.split('-').length === 5)) {
         return language === 'ar' ? 'التفاصيل' : 'Details';
+    }
+    if (language === 'ar') {
+        const lower = s.toLowerCase();
+        if (SEGMENT_ARABIC_MAP[lower]) {
+            return SEGMENT_ARABIC_MAP[lower];
+        }
     }
     return s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, ' ');
   };
@@ -134,7 +200,7 @@ export function DashboardHeader() {
           {getPageTitle()}
         </h1>
         <span className="hidden md:block text-xs text-muted-foreground font-medium truncate">
-          {pathname.split('/').filter(Boolean).map(formatSegment).join(isRtl ? ' \\ ' : ' / ')}
+          {pathname.split('/').filter(Boolean).map(formatSegment).join(isRtl ? ' ← ' : ' / ')}
         </span>
       </div>
 

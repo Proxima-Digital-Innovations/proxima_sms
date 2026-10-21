@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
 import {
   Card,
   CardContent,
@@ -16,7 +17,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Search, Users, User, Trash2, Edit, UserCheck, UserX } from 'lucide-react';
+import { Search, Users, User, UserCheck, UserX } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { StudentHeaderActions } from '@/components/dashboard/students/student-header-actions';
@@ -24,7 +25,6 @@ import { StudentHeaderActions } from '@/components/dashboard/students/student-he
 import {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
@@ -39,6 +39,10 @@ export default async function StudentsPage(props: {
     const currentPage = Number(searchParams.page) || 1;
     const pageSize = 10;
     const skip = (currentPage - 1) * pageSize;
+
+    const cookieStore = await cookies();
+    const lang = cookieStore.get('proxima_language')?.value || 'en';
+    const isAr = lang === 'ar';
 
     const where = {
         OR: [
@@ -78,9 +82,13 @@ export default async function StudentsPage(props: {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-background p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-border backdrop-blur-sm shadow-sm w-full min-w-0">
                 <div className="min-w-0">
-                    <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight truncate">Student Directory</h1>
+                    <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight truncate">
+                        {isAr ? 'سجل ودليل الطلاب' : 'Student Directory'}
+                    </h1>
                     <p className="text-muted-foreground text-xs sm:text-sm mt-1">
-                        Manage enrollment, view records, and process admissions.
+                        {isAr 
+                            ? 'إدارة التسجيل الأكاديمي، استعراض ملفات الطلاب، ومتابعة أولياء الأمور.' 
+                            : 'Manage enrollment, view records, and process admissions.'}
                     </p>
                 </div>
                 <StudentHeaderActions />
@@ -90,29 +98,37 @@ export default async function StudentsPage(props: {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 w-full min-w-0">
                 <Card className="col-span-2 sm:col-span-1 bg-background border-border shadow-none hover:bg-muted/50 transition-colors rounded-2xl sm:rounded-3xl group">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3.5 sm:p-6 pb-1 sm:pb-2">
-                        <CardTitle className="text-[11px] sm:text-sm font-bold tracking-wider uppercase text-primary">Total Active</CardTitle>
-                        <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors"><Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary" /></div>
+                        <CardTitle className="text-[11px] sm:text-sm font-bold tracking-wider uppercase text-emerald-600 dark:text-emerald-400">
+                            {isAr ? 'الطلاب النشطون' : 'Total Active'}
+                        </CardTitle>
+                        <div className="p-1.5 sm:p-2 bg-emerald-500/10 rounded-lg group-hover:bg-emerald-500/20 transition-colors">
+                            <Users className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-500" />
+                        </div>
                     </CardHeader>
                     <CardContent className="p-3.5 sm:p-6 pt-0">
-                        <div className="text-2xl sm:text-3xl font-black text-foreground">{stats.total}</div>
+                        <div className="text-2xl sm:text-3xl font-black text-foreground font-mono numeric-badge">{stats.total}</div>
                     </CardContent>
                 </Card>
                 <Card className="bg-background border-border shadow-none hover:bg-muted/50 transition-colors rounded-2xl sm:rounded-3xl">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3.5 sm:p-6 pb-1 sm:pb-2">
-                        <CardTitle className="text-[11px] sm:text-sm font-bold tracking-wider uppercase text-muted-foreground">Male</CardTitle>
+                        <CardTitle className="text-[11px] sm:text-sm font-bold tracking-wider uppercase text-muted-foreground">
+                            {isAr ? 'الطلاب الذكور' : 'Male'}
+                        </CardTitle>
                         <div className="p-1.5 sm:p-2 bg-muted rounded-lg"><User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" /></div>
                     </CardHeader>
                     <CardContent className="p-3.5 sm:p-6 pt-0">
-                        <div className="text-2xl sm:text-3xl font-black text-foreground">{stats.male}</div>
+                        <div className="text-2xl sm:text-3xl font-black text-foreground font-mono numeric-badge">{stats.male}</div>
                     </CardContent>
                 </Card>
                 <Card className="bg-background border-border shadow-none hover:bg-muted/50 transition-colors rounded-2xl sm:rounded-3xl">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3.5 sm:p-6 pb-1 sm:pb-2">
-                        <CardTitle className="text-[11px] sm:text-sm font-bold tracking-wider uppercase text-muted-foreground">Female</CardTitle>
+                        <CardTitle className="text-[11px] sm:text-sm font-bold tracking-wider uppercase text-muted-foreground">
+                            {isAr ? 'الطالبات الإناث' : 'Female'}
+                        </CardTitle>
                         <div className="p-1.5 sm:p-2 bg-muted rounded-lg"><User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" /></div>
                     </CardHeader>
                     <CardContent className="p-3.5 sm:p-6 pt-0">
-                        <div className="text-2xl sm:text-3xl font-black text-foreground">{stats.female}</div>
+                        <div className="text-2xl sm:text-3xl font-black text-foreground font-mono numeric-badge">{stats.female}</div>
                     </CardContent>
                 </Card>
             </div>
@@ -120,19 +136,21 @@ export default async function StudentsPage(props: {
             <Card className="bg-background border-border shadow-none rounded-2xl sm:rounded-3xl overflow-hidden backdrop-blur-sm w-full min-w-0">
                 <CardHeader className="border-b border-border bg-background p-4 sm:p-6 flex flex-col sm:flex-row gap-4 sm:items-center justify-between w-full min-w-0">
                     <div>
-                        <CardTitle className="text-lg sm:text-xl font-bold text-foreground">All Students</CardTitle>
+                        <CardTitle className="text-lg sm:text-xl font-bold text-foreground">
+                            {isAr ? 'كافة الطلاب المسجلين' : 'All Students'}
+                        </CardTitle>
                         <CardDescription className="text-muted-foreground text-xs sm:text-sm">
-                            Search and manage the student registry.
+                            {isAr ? 'البحث والتصفية في سجل الطلاب' : 'Search and manage the student registry.'}
                         </CardDescription>
                     </div>
                     <div className="relative w-full sm:w-72 md:w-80 lg:w-96 min-w-0">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Search className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <form action="/dashboard/students" method="GET">
                             <Input
                                 name="q"
                                 type="search"
-                                placeholder="Search by name or ID..."
-                                className="pl-10 bg-background border-border text-foreground rounded-xl focus-visible:ring-violet-500 h-10 w-full"
+                                placeholder={isAr ? 'بحث بالاسم أو رقم القيد...' : 'Search by name or ID...'}
+                                className="pl-10 rtl:pl-3 rtl:pr-10 bg-background border-border text-foreground rounded-xl focus-visible:ring-emerald-500 h-10 w-full"
                                 defaultValue={query}
                             />
                         </form>
@@ -143,11 +161,21 @@ export default async function StudentsPage(props: {
                         <Table>
                             <TableHeader className="bg-background">
                                 <TableRow className="border-border hover:bg-transparent">
-                                    <TableHead className="font-bold text-muted-foreground py-3 sm:py-4 px-3 sm:px-6 min-w-[200px]">Student</TableHead>
-                                    <TableHead className="font-bold text-muted-foreground py-3 sm:py-4 hidden sm:table-cell">Class</TableHead>
-                                    <TableHead className="font-bold text-muted-foreground py-3 sm:py-4 hidden md:table-cell">Primary Guardian</TableHead>
-                                    <TableHead className="font-bold text-muted-foreground py-3 sm:py-4">Status</TableHead>
-                                    <TableHead className="text-right font-bold text-muted-foreground py-3 sm:py-4 px-3 sm:px-6 min-w-[100px]">Actions</TableHead>
+                                    <TableHead className="font-bold text-muted-foreground py-3 sm:py-4 px-3 sm:px-6 min-w-[200px]">
+                                        {isAr ? 'الطالب' : 'Student'}
+                                    </TableHead>
+                                    <TableHead className="font-bold text-muted-foreground py-3 sm:py-4 hidden sm:table-cell">
+                                        {isAr ? 'الفصل' : 'Class'}
+                                    </TableHead>
+                                    <TableHead className="font-bold text-muted-foreground py-3 sm:py-4 hidden md:table-cell">
+                                        {isAr ? 'ولي الأمر الرئيسي' : 'Primary Guardian'}
+                                    </TableHead>
+                                    <TableHead className="font-bold text-muted-foreground py-3 sm:py-4">
+                                        {isAr ? 'الحالة' : 'Status'}
+                                    </TableHead>
+                                    <TableHead className="text-end font-bold text-muted-foreground py-3 sm:py-4 px-3 sm:px-6 min-w-[100px]">
+                                        {isAr ? 'الإجراء' : 'Actions'}
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -155,9 +183,13 @@ export default async function StudentsPage(props: {
                                     <TableRow>
                                         <TableCell colSpan={5} className="h-48 text-center text-muted-foreground">
                                             <div className="flex flex-col items-center justify-center">
-                                                <Users className="w-12 h-12 text-slate-700 mb-4" />
-                                                <p className="text-lg font-medium text-muted-foreground">No students found</p>
-                                                <p className="text-sm">Try adjusting your search query.</p>
+                                                <Users className="w-12 h-12 text-muted-foreground mb-4 opacity-50" />
+                                                <p className="text-lg font-medium text-muted-foreground">
+                                                    {isAr ? 'لم يتم العثور على طلاب مطابقة' : 'No students found'}
+                                                </p>
+                                                <p className="text-sm">
+                                                    {isAr ? 'جرب البحث بكلمات أو معايير أخرى.' : 'Try adjusting your search query.'}
+                                                </p>
                                             </div>
                                         </TableCell>
                                     </TableRow>
@@ -166,7 +198,7 @@ export default async function StudentsPage(props: {
                                         <TableRow key={student.id} className="border-border hover:bg-muted transition-colors group">
                                             <TableCell className="px-3 sm:px-6 py-3 sm:py-4">
                                                 <div className="flex items-center gap-3 sm:gap-4">
-                                                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-md shrink-0 text-sm sm:text-base">
+                                                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold shadow-md shrink-0 text-sm sm:text-base">
                                                         {student.firstName?.[0] || 'S'}
                                                     </div>
                                                     <div className="min-w-0">
@@ -174,11 +206,11 @@ export default async function StudentsPage(props: {
                                                             {student.firstName} {student.lastName}
                                                         </div>
                                                         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                                                            <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+                                                            <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider ltr-only">
                                                                 {student.studentId || 'NO ID'}
                                                             </span>
                                                             <Badge variant="outline" className="sm:hidden text-[9px] px-1.5 py-0 h-4 bg-muted border-border text-foreground font-medium">
-                                                                {student.class?.name || 'Unassigned'}
+                                                                {student.class?.name || (isAr ? 'غير محدد' : 'Unassigned')}
                                                             </Badge>
                                                         </div>
                                                         <div className="md:hidden text-[11px] text-muted-foreground mt-0.5 truncate">
@@ -189,22 +221,24 @@ export default async function StudentsPage(props: {
                                             </TableCell>
                                             <TableCell className="hidden sm:table-cell py-4">
                                                 <Badge variant="outline" className="bg-muted border-border text-foreground font-medium">
-                                                    {student.class?.name || 'Unassigned'}
+                                                    {student.class?.name || (isAr ? 'غير محدد' : 'Unassigned')}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="hidden md:table-cell py-4">
                                                 <div className="text-sm text-foreground">
-                                                    {student.guardians[0]?.fullName || 'N/A'}
+                                                    {student.guardians[0]?.fullName || (isAr ? 'لا يوجد' : 'N/A')}
                                                 </div>
                                                 {student.guardians[0]?.email && (
-                                                    <div className="text-xs text-muted-foreground mt-0.5">{student.guardians[0].email}</div>
+                                                    <div className="text-xs text-muted-foreground mt-0.5 font-mono ltr-only">
+                                                        {student.guardians[0].email}
+                                                    </div>
                                                 )}
                                             </TableCell>
                                             <TableCell className="py-3 sm:py-4">
                                                 <div className="flex items-center gap-2">
                                                     {student.status === 'Active' ? (
                                                         <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-medium px-2 py-0.5 text-[11px] sm:text-xs flex gap-1 items-center">
-                                                            <UserCheck className="w-3 h-3" /> Active
+                                                            <UserCheck className="w-3 h-3" /> {isAr ? 'نشط' : 'Active'}
                                                         </Badge>
                                                     ) : (
                                                         <Badge variant="outline" className="bg-rose-500/10 text-rose-400 border-rose-500/20 font-medium px-2 py-0.5 text-[11px] sm:text-xs flex gap-1 items-center">
@@ -213,12 +247,11 @@ export default async function StudentsPage(props: {
                                                     )}
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="text-right px-3 sm:px-6 py-3 sm:py-4">
+                                            <TableCell className="text-end px-3 sm:px-6 py-3 sm:py-4">
                                                 <div className="flex justify-end gap-2">
-                                                    <Button asChild variant="outline" size="sm" className="h-8 px-2.5 sm:px-3 bg-background border-border hover:bg-muted hover:text-foreground text-xs sm:text-sm font-medium">
+                                                    <Button asChild variant="outline" size="sm" className="h-8 px-2.5 sm:px-3 bg-background border-border hover:bg-muted hover:text-foreground text-xs sm:text-sm font-medium rounded-lg">
                                                         <Link href={`/dashboard/students/${student.id}`}>
-                                                            <span className="sm:hidden">View</span>
-                                                            <span className="hidden sm:inline">View Profile</span>
+                                                            <span>{isAr ? 'عرض الملف' : 'View Profile'}</span>
                                                         </Link>
                                                     </Button>
                                                 </div>
@@ -263,9 +296,4 @@ export default async function StudentsPage(props: {
             </Card>
         </div>
     );
-}
-
-// Utility for conditional classes
-function cn(...inputs: any[]) {
-    return inputs.filter(Boolean).join(' ');
 }

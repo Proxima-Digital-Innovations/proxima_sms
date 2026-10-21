@@ -64,10 +64,12 @@ import { getAcademicData } from "@/actions/academic-data";
 import { getSystemSettings } from "@/actions/system-actions";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/context/language-context";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function InvoicesPage() {
+  const { language, isRtl } = useLanguage();
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -556,7 +558,7 @@ export default function InvoicesPage() {
     if (inv.status === "VOID") {
       return (
         <Badge variant="outline" className="bg-muted text-muted-foreground border-border text-[11px]">
-          Voided
+          {language === 'ar' ? 'ملغاة' : 'Voided'}
         </Badge>
       );
     }
@@ -564,7 +566,7 @@ export default function InvoicesPage() {
     if (inv.status === "PAID" || inv.balance <= 0) {
       return (
         <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 text-[11px] font-medium">
-          Paid
+          {language === 'ar' ? 'مسددة' : 'Paid'}
         </Badge>
       );
     }
@@ -573,7 +575,7 @@ export default function InvoicesPage() {
       const days = getDaysOverdue(inv.dueDate);
       return (
         <Badge className="bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20 text-[11px] font-medium animate-pulse">
-          Overdue ({days}d)
+          {language === 'ar' ? `متأخرة (${days} يوم)` : `Overdue (${days}d)`}
         </Badge>
       );
     }
@@ -581,14 +583,14 @@ export default function InvoicesPage() {
     if (inv.status === "PARTIAL" || inv.amountPaid > 0) {
       return (
         <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 text-[11px] font-medium">
-          Partial
+          {language === 'ar' ? 'سداد جزئي' : 'Partial'}
         </Badge>
       );
     }
 
     return (
       <Badge className="bg-slate-500/10 text-slate-700 dark:text-slate-300 border border-slate-500/20 text-[11px] font-medium">
-        Unpaid
+        {language === 'ar' ? 'غير مسددة' : 'Unpaid'}
       </Badge>
     );
   };
@@ -600,15 +602,17 @@ export default function InvoicesPage() {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
-              <FileText className="h-7 w-7 text-primary" />
-              Invoices & Billing
+              <FileText className="h-7 w-7 text-primary shrink-0" />
+              <span>{language === 'ar' ? 'الرسوم والفواتير المدرسية' : 'Invoices & Billing'}</span>
             </h1>
-            <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-xs hidden sm:inline-flex">
+            <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-xs hidden sm:inline-flex font-mono numeric-badge">
               {currencyCode} ({currencySymbol})
             </Badge>
           </div>
           <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
-            Manage student tuition billings, track payment collection statuses, and issue official school invoices.
+            {language === 'ar' 
+              ? 'إدارة الرسوم الدراسية للطلاب، متابعة التحصيل، وإصدار الفواتير الرسمية وسندات القبض.'
+              : 'Manage student tuition billings, track payment collection statuses, and issue official school invoices.'}
           </p>
         </div>
 
@@ -619,10 +623,10 @@ export default function InvoicesPage() {
             onClick={fetchInvoices}
             disabled={refreshing}
             className="rounded-xl border-border text-xs gap-1.5"
-            title="Refresh Invoices"
+            title={language === 'ar' ? 'تحديث الفواتير' : 'Refresh Invoices'}
           >
             <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin text-primary" : ""}`} />
-            <span className="hidden md:inline">Refresh</span>
+            <span className="hidden md:inline">{language === 'ar' ? 'تحديث' : 'Refresh'}</span>
           </Button>
 
           <Button
@@ -632,19 +636,21 @@ export default function InvoicesPage() {
             className="rounded-xl border-border text-xs gap-1.5"
           >
             <Download className="h-3.5 w-3.5" />
-            <span>Export CSV</span>
+            <span>{language === 'ar' ? 'تصدير CSV' : 'Export CSV'}</span>
           </Button>
 
           <Link href="/dashboard/finance/payments">
             <Button variant="outline" size="sm" className="rounded-xl border-border text-xs gap-1.5 hidden md:flex">
-              <CreditCard className="h-3.5 w-3.5 text-emerald-600" /> POS Terminal
+              <CreditCard className="h-3.5 w-3.5 text-emerald-600" />
+              <span>{language === 'ar' ? 'سندات القبض POS' : 'POS Terminal'}</span>
             </Button>
           </Link>
 
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
               <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-xs gap-1.5 shadow-sm">
-                <Plus className="h-3.5 w-3.5" /> + Create / Allocate Invoice
+                <Plus className="h-3.5 w-3.5" />
+                <span>{language === 'ar' ? '+ إصدار فاتورة جديدة' : '+ Create / Allocate Invoice'}</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px] w-[95vw] max-h-[90vh] overflow-y-auto p-5 sm:p-6 rounded-2xl">
@@ -753,16 +759,18 @@ export default function InvoicesPage() {
           }`}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 sm:p-5 pb-1">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Total Invoiced</CardTitle>
-            <CreditCard className="h-4 w-4 text-primary" />
+            <CardTitle className="text-xs font-medium text-muted-foreground">
+              {language === 'ar' ? 'إجمالي المطالبات المفوترة' : 'Total Invoiced'}
+            </CardTitle>
+            <CreditCard className="h-4 w-4 text-primary shrink-0" />
           </CardHeader>
           <CardContent className="p-4 sm:p-5 pt-0">
-            <div className="text-lg sm:text-2xl font-bold text-foreground font-mono">
+            <div className="text-lg sm:text-2xl font-bold text-foreground font-mono numeric-badge">
               {formatMoney(totalInvoiced)}
             </div>
             <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
-              <span>All active billing allocations</span>
-              {segmentTab === "ALL" && <Check className="h-3 w-3 text-primary ml-auto" />}
+              <span>{language === 'ar' ? 'كافة الرسوم المخصصة للطلاب' : 'All active billing allocations'}</span>
+              {segmentTab === "ALL" && <Check className="h-3 w-3 text-primary ms-auto" />}
             </p>
           </CardContent>
         </Card>
@@ -775,16 +783,18 @@ export default function InvoicesPage() {
           }`}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 sm:p-5 pb-1">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Total Collected</CardTitle>
-            <Receipt className="h-4 w-4 text-emerald-500" />
+            <CardTitle className="text-xs font-medium text-muted-foreground">
+              {language === 'ar' ? 'إجمالي المبالغ المحصلة' : 'Total Collected'}
+            </CardTitle>
+            <Receipt className="h-4 w-4 text-emerald-500 shrink-0" />
           </CardHeader>
           <CardContent className="p-4 sm:p-5 pt-0">
-            <div className="text-lg sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+            <div className="text-lg sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono numeric-badge">
               {formatMoney(totalCollected)}
             </div>
             <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
-              <span>Cleared & settled funds</span>
-              {segmentTab === "PAID" && <Check className="h-3 w-3 text-emerald-600 ml-auto" />}
+              <span>{language === 'ar' ? 'المبالغ المودعة والمحصلة فعلياً' : 'Cleared & settled funds'}</span>
+              {segmentTab === "PAID" && <Check className="h-3 w-3 text-emerald-600 ms-auto" />}
             </p>
           </CardContent>
         </Card>
@@ -797,16 +807,18 @@ export default function InvoicesPage() {
           }`}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 sm:p-5 pb-1">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Total Outstanding</CardTitle>
-            <Wallet className="h-4 w-4 text-rose-500" />
+            <CardTitle className="text-xs font-medium text-muted-foreground">
+              {language === 'ar' ? 'المبالغ المتبقية للتحصيل' : 'Total Outstanding'}
+            </CardTitle>
+            <Wallet className="h-4 w-4 text-rose-500 shrink-0" />
           </CardHeader>
           <CardContent className="p-4 sm:p-5 pt-0">
-            <div className="text-lg sm:text-2xl font-bold text-rose-600 dark:text-rose-400 font-mono">
+            <div className="text-lg sm:text-2xl font-bold text-rose-600 dark:text-rose-400 font-mono numeric-badge">
               {formatMoney(totalOutstanding)}
             </div>
             <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
-              <span>Click to view pending balances</span>
-              {segmentTab === "UNPAID" && <Check className="h-3 w-3 text-rose-600 ml-auto" />}
+              <span>{language === 'ar' ? 'انقر لعرض الأرصدة المستحقة' : 'Click to view pending balances'}</span>
+              {segmentTab === "UNPAID" && <Check className="h-3 w-3 text-rose-600 ms-auto" />}
             </p>
           </CardContent>
         </Card>
@@ -819,16 +831,18 @@ export default function InvoicesPage() {
           }`}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 sm:p-5 pb-1">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Overdue Invoices</CardTitle>
-            <AlertCircle className="h-4 w-4 text-amber-500" />
+            <CardTitle className="text-xs font-medium text-muted-foreground">
+              {language === 'ar' ? 'الفواتير المتأخرة' : 'Overdue Invoices'}
+            </CardTitle>
+            <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
           </CardHeader>
           <CardContent className="p-4 sm:p-5 pt-0">
-            <div className="text-lg sm:text-2xl font-bold text-foreground font-mono">
+            <div className="text-lg sm:text-2xl font-bold text-foreground font-mono numeric-badge">
               {overdueCount}
             </div>
             <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
-              <span>Click to filter overdue bills</span>
-              {segmentTab === "OVERDUE" && <Check className="h-3 w-3 text-amber-600 ml-auto" />}
+              <span>{language === 'ar' ? 'انقر لتصفية المطالبات المتأخرة' : 'Click to filter overdue bills'}</span>
+              {segmentTab === "OVERDUE" && <Check className="h-3 w-3 text-amber-600 ms-auto" />}
             </p>
           </CardContent>
         </Card>
@@ -848,7 +862,7 @@ export default function InvoicesPage() {
                   segmentTab === "ALL" ? "bg-background text-foreground shadow-sm font-semibold" : "text-muted-foreground"
                 }`}
               >
-                All ({invoices.length})
+                {language === 'ar' ? `الكل (${invoices.length})` : `All (${invoices.length})`}
               </Button>
               <Button
                 variant="ghost"
@@ -858,7 +872,7 @@ export default function InvoicesPage() {
                   segmentTab === "UNPAID" ? "bg-background text-rose-600 dark:text-rose-400 shadow-sm font-semibold" : "text-muted-foreground"
                 }`}
               >
-                Unpaid / Partial
+                {language === 'ar' ? 'غير مسدد / جزئي' : 'Unpaid / Partial'}
               </Button>
               <Button
                 variant="ghost"
@@ -868,7 +882,7 @@ export default function InvoicesPage() {
                   segmentTab === "PAID" ? "bg-background text-emerald-600 dark:text-emerald-400 shadow-sm font-semibold" : "text-muted-foreground"
                 }`}
               >
-                Fully Paid
+                {language === 'ar' ? 'مسدد بالكامل' : 'Fully Paid'}
               </Button>
               <Button
                 variant="ghost"
@@ -878,7 +892,7 @@ export default function InvoicesPage() {
                   segmentTab === "OVERDUE" ? "bg-background text-amber-600 dark:text-amber-400 shadow-sm font-semibold" : "text-muted-foreground"
                 }`}
               >
-                Overdue ({overdueCount})
+                {language === 'ar' ? `متأخر السداد (${overdueCount})` : `Overdue (${overdueCount})`}
               </Button>
               <Button
                 variant="ghost"
@@ -888,7 +902,7 @@ export default function InvoicesPage() {
                   segmentTab === "VOID" ? "bg-background text-foreground shadow-sm font-semibold" : "text-muted-foreground"
                 }`}
               >
-                Voided
+                {language === 'ar' ? 'ملغاة' : 'Voided'}
               </Button>
             </div>
 
@@ -1093,16 +1107,36 @@ export default function InvoicesPage() {
                         aria-label="Select all visible invoices"
                       />
                     </TableHead>
-                    <TableHead className="w-32 text-xs font-semibold">Invoice #</TableHead>
-                    <TableHead className="min-w-[180px] text-xs font-semibold">Student</TableHead>
-                    <TableHead className="w-28 text-xs font-semibold">Class</TableHead>
-                    <TableHead className="w-32 text-xs font-semibold">Term</TableHead>
-                    <TableHead className="text-right w-28 text-xs font-semibold">Total</TableHead>
-                    <TableHead className="text-right w-28 text-xs font-semibold">Paid</TableHead>
-                    <TableHead className="text-right w-28 text-xs font-semibold">Balance Due</TableHead>
-                    <TableHead className="w-32 text-center text-xs font-semibold">Due Date</TableHead>
-                    <TableHead className="w-28 text-center text-xs font-semibold">Status</TableHead>
-                    <TableHead className="w-16 text-right pr-4 text-xs font-semibold">Actions</TableHead>
+                    <TableHead className="w-32 text-xs font-semibold">
+                      {language === 'ar' ? 'رقم الفاتورة' : 'Invoice #'}
+                    </TableHead>
+                    <TableHead className="min-w-[180px] text-xs font-semibold">
+                      {language === 'ar' ? 'الطالب' : 'Student'}
+                    </TableHead>
+                    <TableHead className="w-28 text-xs font-semibold">
+                      {language === 'ar' ? 'الفصل' : 'Class'}
+                    </TableHead>
+                    <TableHead className="w-32 text-xs font-semibold">
+                      {language === 'ar' ? 'الفصل الدراسي' : 'Term'}
+                    </TableHead>
+                    <TableHead className="text-end w-28 text-xs font-semibold">
+                      {language === 'ar' ? 'الإجمالي' : 'Total'}
+                    </TableHead>
+                    <TableHead className="text-end w-28 text-xs font-semibold">
+                      {language === 'ar' ? 'المدفوع' : 'Paid'}
+                    </TableHead>
+                    <TableHead className="text-end w-28 text-xs font-semibold">
+                      {language === 'ar' ? 'المتبقي' : 'Balance Due'}
+                    </TableHead>
+                    <TableHead className="w-32 text-center text-xs font-semibold">
+                      {language === 'ar' ? 'تاريخ الاستحقاق' : 'Due Date'}
+                    </TableHead>
+                    <TableHead className="w-28 text-center text-xs font-semibold">
+                      {language === 'ar' ? 'الحالة' : 'Status'}
+                    </TableHead>
+                    <TableHead className="w-16 text-end px-4 text-xs font-semibold">
+                      {language === 'ar' ? 'الإجراءات' : 'Actions'}
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1166,18 +1200,18 @@ export default function InvoicesPage() {
                         </TableCell>
 
                         {/* Total Amount */}
-                        <TableCell className="py-3 text-right font-mono text-xs text-foreground">
-                          {formatMoney(inv.amount || 0)}
+                        <TableCell className="py-3 text-end font-mono text-xs text-foreground">
+                          <span className="numeric-badge">{formatMoney(inv.amount || 0)}</span>
                         </TableCell>
 
                         {/* Amount Paid */}
-                        <TableCell className="py-3 text-right font-mono text-xs text-emerald-600 dark:text-emerald-400">
-                          {formatMoney(inv.amountPaid || 0)}
+                        <TableCell className="py-3 text-end font-mono text-xs text-emerald-600 dark:text-emerald-400">
+                          <span className="numeric-badge">{formatMoney(inv.amountPaid || 0)}</span>
                         </TableCell>
 
                         {/* Balance Due */}
-                        <TableCell className="py-3 text-right font-mono text-xs font-bold">
-                          <span className={inv.balance > 0 ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"}>
+                        <TableCell className="py-3 text-end font-mono text-xs font-bold">
+                          <span className={`numeric-badge ${inv.balance > 0 ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"}`}>
                             {formatMoney(inv.balance || 0)}
                           </span>
                         </TableCell>
@@ -1186,7 +1220,7 @@ export default function InvoicesPage() {
                         <TableCell className="py-3 text-center text-xs">
                           {inv.dueDate ? (
                             <div className="flex flex-col items-center">
-                              <span className={overdue ? "text-rose-600 font-semibold" : "text-muted-foreground"}>
+                              <span className={`numeric-badge ${overdue ? "text-rose-600 font-semibold" : "text-muted-foreground"}`}>
                                 {new Date(inv.dueDate).toLocaleDateString()}
                               </span>
                             </div>
@@ -1201,7 +1235,7 @@ export default function InvoicesPage() {
                         </TableCell>
 
                         {/* Actions Menu */}
-                        <TableCell className="py-3 text-right pr-4">
+                        <TableCell className="py-3 text-end px-4">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
@@ -1214,14 +1248,15 @@ export default function InvoicesPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-52 rounded-xl bg-popover border-border shadow-md">
                               <DropdownMenuLabel className="text-xs text-muted-foreground">
-                                Invoice Actions
+                                {language === 'ar' ? 'إجراءات الفاتورة' : 'Invoice Actions'}
                               </DropdownMenuLabel>
                               <DropdownMenuSeparator />
 
                               {/* 1. View / Print */}
                               <Link href={`/dashboard/finance/invoices/${inv.id}`}>
                                 <DropdownMenuItem className="text-xs cursor-pointer gap-2 py-2">
-                                  <Eye className="h-3.5 w-3.5 text-primary" /> View & Print Invoice
+                                  <Eye className="h-3.5 w-3.5 text-primary shrink-0" />
+                                  <span>{language === 'ar' ? 'عرض وطباعة الفاتورة' : 'View & Print Invoice'}</span>
                                 </DropdownMenuItem>
                               </Link>
 
@@ -1234,7 +1269,8 @@ export default function InvoicesPage() {
                                   }}
                                   className="text-xs cursor-pointer gap-2 py-2"
                                 >
-                                  <CreditCard className="h-3.5 w-3.5 text-emerald-600" /> Record Offline Payment
+                                  <CreditCard className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                                  <span>{language === 'ar' ? 'تسجيل دفعة وسند قبض' : 'Record Offline Payment'}</span>
                                 </DropdownMenuItem>
                               )}
 
@@ -1243,7 +1279,8 @@ export default function InvoicesPage() {
                                 onClick={() => handleCopyPaymentLink(inv)}
                                 className="text-xs cursor-pointer gap-2 py-2"
                               >
-                                <LinkIcon className="h-3.5 w-3.5 text-indigo-600" /> Copy Payment Link
+                                <LinkIcon className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
+                                <span>{language === 'ar' ? 'نسخ رابط الدفع' : 'Copy Payment Link'}</span>
                               </DropdownMenuItem>
 
                               {/* 4. Quick Mark Paid */}
@@ -1252,7 +1289,8 @@ export default function InvoicesPage() {
                                   onClick={() => handleQuickMarkPaid(inv)}
                                   className="text-xs cursor-pointer gap-2 py-2 text-emerald-600 focus:text-emerald-700"
                                 >
-                                  <CheckCircle2 className="h-3.5 w-3.5" /> Quick Mark as Paid
+                                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                                  <span>{language === 'ar' ? 'تحديد كمسددة فوراً' : 'Quick Mark as Paid'}</span>
                                 </DropdownMenuItem>
                               )}
 
@@ -1262,7 +1300,8 @@ export default function InvoicesPage() {
                                   onClick={() => handleSendReminder(inv)}
                                   className="text-xs cursor-pointer gap-2 py-2"
                                 >
-                                  <Bell className="h-3.5 w-3.5 text-blue-600" /> Send Reminder
+                                  <Bell className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                                  <span>{language === 'ar' ? 'إرسال تذكير بالسداد' : 'Send Reminder'}</span>
                                 </DropdownMenuItem>
                               )}
 
@@ -1277,7 +1316,8 @@ export default function InvoicesPage() {
                                     }}
                                     className="text-xs cursor-pointer gap-2 py-2 text-rose-600 focus:text-rose-700"
                                   >
-                                    <Ban className="h-3.5 w-3.5" /> Void Invoice
+                                    <Ban className="h-3.5 w-3.5 shrink-0" />
+                                    <span>{language === 'ar' ? 'إلغاء وتفريغ الفاتورة' : 'Void Invoice'}</span>
                                   </DropdownMenuItem>
                                 </>
                               )}

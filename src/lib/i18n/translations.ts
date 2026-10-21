@@ -97,6 +97,16 @@ export interface TranslationDictionary {
   shifts: string;
   holidays: string;
   
+  // Operations & Enterprise
+  recruitment: string;
+  fleet: string;
+  assets: string;
+  inventory: string;
+  timetable: string;
+  seatingPlans: string;
+  examRegistration: string;
+  behaviouralAssessment: string;
+  
   // Administration Group
   administration: string;
   academicYear: string;
@@ -203,6 +213,15 @@ export const translations: Record<Language, TranslationDictionary> = {
     kiosks: 'Biometric Kiosks',
     shifts: 'Work Shifts',
     holidays: 'School Holidays',
+
+    recruitment: 'Staff Recruitment & ATS',
+    fleet: 'Fleet & Transportation',
+    assets: 'Fixed Assets Management',
+    inventory: 'Inventory & Supplies',
+    timetable: 'School Timetable',
+    seatingPlans: 'Exam Seating Plans',
+    examRegistration: 'Exam Candidate Numbers',
+    behaviouralAssessment: 'Behavioural Assessment',
     
     administration: 'System & Administration',
     academicYear: 'Academic Session & Terms',
@@ -307,6 +326,15 @@ export const translations: Record<Language, TranslationDictionary> = {
     kiosks: 'أجهزة البصمة الذكية',
     shifts: 'ورديات ومواعيد الدوام',
     holidays: 'العطلات المدرسية الرسمية',
+
+    recruitment: 'التوظيف واستقطاب الكفاءات',
+    fleet: 'إدارة أسطول الحافلات والنقل',
+    assets: 'إدارة الأصول الثابتة والعهد',
+    inventory: 'المخزون ومستلزمات المدرسة',
+    timetable: 'الجدول المدرسي والحصص',
+    seatingPlans: 'مخططات توزيع لجان الامتحانات',
+    examRegistration: 'تسجيل وأرقام جلوس الامتحانات',
+    behaviouralAssessment: 'التقييم السلوكي والمواظبة',
     
     administration: 'النظام والإدارة',
     academicYear: 'العام الدراسي والفصول',

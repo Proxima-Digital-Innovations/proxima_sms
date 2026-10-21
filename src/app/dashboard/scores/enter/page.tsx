@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
+import { useLanguage } from '@/context/language-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,6 +42,7 @@ interface ScoreEntry {
 
 export default function BasicScoreEntryPage() {
   const { data: session } = useSession();
+  const { language, isRtl } = useLanguage();
   const userRole = ((session?.user as any)?.role || '').toUpperCase();
   const isAdminOrOfficer = ['ADMIN', 'SUPER_ADMIN', 'EXAM_OFFICER', 'SLT', 'HOD'].includes(userRole);
   const { toast } = useToast();
@@ -334,7 +336,9 @@ export default function BasicScoreEntryPage() {
       >
         <div className="space-y-1">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Score Entry</h1>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+              {language === 'ar' ? 'رصد درجات الاختبارات والامتحانات' : 'Score Entry'}
+            </h1>
             <Badge
               variant="outline"
               className={
@@ -347,21 +351,28 @@ export default function BasicScoreEntryPage() {
                   : 'bg-muted text-muted-foreground border-border'
               }
             >
-              {sheetStatus === 'Approved' && <CheckCircle2 className="w-3 h-3 mr-1" />}
-              {sheetStatus === 'Pending' && <Clock className="w-3 h-3 mr-1" />}
-              {sheetStatus === 'Rejected' && <AlertCircle className="w-3 h-3 mr-1" />}
-              {sheetStatus} Sheet
+              {sheetStatus === 'Approved' && <CheckCircle2 className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0 shrink-0" />}
+              {sheetStatus === 'Pending' && <Clock className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0 shrink-0" />}
+              {sheetStatus === 'Rejected' && <AlertCircle className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0 shrink-0" />}
+              <span>
+                {language === 'ar' 
+                  ? (sheetStatus === 'Approved' ? 'معتمد رسمياً' : sheetStatus === 'Pending' ? 'بانتظار المراجعة' : sheetStatus === 'Rejected' ? 'مرفوض ومُعاد' : 'مسودة')
+                  : `${sheetStatus} Sheet`}
+              </span>
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            WAEC 20/20/60 Continuous Assessment Matrix • CA1 (20) • CA2 (20) • Exam (60) • Total (100)
+            {language === 'ar'
+              ? 'مصفوفة التقييم المستمر: أعمال السنة الأولى (20) • أعمال السنة الثانية (20) • الامتحان النهائي (60) • المجموع (100)'
+              : 'Continuous Assessment Matrix • CA1 (20) • CA2 (20) • Exam (60) • Total (100)'}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <Link href="/dashboard/scores/gradebook">
-            <Button variant="outline" size="sm" className="rounded-xl border-border">
-              Advanced Gradebook <ArrowRight className="ml-2 h-4 w-4" />
+            <Button variant="outline" size="sm" className="rounded-xl border-border flex items-center gap-2">
+              <span>{language === 'ar' ? 'سجل الدرجات المتقدم' : 'Advanced Gradebook'}</span>
+              <ArrowRight className="h-4 w-4 rtl:rotate-180 shrink-0" />
             </Button>
           </Link>
 
@@ -372,20 +383,20 @@ export default function BasicScoreEntryPage() {
                 size="sm"
                 onClick={() => handleSave()}
                 disabled={isSaving || dirty.size === 0}
-                className="rounded-xl border-border"
+                className="rounded-xl border-border flex items-center gap-2"
               >
-                {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-                Save Draft {dirty.size > 0 ? `(${dirty.size})` : ''}
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin shrink-0" /> : <Save className="h-4 w-4 shrink-0" />}
+                <span>{language === 'ar' ? 'حفظ كمسودة' : 'Save Draft'} {dirty.size > 0 ? `(${dirty.size})` : ''}</span>
               </Button>
 
               <Button
                 size="sm"
                 onClick={handleSubmitForReview}
                 disabled={isSubmitting || metrics.scoredCount === 0}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl flex items-center gap-2"
               >
-                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
-                Submit for Moderation
+                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin shrink-0" /> : <Send className="h-4 w-4 shrink-0" />}
+                <span>{language === 'ar' ? 'إرسال للاعتماد والتدقيق' : 'Submit for Moderation'}</span>
               </Button>
             </>
           )}
@@ -395,10 +406,10 @@ export default function BasicScoreEntryPage() {
               variant="outline"
               size="sm"
               onClick={() => handleSave('Draft')}
-              className="rounded-xl border-amber-500/30 text-amber-600"
+              className="rounded-xl border-amber-500/30 text-amber-600 flex items-center gap-2"
             >
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Re-open as Draft (Admin)
+              <RotateCcw className="h-4 w-4 shrink-0" />
+              <span>{language === 'ar' ? 'إعادة فتح المسودة (إدارة)' : 'Re-open as Draft (Admin)'}</span>
             </Button>
           )}
         </div>
@@ -459,10 +470,12 @@ export default function BasicScoreEntryPage() {
         <CardContent className="p-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 items-end">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground">Academic Session</Label>
+              <Label className="text-xs font-semibold text-muted-foreground">
+                {language === 'ar' ? 'العام الدراسي' : 'Academic Session'}
+              </Label>
               <Select value={selectedSession} onValueChange={setSelectedSession}>
                 <SelectTrigger className="rounded-xl border-border bg-background h-10">
-                  <SelectValue placeholder="Session" />
+                  <SelectValue placeholder={language === 'ar' ? 'اختر العام' : 'Session'} />
                 </SelectTrigger>
                 <SelectContent className="bg-popover border-border">
                   {sessions.map(s => (
@@ -475,10 +488,12 @@ export default function BasicScoreEntryPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground">Academic Term</Label>
+              <Label className="text-xs font-semibold text-muted-foreground">
+                {language === 'ar' ? 'الفصل الدراسي' : 'Academic Term'}
+              </Label>
               <Select value={selectedTerm} onValueChange={setSelectedTerm}>
                 <SelectTrigger className="rounded-xl border-border bg-background h-10">
-                  <SelectValue placeholder="Term" />
+                  <SelectValue placeholder={language === 'ar' ? 'اختر الفصل' : 'Term'} />
                 </SelectTrigger>
                 <SelectContent className="bg-popover border-border">
                   {terms.map(t => (
@@ -491,10 +506,12 @@ export default function BasicScoreEntryPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground">Class</Label>
+              <Label className="text-xs font-semibold text-muted-foreground">
+                {language === 'ar' ? 'الصف / الفصل' : 'Class'}
+              </Label>
               <Select value={selectedClass} onValueChange={setSelectedClass}>
                 <SelectTrigger className="rounded-xl border-border bg-background h-10">
-                  <SelectValue placeholder="Select Class" />
+                  <SelectValue placeholder={language === 'ar' ? 'اختر الصف' : 'Select Class'} />
                 </SelectTrigger>
                 <SelectContent className="bg-popover border-border">
                   {classes.map(c => (
@@ -507,10 +524,12 @@ export default function BasicScoreEntryPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground">Subject</Label>
+              <Label className="text-xs font-semibold text-muted-foreground">
+                {language === 'ar' ? 'المادة الدراسية' : 'Subject'}
+              </Label>
               <Select value={selectedSubject} onValueChange={setSelectedSubject}>
                 <SelectTrigger className="rounded-xl border-border bg-background h-10">
-                  <SelectValue placeholder="Select Subject" />
+                  <SelectValue placeholder={language === 'ar' ? 'اختر المادة' : 'Select Subject'} />
                 </SelectTrigger>
                 <SelectContent className="bg-popover border-border">
                   {subjects.map(s => (
@@ -525,10 +544,10 @@ export default function BasicScoreEntryPage() {
             <Button
               onClick={loadStudents}
               disabled={isLoading || !selectedClass || !selectedSubject || !selectedTerm}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-10"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-10 flex items-center justify-center gap-2"
             >
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <BookOpen className="h-4 w-4 mr-2" />}
-              Load Mark Sheet
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin shrink-0" /> : <BookOpen className="h-4 w-4 shrink-0" />}
+              <span>{language === 'ar' ? 'عرض كشف الدرجات' : 'Load Mark Sheet'}</span>
             </Button>
           </div>
         </CardContent>
@@ -597,22 +616,38 @@ export default function BasicScoreEntryPage() {
                     <TableHeader>
                       <TableRow className="border-border bg-muted/40 hover:bg-muted/40">
                         <TableHead className="w-10 sm:w-12 text-center text-xs font-bold text-muted-foreground">#</TableHead>
-                        <TableHead className="hidden sm:table-cell w-32 text-xs font-bold text-muted-foreground">Candidate ID</TableHead>
-                        <TableHead className="text-xs font-bold text-muted-foreground min-w-[130px]">Full Name</TableHead>
-                        <TableHead className="w-20 sm:w-28 text-center text-xs font-bold text-muted-foreground">
-                          CA 1 <span className="text-[10px] font-normal block text-muted-foreground">Max 20</span>
+                        <TableHead className="hidden sm:table-cell w-32 text-xs font-bold text-muted-foreground">
+                          {language === 'ar' ? 'رقم القيد' : 'Candidate ID'}
+                        </TableHead>
+                        <TableHead className="text-xs font-bold text-muted-foreground min-w-[130px]">
+                          {language === 'ar' ? 'اسم الطالب' : 'Full Name'}
                         </TableHead>
                         <TableHead className="w-20 sm:w-28 text-center text-xs font-bold text-muted-foreground">
-                          CA 2 <span className="text-[10px] font-normal block text-muted-foreground">Max 20</span>
+                          {language === 'ar' ? 'أعمال 1' : 'CA 1'}{' '}
+                          <span className="text-[10px] font-normal block text-muted-foreground">
+                            {language === 'ar' ? 'من 20' : 'Max 20'}
+                          </span>
                         </TableHead>
                         <TableHead className="w-20 sm:w-28 text-center text-xs font-bold text-muted-foreground">
-                          Exam <span className="text-[10px] font-normal block text-muted-foreground">Max 60</span>
+                          {language === 'ar' ? 'أعمال 2' : 'CA 2'}{' '}
+                          <span className="text-[10px] font-normal block text-muted-foreground">
+                            {language === 'ar' ? 'من 20' : 'Max 20'}
+                          </span>
+                        </TableHead>
+                        <TableHead className="w-20 sm:w-28 text-center text-xs font-bold text-muted-foreground">
+                          {language === 'ar' ? 'الامتحان' : 'Exam'}{' '}
+                          <span className="text-[10px] font-normal block text-muted-foreground">
+                            {language === 'ar' ? 'من 60' : 'Max 60'}
+                          </span>
                         </TableHead>
                         <TableHead className="w-16 sm:w-24 text-center text-xs font-bold text-muted-foreground">
-                          Total <span className="text-[10px] font-normal block text-muted-foreground">100</span>
+                          {language === 'ar' ? 'المجموع' : 'Total'}{' '}
+                          <span className="text-[10px] font-normal block text-muted-foreground">
+                            {language === 'ar' ? 'من 100' : '100'}
+                          </span>
                         </TableHead>
-                        <TableHead className="w-16 sm:w-28 text-center text-xs font-bold text-muted-foreground pr-4 sm:pr-6">
-                          Grade
+                        <TableHead className="w-16 sm:w-28 text-center text-xs font-bold text-muted-foreground px-4 sm:px-6">
+                          {language === 'ar' ? 'التقدير' : 'Grade'}
                         </TableHead>
                       </TableRow>
                     </TableHeader>
@@ -644,7 +679,7 @@ export default function BasicScoreEntryPage() {
                               <TableCell className="text-center font-mono text-xs text-muted-foreground p-2 sm:p-4">
                                 {idx + 1}
                               </TableCell>
-                              <TableCell className="hidden sm:table-cell font-mono text-xs font-medium text-muted-foreground">
+                              <TableCell className="hidden sm:table-cell font-mono text-xs font-medium text-muted-foreground ltr-only">
                                 {student.studentId || '-'}
                               </TableCell>
                               <TableCell className="p-2 sm:p-4">
@@ -652,7 +687,7 @@ export default function BasicScoreEntryPage() {
                                   {student.lastName}, {student.firstName}
                                 </div>
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="sm:hidden font-mono text-[10px] text-muted-foreground uppercase">{student.studentId || '-'}</span>
+                                  <span className="sm:hidden font-mono text-[10px] text-muted-foreground uppercase ltr-only">{student.studentId || '-'}</span>
                                   {student.middleName && (
                                     <span className="text-[11px] text-muted-foreground">{student.middleName}</span>
                                   )}

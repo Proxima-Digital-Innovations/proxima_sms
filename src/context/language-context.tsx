@@ -38,6 +38,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     if (typeof document !== 'undefined') {
       document.documentElement.lang = lang;
       document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+      document.cookie = `proxima_language=${lang}; path=/; max-age=31536000; SameSite=Lax`;
       if (lang === 'ar') {
         document.documentElement.classList.add('rtl');
       } else {

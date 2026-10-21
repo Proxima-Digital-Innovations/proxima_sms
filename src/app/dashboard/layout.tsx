@@ -22,24 +22,29 @@ import { LicenseProvider } from '@/components/license/license-provider';
 
 function AccessDenied() {
     const router = useRouter();
+    const { language } = useLanguage();
     return (
         <div className="flex flex-1 items-center justify-center h-full">
-            <Card className="w-full max-w-md text-center">
+            <Card className="w-full max-w-md text-center rounded-2xl shadow-lg border-border">
                 <CardHeader>
-                    <CardTitle className="flex items-center justify-center gap-2 text-3xl text-destructive">
-                        <ShieldAlert className="h-8 w-8" />
-                        Access Denied
+                    <CardTitle className="flex items-center justify-center gap-2 text-2xl font-bold text-destructive">
+                        <ShieldAlert className="h-7 w-7" />
+                        {language === 'ar' ? 'غير مصرح بالوصول' : 'Access Denied'}
                     </CardTitle>
                     <CardDescription>
-                        You do not have the necessary permissions to view this page.
+                        {language === 'ar' 
+                            ? 'ليس لديك الصلاحيات الكافية للوصول إلى هذه الصفحة أو هذا القسم.' 
+                            : 'You do not have the necessary permissions to view this page.'}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <p className="text-sm text-muted-foreground">
-                        The page you are trying to access is restricted to other user roles.
+                        {language === 'ar'
+                            ? 'هذه الصفحة مخصصة لأدوار أخرى ضمن إدارة المدرسة.'
+                            : 'The page you are trying to access is restricted to other user roles.'}
                     </p>
-                    <Button onClick={() => router.push('/dashboard')} className="mt-6">
-                        Return to Dashboard
+                    <Button onClick={() => router.push('/dashboard')} className="mt-6 rounded-xl">
+                        {language === 'ar' ? 'العودة للوحة التحكم' : 'Return to Dashboard'}
                     </Button>
                 </CardContent>
             </Card>
@@ -47,14 +52,19 @@ function AccessDenied() {
     );
 }
 
-const AuthLoader = () => (
-    <div className="flex flex-1 items-center justify-center h-full">
-        <div className="flex flex-col items-center gap-4">
-             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-             <p className="text-muted-foreground">Verifying permissions...</p>
+const AuthLoader = () => {
+    const { language } = useLanguage();
+    return (
+        <div className="flex flex-1 items-center justify-center h-full">
+            <div className="flex flex-col items-center gap-4">
+                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                 <p className="text-muted-foreground text-sm font-medium">
+                    {language === 'ar' ? 'جاري التحقق من الصلاحيات...' : 'Verifying permissions...'}
+                 </p>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 function MainLayout({ children, isCheckingAuth, isAuthorized }: { children: React.ReactNode, isCheckingAuth: boolean, isAuthorized: boolean }) {
   const { state } = useSidebar();

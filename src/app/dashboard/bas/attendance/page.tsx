@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getMyAttendanceLogs } from '@/actions/bas-actions';
 import { useRole } from '@/context/role-context';
+import { useLanguage } from '@/context/language-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
@@ -42,6 +43,7 @@ export default function MyAttendancePage() {
   const [loading, setLoading] = useState(true);
 
   const { user } = useRole();
+  const { language, isRtl } = useLanguage();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -76,16 +78,21 @@ export default function MyAttendancePage() {
             <Fingerprint className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">My Attendance</h1>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
+              {language === 'ar' ? 'سجل الحضور والبصمة الشخصي' : 'My Attendance'}
+            </h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-              Your personal biometric clock-in records and monthly punctuality score.
+              {language === 'ar'
+                ? 'سجل تسجيل الحضور والانصراف الإلكتروني ونسبة الانضباط والمواظبة الشهرية.'
+                : 'Your personal biometric clock-in records and monthly punctuality score.'}
             </p>
           </div>
         </div>
 
         <Button asChild variant="outline" size="sm" className="rounded-xl border-border hover:bg-muted">
           <Link href="/dashboard/bas/dashboard">
-            <ArrowLeft className="w-4 h-4 mr-1.5" /> Back to Terminal Stream
+            <ArrowLeft className="w-4 h-4 mr-1.5 rtl:ml-1.5 rtl:mr-0 rtl:rotate-180 shrink-0" />
+            <span>{language === 'ar' ? 'العودة للمنصة الحية' : 'Back to Terminal Stream'}</span>
           </Link>
         </Button>
       </motion.div>
@@ -101,27 +108,27 @@ export default function MyAttendancePage() {
           icon={<CalendarDays className="h-4 w-4" />} 
           iconColor="text-blue-600 dark:text-blue-400" 
           iconBg="bg-blue-500/10"
-          title="Days Present" 
+          title={language === 'ar' ? 'أيام الحضور' : 'Days Present'} 
           value={monthlyStats?.totalDays || 0} 
-          sub="This month" 
+          sub={language === 'ar' ? 'خلال هذا الشهر' : 'This month'} 
           loading={loading} 
         />
         <StatCard 
           icon={<Clock className="h-4 w-4" />} 
           iconColor="text-emerald-600 dark:text-emerald-400" 
           iconBg="bg-emerald-500/10"
-          title="Total Hours" 
+          title={language === 'ar' ? 'ساعات العمل' : 'Total Hours'} 
           value={`${monthlyStats?.totalHours || 0}h`} 
-          sub={`Avg ${monthlyStats?.avgHoursPerDay || 0}h/day`} 
+          sub={language === 'ar' ? `المعدل ${monthlyStats?.avgHoursPerDay || 0} س/يوم` : `Avg ${monthlyStats?.avgHoursPerDay || 0}h/day`} 
           loading={loading} 
         />
         <StatCard 
           icon={<Award className="h-4 w-4" />} 
           iconColor="text-amber-600 dark:text-amber-400" 
           iconBg="bg-amber-500/10"
-          title="Punctuality" 
+          title={language === 'ar' ? 'نسبة الانضباط' : 'Punctuality'} 
           value={`${monthlyStats?.punctuality || 0}%`} 
-          sub="On-time arrivals" 
+          sub={language === 'ar' ? 'حضور في الموعد' : 'On-time arrivals'} 
           valueColor={(monthlyStats?.punctuality || 0) >= 90 ? 'text-emerald-600 dark:text-emerald-400' : (monthlyStats?.punctuality || 0) >= 70 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'}
           loading={loading} 
         />
@@ -129,9 +136,9 @@ export default function MyAttendancePage() {
           icon={<TrendingUp className="h-4 w-4" />} 
           iconColor="text-purple-600 dark:text-purple-400" 
           iconBg="bg-purple-500/10"
-          title="Avg Hours / Day" 
+          title={language === 'ar' ? 'معدل الدوام اليومي' : 'Avg Hours / Day'} 
           value={`${monthlyStats?.avgHoursPerDay || 0}h`} 
-          sub="Working average" 
+          sub={language === 'ar' ? 'متوسط الساعات' : 'Working average'} 
           loading={loading} 
         />
       </motion.div>
@@ -141,9 +148,13 @@ export default function MyAttendancePage() {
         <motion.div variants={itemVariants}>
           <Card className="bg-background border-border shadow-none rounded-3xl overflow-hidden backdrop-blur-sm">
             <CardHeader className="border-b border-border bg-background p-6">
-              <CardTitle className="text-xl font-bold text-foreground">Recent Clock-in Logs</CardTitle>
+              <CardTitle className="text-xl font-bold text-foreground">
+                {language === 'ar' ? 'سجلات تسجيل الدخول والخروج' : 'Recent Clock-in Logs'}
+              </CardTitle>
               <CardDescription className="text-muted-foreground text-xs sm:text-sm">
-                Your last 50 verified biometric terminal records.
+                {language === 'ar' 
+                  ? 'آخر 50 عملية حضور موثقة عبر أجهزة البصمة الذكية.'
+                  : 'Your last 50 verified biometric terminal records.'}
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
@@ -156,36 +167,53 @@ export default function MyAttendancePage() {
                   <div className="w-14 h-14 bg-muted/60 border border-border rounded-2xl flex items-center justify-center mb-3">
                     <Clock className="h-7 w-7 text-muted-foreground" />
                   </div>
-                  <p className="text-base font-bold text-foreground">No attendance records found</p>
-                  <p className="text-xs text-muted-foreground mt-1">Check in at any campus kiosk to record your presence.</p>
+                  <p className="text-base font-bold text-foreground">
+                    {language === 'ar' ? 'لا توجد سجلات حضور مسجلة' : 'No attendance records found'}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {language === 'ar' 
+                      ? 'قم بالبصمة عند أي جهاز حضور في المدرسة لتسجيل تواجدك.'
+                      : 'Check in at any campus kiosk to record your presence.'}
+                  </p>
                 </div>
               ) : (
                 <div className="overflow-x-auto w-full min-w-0">
                   <Table>
                     <TableHeader className="bg-muted/30">
                       <TableRow className="border-border hover:bg-transparent">
-                        <TableHead className="pl-6 font-bold text-muted-foreground py-3.5">Date</TableHead>
-                        <TableHead className="font-bold text-muted-foreground py-3.5">Clock In</TableHead>
-                        <TableHead className="font-bold text-muted-foreground py-3.5">Clock Out</TableHead>
-                        <TableHead className="font-bold text-muted-foreground py-3.5">Duration</TableHead>
-                        <TableHead className="pr-6 text-right font-bold text-muted-foreground py-3.5">Status</TableHead>
+                        <TableHead className="px-6 font-bold text-muted-foreground py-3.5">
+                          {language === 'ar' ? 'التاريخ' : 'Date'}
+                        </TableHead>
+                        <TableHead className="font-bold text-muted-foreground py-3.5">
+                          {language === 'ar' ? 'وقت الدخول' : 'Clock In'}
+                        </TableHead>
+                        <TableHead className="font-bold text-muted-foreground py-3.5">
+                          {language === 'ar' ? 'وقت الخروج' : 'Clock Out'}
+                        </TableHead>
+                        <TableHead className="font-bold text-muted-foreground py-3.5">
+                          {language === 'ar' ? 'المدة' : 'Duration'}
+                        </TableHead>
+                        <TableHead className="px-6 text-end font-bold text-muted-foreground py-3.5">
+                          {language === 'ar' ? 'الحالة' : 'Status'}
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {paginatedLogs.map((log) => (
                         <TableRow key={log.id} className="border-border hover:bg-muted/40 transition-colors">
-                          <TableCell className="pl-6 font-medium text-foreground py-3.5">{log.date}</TableCell>
-                          <TableCell className="font-mono text-xs text-foreground py-3.5">{log.timeIn || '—'}</TableCell>
-                          <TableCell className="font-mono text-xs text-foreground py-3.5">{log.timeOut || '—'}</TableCell>
+                          <TableCell className="px-6 font-medium text-foreground py-3.5">{log.date}</TableCell>
+                          <TableCell className="font-mono text-xs text-foreground py-3.5 ltr-only">{log.timeIn || '—'}</TableCell>
+                          <TableCell className="font-mono text-xs text-foreground py-3.5 ltr-only">{log.timeOut || '—'}</TableCell>
                           <TableCell className="text-xs font-semibold text-foreground py-3.5">{log.duration || '—'}</TableCell>
-                          <TableCell className="pr-6 text-right py-3.5">
+                          <TableCell className="px-6 text-end py-3.5">
                             {log.type === 1 ? (
                               <Badge variant="outline" className={`font-semibold text-xs ${log.isLate ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'}`}>
-                                {log.isLate ? 'Late' : 'On Time'}
+                                {language === 'ar' ? (log.isLate ? 'متأخر' : 'في الموعد') : (log.isLate ? 'Late' : 'On Time')}
                               </Badge>
                             ) : (
                               <Badge variant="outline" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 font-semibold text-xs">
-                                <LogOut className="w-3 h-3 mr-1" /> Clock Out
+                                <LogOut className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0 shrink-0" />
+                                <span>{language === 'ar' ? 'انصراف' : 'Clock Out'}</span>
                               </Badge>
                             )}
                           </TableCell>

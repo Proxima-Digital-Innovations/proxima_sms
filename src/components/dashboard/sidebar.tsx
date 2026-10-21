@@ -100,6 +100,19 @@ const ARABIC_NAV_DICT: Record<string, string> = {
     'Reports': 'تقارير الحضور والانصراف',
     'Kiosks': 'أجهزة البصمة الذكية',
     'Holidays': 'العطل المدرسية الرسمية',
+    'Fleet': 'أسطول النقل والمواصلات',
+    'Recruitment': 'التوظيف والاستقطاب',
+    'Asset Management': 'إدارة الأصول والممتلكات',
+    'Assets': 'الأصول والعهد',
+    'Inventory': 'المستودع والمخزون',
+    'Loans': 'سلف وقروض الموظفين',
+    'Salary Advances': 'السلف والخصومات',
+    'Gradebook': 'سجل الدرجات التفاعلي',
+    'Broadsheet': 'جدول كشف الدرجات العام',
+    'Tokens': 'أكواد وبطاقات النتائج',
+    'Attendance': 'الحضور والغياب',
+    'Promotions': 'ترحيل وترقية الطلاب',
+    'Admissions': 'القبول والتسجيل الجديد',
 };
 
 const ROLE_DISPLAY_NAMES: Record<string, { en: string; ar: string }> = {

@@ -1,4 +1,3 @@
-
 'use client';
 import {
   BookCopy,
@@ -6,7 +5,6 @@ import {
   Clock,
   Users,
   XCircle,
-  BarChart,
 } from 'lucide-react';
 import {
   Card,
@@ -31,6 +29,7 @@ import { getHodDashboardData } from '@/actions/hod-actions';
 import type { MockLessonNote, MockUser } from '@/lib/schema';
 import { useToast } from '@/hooks/use-toast';
 import { useRole } from '@/context/role-context';
+import { useLanguage } from '@/context/language-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   ChartContainer,
@@ -40,8 +39,6 @@ import {
   ChartLegendContent,
 } from '@/components/ui/chart';
 import { Pie, PieChart, Cell, Bar, BarChart as RechartsBarChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
-import { format } from 'date-fns';
-
 
 type SubmissionStatusData = {
   name: string;
@@ -49,17 +46,9 @@ type SubmissionStatusData = {
   fill: string;
 };
 
-// Placeholder data until backend is ready
-const subjectPerformanceData = [
-  { subject: 'Math', average: 0, color: 'hsl(var(--chart-1))' },
-  { subject: 'English', average: 0, color: 'hsl(var(--chart-2))' },
-  { subject: 'Science', average: 0, color: 'hsl(var(--chart-3))' },
-  { subject: 'History', average: 0, color: 'hsl(var(--chart-4))' },
-  { subject: 'Art', average: 0, color: 'hsl(var(--chart-5))' },
-];
-
 export function HodDashboard() {
   const { user } = useRole();
+  const { language } = useLanguage();
   const { toast } = useToast();
   const [notes, setNotes] = useState<MockLessonNote[]>([]);
   const [staff, setStaff] = useState<MockUser[]>([]);
@@ -72,13 +61,30 @@ export function HodDashboard() {
   const [submissionStatusData, setSubmissionStatusData] = useState<SubmissionStatusData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const subjectPerformanceData = [
+    { subject: language === 'ar' ? 'الرياضيات' : 'Math', average: 0, color: 'hsl(var(--chart-1))' },
+    { subject: language === 'ar' ? 'اللغة الإنجليزية' : 'English', average: 0, color: 'hsl(var(--chart-2))' },
+    { subject: language === 'ar' ? 'العلوم' : 'Science', average: 0, color: 'hsl(var(--chart-3))' },
+    { subject: language === 'ar' ? 'التاريخ' : 'History', average: 0, color: 'hsl(var(--chart-4))' },
+    { subject: language === 'ar' ? 'الفنون' : 'Art', average: 0, color: 'hsl(var(--chart-5))' },
+  ];
+
+  const statusLabel = (status: string) => {
+    if (language !== 'ar') return status;
+    if (status.includes('Approved') || status === 'APPROVED') return 'معتمد';
+    if (status.includes('Pending') || status === 'PENDING' || status === 'SUBMITTED') return 'بانتظار الاعتماد';
+    if (status.includes('Rejected') || status === 'REJECTED') return 'مرفوض';
+    if (status === 'DRAFT') return 'مسودة';
+    return status;
+  };
+
   const fetchData = useCallback(async () => {
     if (!user) return;
     setIsLoading(true);
     try {
       const data = await getHodDashboardData(user.id || user.uid);
       if (data.error) {
-        toast({ title: "Error", description: data.error });
+        toast({ title: language === 'ar' ? 'خطأ' : "Error", description: data.error });
         setIsLoading(false);
         return;
       }
@@ -91,18 +97,17 @@ export function HodDashboard() {
        console.error("Error fetching HOD data:", error);
        toast({
         variant: "destructive",
-        title: "Error",
-        description: "Could not fetch dashboard data.",
+        title: language === 'ar' ? 'خطأ' : "Error",
+        description: language === 'ar' ? "تعذر جلب بيانات لوحة رئيس القسم." : "Could not fetch dashboard data.",
       });
     } finally {
       setIsLoading(false);
     }
-  }, [user, toast]);
+  }, [user, toast, language]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
 
   const statusVariant = (status: string) => {
     if (status.includes('Approved')) return 'default';
@@ -112,83 +117,107 @@ export function HodDashboard() {
   };
   
   const chartConfig = {
-    approved: { label: 'Approved', color: 'hsl(var(--chart-2))' },
-    pending: { label: 'Pending', color: 'hsl(var(--chart-4))' },
-    rejected: { label: 'Rejected', color: 'hsl(var(--destructive))' },
-    average: { label: 'Average Score', color: 'hsl(var(--chart-1))' },
-    graded: { label: 'Graded', color: 'hsl(var(--chart-2))' },
-    pendingGrade: { label: 'Pending', color: 'hsl(var(--chart-4))' },
+    approved: { label: language === 'ar' ? 'معتمد' : 'Approved', color: 'hsl(var(--chart-2))' },
+    pending: { label: language === 'ar' ? 'معلق' : 'Pending', color: 'hsl(var(--chart-4))' },
+    rejected: { label: language === 'ar' ? 'مرفوض' : 'Rejected', color: 'hsl(var(--destructive))' },
+    average: { label: language === 'ar' ? 'المعدل' : 'Average Score', color: 'hsl(var(--chart-1))' },
+    graded: { label: language === 'ar' ? 'تم الرصد' : 'Graded', color: 'hsl(var(--chart-2))' },
+    pendingGrade: { label: language === 'ar' ? 'قيد الرصد' : 'Pending', color: 'hsl(var(--chart-4))' },
   };
 
   const totalNotes = stats.approved + stats.pending + stats.rejected;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 animate-in fade-in duration-300">
        <div className="space-y-1">
-        <h1 className="font-headline text-2xl md:text-3xl font-bold">HOD Dashboard</h1>
-        <p className="text-muted-foreground">
-          Department Overview & Approval Queue
+        <h1 className="font-headline text-2xl md:text-3xl font-bold">
+          {language === 'ar' ? 'لوحة تحكم رئيس القسم' : 'HOD Dashboard'}
+        </h1>
+        <p className="text-muted-foreground text-sm">
+          {language === 'ar'
+            ? 'نظرة عامة على أداء القسم وطابور مراجعة واعتماد خطط المعلمين.'
+            : 'Department Overview & Approval Queue'}
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="rounded-2xl border-border bg-card">
           <CardHeader className="flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
-            <Clock className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">
+              {language === 'ar' ? 'بانتظار الاعتماد' : 'Pending Review'}
+            </CardTitle>
+            <Clock className="h-5 w-5 text-amber-500 shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{isLoading ? <Skeleton className='w-10 h-8'/> : stats.pending}</div>
-            <p className="text-xs text-muted-foreground">notes awaiting your approval</p>
+            <div className="text-2xl font-bold font-mono numeric-badge">{isLoading ? <Skeleton className='w-10 h-8'/> : stats.pending}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {language === 'ar' ? 'خطط دروس تنتظر موافقتك' : 'notes awaiting your approval'}
+            </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="rounded-2xl border-border bg-card">
           <CardHeader className="flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Approved Notes</CardTitle>
-            <CheckCircle className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">
+              {language === 'ar' ? 'خطط معتمدة' : 'Approved Notes'}
+            </CardTitle>
+            <CheckCircle className="h-5 w-5 text-emerald-500 shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{isLoading ? <Skeleton className='w-10 h-8'/> : stats.approved}</div>
-             <p className="text-xs text-muted-foreground">total notes approved</p>
+            <div className="text-2xl font-bold font-mono numeric-badge">{isLoading ? <Skeleton className='w-10 h-8'/> : stats.approved}</div>
+             <p className="text-xs text-muted-foreground mt-1">
+              {language === 'ar' ? 'إجمالي الخطط المعتمدة بالقسم' : 'total notes approved'}
+             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="rounded-2xl border-border bg-card">
           <CardHeader className="flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Returned Notes</CardTitle>
-            <XCircle className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">
+              {language === 'ar' ? 'خطط معادة للتعديل' : 'Returned Notes'}
+            </CardTitle>
+            <XCircle className="h-5 w-5 text-rose-500 shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{isLoading ? <Skeleton className='w-10 h-8'/> : stats.rejected}</div>
-            <p className="text-xs text-muted-foreground">for revision or rejected</p>
+            <div className="text-2xl font-bold font-mono numeric-badge">{isLoading ? <Skeleton className='w-10 h-8'/> : stats.rejected}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {language === 'ar' ? 'خطط تم إرجاعها للمعلمين' : 'for revision or rejected'}
+            </p>
           </CardContent>
         </Card>
-         <Card>
+         <Card className="rounded-2xl border-border bg-card">
           <CardHeader className="flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Department Staff</CardTitle>
-            <Users className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">
+              {language === 'ar' ? 'كادر ومعلمو القسم' : 'Department Staff'}
+            </CardTitle>
+            <Users className="h-5 w-5 text-indigo-500 shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{isLoading ? <Skeleton className='w-10 h-8'/> : stats.staffCount}</div>
-            <p className="text-xs text-muted-foreground">teachers in your department</p>
+            <div className="text-2xl font-bold font-mono numeric-badge">{isLoading ? <Skeleton className='w-10 h-8'/> : stats.staffCount}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {language === 'ar' ? 'معلم مسجل ضمن القسم' : 'teachers in your department'}
+            </p>
           </CardContent>
         </Card>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-            <Card>
+            <Card className="rounded-2xl border-border bg-card">
                 <CardHeader>
-                    <CardTitle>Lesson Plan Approval Queue</CardTitle>
-                    <CardDescription>Review and approve lesson plans from your department.</CardDescription>
+                    <CardTitle className="text-lg font-bold">
+                      {language === 'ar' ? 'طابور اعتماد خطط الدروس' : 'Lesson Plan Approval Queue'}
+                    </CardTitle>
+                    <CardDescription>
+                      {language === 'ar' ? 'مراجعة وتدقيق واعتماد خطط المعلمين في القسم.' : 'Review and approve lesson plans from your department.'}
+                    </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Table>
                     <TableHeader>
                         <TableRow>
-                        <TableHead>Teacher</TableHead>
-                        <TableHead className="hidden sm:table-cell">Subject</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Action</TableHead>
+                        <TableHead>{language === 'ar' ? 'المعلم' : 'Teacher'}</TableHead>
+                        <TableHead className="hidden sm:table-cell">{language === 'ar' ? 'المادة' : 'Subject'}</TableHead>
+                        <TableHead>{language === 'ar' ? 'الحالة' : 'Status'}</TableHead>
+                        <TableHead className="text-end">{language === 'ar' ? 'الإجراء' : 'Action'}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -197,7 +226,7 @@ export function HodDashboard() {
                                 <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                                 <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
                                 <TableCell><Skeleton className="h-6 w-28" /></TableCell>
-                                <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
+                                <TableCell className="text-end"><Skeleton className="h-8 w-20 ms-auto" /></TableCell>
                            </TableRow>
                         ))) : notes.length > 0 ? (notes.map((note) => (
                         <TableRow key={note.id}>
@@ -207,27 +236,35 @@ export function HodDashboard() {
                             </TableCell>
                             <TableCell className="hidden sm:table-cell">{note.subject}</TableCell>
                             <TableCell>
-                            <Badge variant={statusVariant(note.status)}>{note.status}</Badge>
+                            <Badge variant={statusVariant(note.status)}>{statusLabel(note.status)}</Badge>
                             </TableCell>
-                            <TableCell className="text-right">
-                            <Button asChild variant="outline" size="sm">
-                                <Link href={`/dashboard/lesson-notes/${note.id}`}>Review</Link>
+                            <TableCell className="text-end">
+                            <Button asChild variant="outline" size="sm" className="rounded-lg">
+                                <Link href={`/dashboard/lesson-notes/${note.id}`}>
+                                  {language === 'ar' ? 'مراجعة' : 'Review'}
+                                </Link>
                             </Button>
                             </TableCell>
                         </TableRow>
                         ))) : (
                             <TableRow>
-                                <TableCell colSpan={4} className="h-24 text-center">No lesson plans in the queue.</TableCell>
+                                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground text-sm">
+                                  {language === 'ar' ? 'لا توجد خطط دروس في طابور الانتظار.' : 'No lesson plans in the queue.'}
+                                </TableCell>
                             </TableRow>
                         )}
                     </TableBody>
                     </Table>
                 </CardContent>
             </Card>
-            <Card>
+            <Card className="rounded-2xl border-border bg-card">
                 <CardHeader>
-                    <CardTitle>Class Averages by Subject</CardTitle>
-                    <CardDescription>Average performance in subjects across your department. (Placeholder)</CardDescription>
+                    <CardTitle className="text-lg font-bold">
+                      {language === 'ar' ? 'متوسط نتائج المواد في القسم' : 'Class Averages by Subject'}
+                    </CardTitle>
+                    <CardDescription>
+                      {language === 'ar' ? 'معدلات التحصيل الأكاديمي لمواد القسم' : 'Average performance in subjects across your department.'}
+                    </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ChartContainer config={chartConfig} className="w-full h-[250px]">
@@ -248,29 +285,39 @@ export function HodDashboard() {
         </div>
         
         <div className="lg:col-span-1 space-y-6">
-             <Card>
+             <Card className="rounded-2xl border-border bg-card">
                 <CardHeader>
-                    <CardTitle>Quick Actions</CardTitle>
-                    <CardDescription>Common department tasks.</CardDescription>
+                    <CardTitle className="text-lg font-bold">
+                      {language === 'ar' ? 'إجراءات القسم السريعة' : 'Quick Actions'}
+                    </CardTitle>
+                    <CardDescription>
+                      {language === 'ar' ? 'المهام الإدارية للقسم' : 'Common department tasks.'}
+                    </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-3">
-                    <Button asChild variant="outline" size="lg" className="justify-start">
+                    <Button asChild variant="outline" size="lg" className="rounded-xl flex items-center justify-start gap-2">
                         <Link href="/dashboard/departments">
-                            <Users className="mr-2 h-4 w-4" /> Manage Department Staff
+                            <Users className="h-4 w-4 shrink-0" />
+                            <span>{language === 'ar' ? 'إدارة معلمي القسم' : 'Manage Department Staff'}</span>
                         </Link>
                     </Button>
-                    <Button asChild variant="outline" size="lg" className="justify-start">
+                    <Button asChild variant="outline" size="lg" className="rounded-xl flex items-center justify-start gap-2">
                         <Link href="/dashboard/lesson-notes">
-                            <BookCopy className="mr-2 h-4 w-4" /> Review Lesson Notes
+                            <BookCopy className="h-4 w-4 shrink-0" />
+                            <span>{language === 'ar' ? 'مراجعة واعتماد الخطط' : 'Review Lesson Notes'}</span>
                         </Link>
                     </Button>
                 </CardContent>
              </Card>
 
-             <Card>
+             <Card className="rounded-2xl border-border bg-card">
                 <CardHeader>
-                    <CardTitle>Department Submission Status</CardTitle>
-                    <CardDescription>Overview of lesson note statuses in your department.</CardDescription>
+                    <CardTitle className="text-lg font-bold">
+                      {language === 'ar' ? 'حالة تسليم خطط الدروس' : 'Department Submission Status'}
+                    </CardTitle>
+                    <CardDescription>
+                      {language === 'ar' ? 'نسب ومعدلات تسليم الخطط في القسم' : 'Overview of lesson note statuses in your department.'}
+                    </CardDescription>
                 </CardHeader>
                 <CardContent>
                     {isLoading ? ( <Skeleton className="h-[250px] w-full" /> ) : totalNotes > 0 ? (
@@ -286,19 +333,10 @@ export function HodDashboard() {
                             </PieChart>
                         </ChartContainer>
                     ) : (
-                         <div className="flex h-[250px] items-center justify-center text-center text-muted-foreground">
-                            <p>No submission data available.</p>
+                         <div className="flex h-[250px] items-center justify-center text-center text-muted-foreground text-sm">
+                            <p>{language === 'ar' ? 'لا توجد بيانات تسليم متاحة.' : 'No submission data available.'}</p>
                         </div>
                     )}
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Grading Progress</CardTitle>
-                    <CardDescription>Status of score entry for the current term. (Placeholder)</CardDescription>
-                </CardHeader>
-                <CardContent className="flex items-center justify-center h-[250px]">
-                    <p className="text-sm text-muted-foreground">Chart coming soon</p>
                 </CardContent>
             </Card>
         </div>
