@@ -49,7 +49,8 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
   midtermScores: { icon: 'ClipboardCheck', label: 'Mid-Term Results', path: '/dashboard/midterm' },
   behaviouralAssessment: { icon: 'Heart', label: 'Behavioural Assessment', path: '/dashboard/behavioural' },
   myStudents: { icon: 'UsersRound', label: 'My Students', path: '/dashboard/performance' },
-  attendance: { icon: 'CalendarCheck', label: 'Take Attendance', path: '/dashboard/bas/attendance' },
+  attendance: { icon: 'CalendarCheck', label: 'Student Attendance', path: '/dashboard/attendance' },
+  staffAttendance: { icon: 'Fingerprint', label: 'Staff Clock-In', path: '/dashboard/bas/attendance' },
   reviewQuestions: { icon: 'FileQuestion', label: 'Review Questions', path: '/dashboard/exam-questions', requiredModule: 'CBT' },
   generateResults: { icon: 'CheckSquare', label: 'Generate Results', path: '/dashboard/results/generate' },
   viewResults: { icon: 'Award', label: 'View Results', path: '/dashboard/results/view' },
@@ -91,7 +92,7 @@ export const navConfig: Record<string, { group: string; links: (keyof typeof all
     { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'messaging', 'announcements'] },
     { group: 'Management', links: ['reports', 'system', 'manageStaff', 'manageStudents', 'departments', 'bas'] },
     { group: 'Finance', links: ['feeSystem', 'invoices', 'payments', 'expenses', 'payroll', 'reconciliation', 'chartOfAccounts', 'financialReports'] },
-    { group: 'Academics', links: ['lessonApprovals', 'reviewQuestions', 'enterScores', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'generateResults', 'viewResults'] },
+    { group: 'Academics', links: ['attendance', 'lessonApprovals', 'reviewQuestions', 'enterScores', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'generateResults', 'viewResults'] },
     { group: 'Infrastructure', links: ['database', 'logs'] }
   ],
   SLT: [
@@ -104,7 +105,7 @@ export const navConfig: Record<string, { group: string; links: (keyof typeof all
   HOD: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
     { group: 'Communication', links: ['announcements', 'messaging'] },
-    { group: 'Department', links: ['lessonApprovals', 'enterScores', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'hodAnalytics', 'manageStaff'] },
+    { group: 'Department', links: ['attendance', 'lessonApprovals', 'enterScores', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'hodAnalytics', 'manageStaff'] },
     { group: 'Academics', links: ['classesAndSubjects'] },
   ],
   ACCOUNTANT: [

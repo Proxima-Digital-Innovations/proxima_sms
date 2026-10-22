@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { admitStudent } from '@/actions/student-actions';
+import { admitStudent, generateNextStudentId } from '@/actions/student-actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -43,10 +43,8 @@ export default function AdmissionsPage() {
         medicalConditions: ''
     });
 
-    const generateStudentId = () => {
-        const year = new Date().getFullYear().toString().slice(-2);
-        const count = Math.floor(Math.random() * 1000) + 1; // Simplified for demo
-        return `SCHOOL/STU/${year}/${count.toString().padStart(4, '0')}`;
+    const generateStudentId = async () => {
+        return await generateNextStudentId();
     };
 
     const handleSubmit = async () => {

@@ -1,17 +1,20 @@
 'use server';
 
-import { requireSchoolId } from "@/lib/server-context";
 import { ParentService } from "@/lib/services/parent-service";
+import { auth } from "@/auth";
 
 const service = new ParentService();
 
 /**
  * Fetches the holistic dashboard data for a Parent
  */
-export async function getParentDashboardData() {
+export async function getParentDashboardData(selectedStudentId?: string) {
   try {
-    
-    const data = await service.getParentDashboardData();
+    const session = await auth();
+    const userId = session?.user?.id;
+    const userEmail = session?.user?.email;
+
+    const data = await service.getParentDashboardData(userId || undefined, userEmail || undefined, selectedStudentId);
 
     return {
       success: true,
