@@ -3,14 +3,14 @@
 import {
   Activity, BarChart2, Bell, Book, Building, Calendar, Wallet, LayoutDashboard, LogOut, MessageSquare, Server, Settings, Shield, User, Users,
   UsersRound, FileQuestion, BookCopy, Edit3, CheckSquare, Award, BookOpen, TrendingUp, Landmark, Briefcase, FileText, CreditCard,
-  Receipt, Ticket, Grid, BookMarked, Wrench, GraduationCap, Sparkles, UploadCloud, CalendarCheck, Heart, ClipboardCheck, BookText,
+  Receipt, Ticket, Grid, BookMarked, Wrench, GraduationCap, Sparkles, UploadCloud, CalendarCheck, Heart, ClipboardCheck, BookText, Megaphone,
 } from 'lucide-react';
 import type { ElementType } from 'react';
 
 export const iconMap: { [key: string]: ElementType } = {
   LayoutDashboard, User, Users, UsersRound, Building, Server, Activity, Book, FileText, BarChart2, BookOpen, Edit3, Wallet, Calendar, Bell, MessageSquare,
   FileQuestion, BookCopy, CheckSquare, Award, Shield, Settings, LogOut, TrendingUp, Landmark, Briefcase, Receipt, CreditCard, Ticket, Grid,
-  BookMarked, Wrench, GraduationCap, Sparkles, UploadCloud, CalendarCheck, Heart, ClipboardCheck, BookText
+  BookMarked, Wrench, GraduationCap, Sparkles, UploadCloud, CalendarCheck, Heart, ClipboardCheck, BookText, Megaphone
 };
 
 export const allNavLinks: Record<string, { icon: string; label: string; path: string; requiredModule?: string; subLinks?: { label: string; path: string; requiredModule?: string }[] }> = {
@@ -18,7 +18,7 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
   profile: { icon: 'User', label: 'Profile', path: '/dashboard/profile' },
   notifications: { icon: 'Bell', label: 'Notifications', path: '/dashboard/notifications' },
   messaging: { icon: 'MessageSquare', label: 'Messaging', path: '/dashboard/messaging' },
-  announcements: { icon: 'Bell', label: 'Announcements', path: '/dashboard/announcements' },
+  announcements: { icon: 'Megaphone', label: 'Announcements', path: '/dashboard/announcements' },
   reports: { icon: 'TrendingUp', label: 'Reports & Analytics', path: '/dashboard/analytics' },
   system: { icon: 'Shield', label: 'System Config', path: '/dashboard/system',
     subLinks: [
@@ -71,7 +71,7 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
   parentWallet: { icon: 'Wallet', label: 'Tuition Wallet', path: '/dashboard/parent/wallet', requiredModule: 'FINANCE' },
   parentInvoices: { icon: 'Receipt', label: 'Fee Invoices', path: '/dashboard/parent/invoices', requiredModule: 'FINANCE' },
   parentPayments: { icon: 'CreditCard', label: 'Pay School Fees', path: '/dashboard/parent/invoices', requiredModule: 'FINANCE' },
-  parentAnnouncements: { icon: 'Bell', label: 'Announcements', path: '/dashboard/announcements' },
+  parentAnnouncements: { icon: 'Megaphone', label: 'Announcements', path: '/dashboard/announcements' },
   studentResults: { icon: 'Award', label: 'My Results', path: '/dashboard/performance' },
   studentAssignments: { icon: 'FileEdit', label: 'Assignments', path: '/student/lms/assignments', requiredModule: 'LMS' },
   studentQuizzes: { icon: 'HelpCircle', label: 'Quizzes', path: '/student/lms/quizzes', requiredModule: 'CBT' },
@@ -93,45 +93,44 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
 
 export const navConfig: Record<string, { group: string; links: (keyof typeof allNavLinks)[] }[]> = {
   ADMIN: [
-    { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'messaging', 'announcements'] },
+    { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'announcements', 'messaging'] },
     { group: 'Management', links: ['reports', 'system', 'manageStaff', 'manageStudents', 'departments', 'bas'] },
     { group: 'Finance', links: ['feeSystem', 'invoices', 'payments', 'expenses', 'payroll', 'reconciliation', 'chartOfAccounts', 'financialReports'] },
     { group: 'Academics', links: ['attendance', 'lessonApprovals', 'reviewQuestions', 'enterScores', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'generateResults', 'viewResults'] },
     { group: 'Infrastructure', links: ['database', 'logs'] }
   ],
   SLT: [
-    { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
-    { group: 'Communication', links: ['announcements', 'messaging'] },
+    { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'announcements'] },
+    { group: 'Communication', links: ['messaging'] },
     { group: 'Oversight', links: ['reports', 'manageStaff', 'manageStudents'] },
     { group: 'Academics', links: ['academicOverview', 'lessonApprovals', 'generateResults', 'viewResults', 'gradingSystem', 'classesAndSubjects', 'aiSettings'] },
     { group: 'Finance', links: ['financialReports'] },
   ],
   HOD: [
-    { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
-    { group: 'Communication', links: ['announcements', 'messaging'] },
+    { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'announcements'] },
+    { group: 'Communication', links: ['messaging'] },
     { group: 'Department', links: ['attendance', 'lessonApprovals', 'enterScores', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'hodAnalytics', 'manageStaff'] },
     { group: 'Academics', links: ['classesAndSubjects'] },
   ],
   ACCOUNTANT: [
-    { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
-    { group: 'Communication', links: ['announcements', 'messaging'] },
+    { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'announcements'] },
+    { group: 'Communication', links: ['messaging'] },
     { group: 'Finance', links: ['feeSystem', 'invoices', 'payments', 'expenses', 'payroll', 'reconciliation', 'chartOfAccounts', 'financialReports'] },
   ],
   EXAM_OFFICER: [
-    { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
-    { group: 'Communication', links: ['announcements', 'messaging'] },
+    { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'announcements'] },
+    { group: 'Communication', links: ['messaging'] },
     { group: 'Examinations', links: ['reviewQuestions', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'generateResults', 'viewResults', 'timetable', 'examRegistration', 'seatingPlans'] },
   ],
   TEACHER: [
-    { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
-    { group: 'Communication', links: ['announcements', 'messaging'] },
+    { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'announcements'] },
+    { group: 'Communication', links: ['messaging'] },
     { group: 'My Work', links: ['lessonPlans', 'examQuestions', 'bulkUpload', 'enterScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'attendance', 'myStudents'] },
   ],
   PARENT: [
-    { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
+    { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'parentAnnouncements'] },
     { group: 'My Wards', links: ['parentResults', 'parentAttendance', 'parentTimetable'] },
     { group: 'Tuition & Wallet', links: ['parentWallet', 'parentInvoices'] },
-    { group: 'School Communication', links: ['parentAnnouncements'] },
   ],
 };
 
