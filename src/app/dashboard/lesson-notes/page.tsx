@@ -55,6 +55,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { motion, AnimatePresence } from 'framer-motion';
+import { DocumentUploadZone } from '@/components/academics/document-upload-zone';
 
 const REVIEW_ROLES = ['HOD', 'SLT', 'ADMIN', 'SUPER_ADMIN'];
 
@@ -576,14 +577,14 @@ export default function LessonPlansPage() {
                       <Upload className="w-6 h-6 text-blue-500" strokeWidth={2} />
                     </div>
                   </div>
-                  <p className="text-xs font-bold text-foreground text-center">Attach Document / PDF</p>
+                  <p className="text-xs font-bold text-foreground text-center">Upload Outside Document</p>
                 </motion.div>
               </DialogTrigger>
-              <DialogContent className="bg-card border-border text-foreground shadow-2xl max-w-md">
+              <DialogContent className="bg-card border-border text-foreground shadow-2xl max-w-lg">
                 <DialogHeader>
-                  <DialogTitle className="text-foreground">Attach Lesson Plan Document</DialogTitle>
+                  <DialogTitle className="text-foreground">Upload Outside Lesson Plan</DialogTitle>
                   <DialogDescription className="text-muted-foreground text-xs">
-                    Link a PDF, Google Docs, Word file, or Drive link to your lesson submission.
+                    Upload an external PDF, Word document (.docx/.doc), PowerPoint, or scanned notes from your device.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-2">
@@ -596,14 +597,33 @@ export default function LessonPlansPage() {
                       placeholder="e.g. Term 1 Physics Syllabus Notes"
                     />
                   </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-muted-foreground">Document URL / Attachment Link</Label>
-                    <Input
-                      className="bg-background border-border text-foreground text-xs rounded-xl font-mono"
-                      value={form.fileUrl}
-                      onChange={e => setForm(p => ({ ...p, fileUrl: e.target.value }))}
-                      placeholder="https://docs.google.com/document/... or file URL"
-                    />
+
+                  {/* Drag and Drop File Upload */}
+                  <DocumentUploadZone
+                    folder="lessonNotes"
+                    label="Attach Outside File"
+                    initialUrl={form.fileUrl}
+                    onUploaded={(url, fileName) => {
+                      setForm(p => ({
+                        ...p,
+                        fileUrl: url,
+                        title: p.title === 'Untitled Document' || !p.title ? fileName.replace(/\.[^/.]+$/, '') : p.title
+                      }));
+                    }}
+                  />
+
+                  <div className="pt-1">
+                    <details className="text-[11px] text-muted-foreground cursor-pointer">
+                      <summary className="hover:text-foreground font-medium">Or paste an external web link (Google Docs / Drive)</summary>
+                      <div className="mt-2">
+                        <Input
+                          className="bg-background border-border text-foreground text-xs rounded-xl font-mono"
+                          value={form.fileUrl}
+                          onChange={e => setForm(p => ({ ...p, fileUrl: e.target.value }))}
+                          placeholder="https://docs.google.com/document/... or direct link"
+                        />
+                      </div>
+                    </details>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">

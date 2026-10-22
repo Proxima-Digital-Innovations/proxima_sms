@@ -18,6 +18,7 @@ import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { motion, AnimatePresence } from 'framer-motion';
+import { DocumentUploadZone } from '@/components/academics/document-upload-zone';
 
 const OFFICER_ROLES = ['EXAM_OFFICER', 'ADMIN', 'SUPER_ADMIN'];
 const PAPER_TYPES = ['CA Test', 'Mid-Term Exam', 'Final Exam'];
@@ -36,10 +37,16 @@ export default function QuestionPapersPage() {
   const [terms, setTerms] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const [form, setForm] = useState({
-    title: 'Untitled Question Paper', subjectId: '', classId: '', termId: '', paperType: 'CA Test'
+    title: 'Untitled Question Paper',
+    subjectId: '',
+    classId: '',
+    termId: '',
+    paperType: 'CA Test',
+    fileUrl: '',
   });
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -62,6 +69,10 @@ export default function QuestionPapersPage() {
       setSubjects(acadRes.subjects || []);
       setClasses(acadRes.classes || []);
       setTerms(acadRes.terms || []);
+
+      const activeTerm = acadRes.terms?.find((t: any) => t.isActive) || acadRes.terms?.[0];
+      if (activeTerm) setForm(prev => ({ ...prev, termId: activeTerm.id }));
+
       if (myRes.success) setMyPapers(myRes.papers || []);
       if (queueRes.success) setReviewQueue((queueRes.papers || []).filter((p: any) => p.teacherId !== userId));
     } catch (err) {
@@ -71,20 +82,30 @@ export default function QuestionPapersPage() {
     }
   };
 
-  const handleCreate = async () => {
+  const handleCreate = async (withAttachment = false) => {
     if (!form.title || !form.subjectId || !form.classId || !form.termId) {
       toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill in title, subject, class, and term.' });
+      return;
+    }
+    if (withAttachment && !form.fileUrl) {
+      toast({ variant: 'destructive', title: 'No File Attached', description: 'Please select an outside document to upload.' });
       return;
     }
     setIsSaving(true);
     try {
       const res = await createQuestionPaper({
-        title: form.title, subjectId: form.subjectId, classId: form.classId,
-        teacherId: userId, termId: form.termId, paperType: form.paperType
+        title: form.title,
+        subjectId: form.subjectId,
+        classId: form.classId,
+        teacherId: userId,
+        termId: form.termId,
+        paperType: form.paperType,
+        fileUrl: withAttachment && form.fileUrl ? form.fileUrl : undefined,
       });
       if (res.success && res.paper) {
-        toast({ title: 'Created', description: 'Opening document...' });
+        toast({ title: 'Created', description: 'Opening question paper...' });
         setCreateOpen(false);
+        setUploadOpen(false);
         router.push(`/dashboard/exam-questions/${res.paper.id}`);
       } else {
         throw new Error(res.message);
@@ -275,7 +296,7 @@ export default function QuestionPapersPage() {
                 </div>
                 <DialogFooter className="border-t border-border pt-4">
                   <Button variant="ghost" onClick={() => setCreateOpen(false)} className="text-muted-foreground hover:text-foreground hover:bg-muted">Cancel</Button>
-                  <Button onClick={handleCreate} disabled={isSaving} className="bg-violet-600 hover:bg-violet-700 text-white min-w-[140px]">
+                  <Button onClick={() => handleCreate(false)} disabled={isSaving} className="bg-violet-600 hover:bg-violet-700 text-white min-w-[140px]">
                     {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2"/> : null}
                     {isSaving ? 'Creating...' : 'Create Document'}
                   </Button>
@@ -283,15 +304,108 @@ export default function QuestionPapersPage() {
               </DialogContent>
             </Dialog>
 
-            {/* Upload Document Template */}
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="cursor-not-allowed group flex flex-col gap-3 min-w-[160px] opacity-60" onClick={() => toast({ title: "Coming soon", description: "Direct file upload will be enabled soon.", variant: "default" })}>
-              <div className="h-56 bg-background border border-border rounded-xl flex items-center justify-center transition-all shadow-lg relative overflow-hidden">
-                <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
-                  <Upload className="w-6 h-6 text-muted-foreground" strokeWidth={2} />
+            {/* Upload Outside Question Paper Dialog */}
+            <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
+              <DialogTrigger asChild>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="cursor-pointer group flex flex-col gap-3 min-w-[160px]">
+                  <div className="h-56 bg-background border border-border rounded-xl flex items-center justify-center group-hover:border-blue-500 group-hover:bg-blue-500/5 transition-all shadow-lg group-hover:shadow-[0_0_20px_rgba(59,130,246,0.15)] relative overflow-hidden">
+                    <div className="w-14 h-14 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
+                      <Upload className="w-7 h-7 text-blue-500" strokeWidth={2} />
+                    </div>
+                  </div>
+                  <p className="text-sm font-semibold text-foreground text-center">Upload Outside Paper</p>
+                </motion.div>
+              </DialogTrigger>
+              <DialogContent className="bg-card border-border text-foreground shadow-2xl max-w-lg">
+                <DialogHeader>
+                  <DialogTitle className="text-foreground">Upload Outside Question Paper</DialogTitle>
+                  <DialogDescription className="text-muted-foreground text-xs">
+                    Upload an external exam paper (PDF, Word DOCX/DOC, scanned paper) directly from your device.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-2">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-muted-foreground">Paper Title</Label>
+                    <Input 
+                      className="bg-background border-border text-foreground text-xs rounded-xl"
+                      value={form.title} 
+                      onChange={e => setForm(p => ({ ...p, title: e.target.value }))} 
+                      placeholder="e.g. SS2 Physics First Term Exam Paper"
+                    />
+                  </div>
+
+                  {/* Document Upload Zone */}
+                  <DocumentUploadZone
+                    folder="examQuestions"
+                    label="Attach Question Paper (PDF / Word / Scans)"
+                    initialUrl={form.fileUrl}
+                    onUploaded={(url, fileName) => {
+                      setForm(p => ({
+                        ...p,
+                        fileUrl: url,
+                        title: p.title === 'Untitled Question Paper' || !p.title ? fileName.replace(/\.[^/.]+$/, '') : p.title
+                      }));
+                    }}
+                  />
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-muted-foreground">Subject</Label>
+                      <Select value={form.subjectId} onValueChange={v => setForm(p => ({ ...p, subjectId: v }))}>
+                        <SelectTrigger className="bg-background border-border text-foreground text-xs rounded-xl">
+                          <SelectValue placeholder="Select Subject" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover border-border">
+                          {subjects.map(s => <SelectItem key={s.id} value={s.id} className="text-xs">{s.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-muted-foreground">Class</Label>
+                      <Select value={form.classId} onValueChange={v => setForm(p => ({ ...p, classId: v }))}>
+                        <SelectTrigger className="bg-background border-border text-foreground text-xs rounded-xl">
+                          <SelectValue placeholder="Select Class" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover border-border">
+                          {classes.map(c => <SelectItem key={c.id} value={c.id} className="text-xs">{c.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-muted-foreground">Term</Label>
+                      <Select value={form.termId} onValueChange={v => setForm(p => ({ ...p, termId: v }))}>
+                        <SelectTrigger className="bg-background border-border text-foreground text-xs rounded-xl">
+                          <SelectValue placeholder="Select Term" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover border-border">
+                          {terms.map(t => <SelectItem key={t.id} value={t.id} className="text-xs">{t.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-muted-foreground">Paper Type</Label>
+                      <Select value={form.paperType} onValueChange={v => setForm(p => ({ ...p, paperType: v }))}>
+                        <SelectTrigger className="bg-background border-border text-foreground text-xs rounded-xl">
+                          <SelectValue placeholder="Select Type" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover border-border">
+                          {PAPER_TYPES.map(t => <SelectItem key={t} value={t} className="text-xs">{t}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <p className="text-sm font-semibold text-muted-foreground text-center">Upload File</p>
-            </motion.div>
+                <DialogFooter className="border-t border-border pt-4">
+                  <Button variant="ghost" onClick={() => setUploadOpen(false)} className="text-muted-foreground hover:text-foreground text-xs rounded-xl">Cancel</Button>
+                  <Button onClick={() => handleCreate(true)} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-xl font-semibold min-w-[140px]">
+                    {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-2"/> : null}
+                    {isSaving ? 'Uploading...' : 'Upload & Create'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
           </div>
         </div>

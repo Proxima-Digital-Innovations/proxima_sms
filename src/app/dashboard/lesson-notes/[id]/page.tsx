@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getLessonNoteById, updateLessonNote, submitLessonNote, reviewLessonNote } from '@/actions/lesson-note-actions';
 import { ArrowLeft, Save, Send, Printer, MessageSquare, Check, X, FileText, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { AttachedDocumentBanner, DocumentUploadZone } from '@/components/academics/document-upload-zone';
 
 const REVIEW_ROLES = ['HOD', 'SLT', 'ADMIN', 'SUPER_ADMIN'];
 
@@ -202,6 +203,34 @@ export default function LessonNoteEditorPage() {
               </div>
               <div className="text-sm text-muted-foreground mt-3 italic">Prepared by: <span className="font-semibold text-foreground">{note.teacher?.firstName} {note.teacher?.lastName}</span></div>
             </div>
+
+            {/* Attached Outside Document Viewer */}
+            {note.fileUrl && (
+              <div className="mb-8">
+                <AttachedDocumentBanner
+                  fileUrl={note.fileUrl}
+                  title="Attached Outside Lesson Plan Document"
+                />
+              </div>
+            )}
+
+            {/* Author Document Attachment / Replacement Zone */}
+            {canEdit && (
+              <div className="mb-8 p-4 rounded-xl border border-dashed border-border bg-muted/20">
+                <DocumentUploadZone
+                  folder="lessonNotes"
+                  label={note.fileUrl ? "Replace Outside Document (PDF, Word, Scans)" : "Attach Outside Document (PDF, Word, Scans)"}
+                  initialUrl={note.fileUrl || ''}
+                  onUploaded={async (url) => {
+                    setNote((prev: any) => ({ ...prev, fileUrl: url }));
+                    if (typeof id === 'string') {
+                      await updateLessonNote(id, { ...form, fileUrl: url });
+                      toast({ title: 'Document Attached', description: 'Outside document saved to lesson plan.' });
+                    }
+                  }}
+                />
+              </div>
+            )}
 
             <div className="space-y-8">
               <section className="bg-muted/30 p-5 rounded-xl border border-border">
