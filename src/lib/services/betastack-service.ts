@@ -2,6 +2,8 @@ import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { paymentRepository } from '../dal/payment-repository';
 import { getSchoolBankSettings } from '@/actions/school-bank-actions';
+import { FinancialSecurity } from '../security/financial-security';
+import { parentWalletService } from './parent-wallet-service';
 
 export interface VirtualAccountDetails {
   invoiceId: string;
@@ -155,7 +157,32 @@ export class BetastackService {
   }) {
     const { accountNumber, depositedAmount, txnRef, paymentRef, payerName, recordedByUserId } = params;
 
-    // 1. Idempotency check: Ensure reference hasn't already been processed
+    // 0. Financial Security Amount Sanitization
+    const validAmount = FinancialSecurity.validateMonetaryAmount(depositedAmount, 100);
+
+    // 1. Check if deposit is designated for a Parent Wallet
+    const parentWallet = await prisma.parentWallet.findFirst({
+      where: { accountNumber },
+      include: { user: true },
+    });
+
+    if (parentWallet) {
+      const creditRes = await parentWalletService.creditWallet({
+        userId: parentWallet.userId,
+        amount: validAmount,
+        reference: txnRef,
+        category: 'WALLET_FUNDING',
+        description: `Automated Bank Transfer to School Wallet from ${payerName || 'Parent'}`,
+      });
+      return {
+        alreadyProcessed: creditRes.alreadyProcessed,
+        isWalletCredit: true,
+        wallet: parentWallet,
+        transaction: creditRes.transaction,
+      };
+    }
+
+    // 2. Idempotency check: Ensure reference hasn't already been processed
     const existingReceipt = await prisma.paymentReceipt.findFirst({
       where: { reference: txnRef },
     });
@@ -167,7 +194,7 @@ export class BetastackService {
       return { alreadyProcessed: true, receipt: existingReceipt, invoice };
     }
 
-    // 2. Resolve target invoice from virtual account mapping or invoice ID
+    // 3. Resolve target invoice from virtual account mapping or invoice ID
     let mappedDetails = virtualAccountStore.get(accountNumber);
     let invoice: any = null;
 
@@ -189,13 +216,13 @@ export class BetastackService {
 
     if (!invoice) throw new Error('No pending invoice found matching this deposit.');
 
-    // 3. Calculate updated balances
-    const effectivePaid = Math.min(depositedAmount, invoice.balance);
+    // 4. Calculate updated balances
+    const effectivePaid = Math.min(validAmount, invoice.balance);
     const newAmountPaid = invoice.amountPaid + effectivePaid;
     const newBalance = Math.max(0, invoice.amount - newAmountPaid);
     const newStatus = newBalance <= 0 ? 'PAID' : 'PARTIALLY_PAID';
 
-    // 4. Resolve audit user
+    // 5. Resolve audit user
     let loggedById = recordedByUserId;
     if (!loggedById) {
       const systemUser = await prisma.user.findFirst({
@@ -205,7 +232,7 @@ export class BetastackService {
       loggedById = systemUser?.id || invoice.studentId;
     }
 
-    // 5. Atomic database transaction: Update Invoice & Create Payment Receipt
+    // 6. Atomic database transaction: Update Invoice & Create Payment Receipt
     await paymentRepository.recordPaymentTx(
       invoice.id,
       {
@@ -242,15 +269,20 @@ export class BetastackService {
   }
 
   /**
-   * Validates Betastack/Zainpay Webhook Signature using HMAC SHA256
+   * Validates Betastack/Zainpay Webhook Signature using timing-safe HMAC SHA256
    */
   async processWebhook(rawBody: string, signature: string) {
     const secret = this.getPrivateKey();
-    if (this.isLiveConfigured()) {
-      const computedHash = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
-      if (computedHash !== signature) {
-        throw new Error('Invalid Zainpay-Signature HMAC hash.');
-      }
+    const isLive = this.isLiveConfigured();
+
+    const isValidSignature = FinancialSecurity.verifyHmacSignature(rawBody, signature, secret, 'sha256');
+
+    if (isLive && !isValidSignature) {
+      throw new Error('Security Violation: Invalid Zainpay-Signature HMAC hash.');
+    }
+
+    if (process.env.NODE_ENV === 'production' && !isValidSignature) {
+      throw new Error('Security Violation: Webhook signature verification mandatory in production.');
     }
 
     const payload = JSON.parse(rawBody);

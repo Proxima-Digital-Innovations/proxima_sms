@@ -137,6 +137,7 @@ model User {
   journalEntries   JournalEntry[]     @relation("JournalEntriesRecorded")
   assetAssignments AssetAssignment[]  @relation("AssetsAssigned")
   scoreAuditsModified ScoreAuditLog[] @relation("ScoreAuditsModified")
+  parentWallet        ParentWallet?
 }
 
 model Department {
@@ -1582,4 +1583,35 @@ model SystemLicense {
   lastValidatedAt      DateTime  @default(now())
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
+}
+
+// --- PARENT SCHOOL WALLET & ADVANCE TUITION FUNDING ---
+
+model ParentWallet {
+  id            String              @id @default(cuid())
+  userId        String              @unique
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balance       Float               @default(0.0)
+  accountNumber String?             // Assigned Betastack/Zainpay DVA for direct wallet funding
+  bankName      String?             @default("Guaranty Trust Bank (GTBank Virtual Collection)")
+  currency      String              @default("NGN")
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  transactions  WalletTransaction[]
+}
+
+model WalletTransaction {
+  id          String        @id @default(cuid())
+  walletId    String
+  wallet      ParentWallet  @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  amount      Float
+  type        String        // CREDIT (Fund Wallet) or DEBIT (Fee Payment)
+  category    String        // WALLET_FUNDING, TUITION_PAYMENT, REFUND, ADJUSTMENT
+  description String
+  reference   String        @unique
+  status      String        @default("SUCCESS") // SUCCESS, PENDING, FAILED
+  invoiceId   String?
+  metadata    String?       // JSON metadata
+  createdAt   DateTime      @default(now())
 }

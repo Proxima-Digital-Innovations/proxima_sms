@@ -1,14 +1,18 @@
 import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { paymentRepository } from '../dal/payment-repository';
+import { FinancialSecurity } from '../security/financial-security';
+import { parentWalletService } from './parent-wallet-service';
 
 export interface PaystackInitParams {
-  invoiceId: string;
+  invoiceId?: string;
   amount: number; // in Naira
   email: string;
   studentName?: string;
   callbackUrl?: string;
   userId?: string;
+  reference?: string;
+  metadata?: any;
 }
 
 export class PaystackService {
@@ -25,22 +29,39 @@ export class PaystackService {
    * Initializes a Paystack payment session for an invoice
    */
   async initializePayment(params: PaystackInitParams) {
-    const { invoiceId, amount, email, studentName, callbackUrl, userId } = params;
+    const { invoiceId, amount, email, studentName, callbackUrl, userId, metadata } = params;
 
-    const invoice = await prisma.invoice.findUnique({
-      where: { id: invoiceId },
-      include: { student: true, term: true },
-    });
+    let invoice: any = null;
+    if (invoiceId) {
+      invoice = await prisma.invoice.findUnique({
+        where: { id: invoiceId },
+        include: { student: true, term: true },
+      });
 
-    if (!invoice) throw new Error('Invoice not found.');
-    if (invoice.status === 'PAID') throw new Error('This invoice has already been fully paid.');
-    if (amount <= 0) throw new Error('Payment amount must be greater than zero.');
-    if (amount > invoice.balance) {
-      throw new Error(`Amount exceeds remaining balance of ₦${invoice.balance.toLocaleString()}.`);
+      if (!invoice) throw new Error('Invoice not found.');
+      if (invoice.status === 'PAID') throw new Error('This invoice has already been fully paid.');
+      if (amount > invoice.balance) {
+        throw new Error(`Amount exceeds remaining balance of ₦${invoice.balance.toLocaleString()}.`);
+      }
     }
 
-    const reference = `PRX_${invoiceId.slice(-6)}_${Date.now()}`;
+    if (amount <= 0) throw new Error('Payment amount must be greater than zero.');
+
+    const reference = params.reference || (invoiceId ? `PRX_${invoiceId.slice(-6)}_${Date.now()}` : `PRX_${Date.now()}`);
     const amountInKobo = Math.round(amount * 100);
+
+    const effectiveMetadata = {
+      ...(metadata || {}),
+      invoiceId: invoice?.id || invoiceId || null,
+      studentId: invoice?.studentId || null,
+      studentName: studentName || (invoice ? `${invoice.student?.firstName} ${invoice.student?.lastName}` : 'Topup'),
+      termName: invoice?.term?.name || 'Current Term',
+      userId: userId || null,
+      custom_fields: [
+        { display_name: "Student Name", variable_name: "student_name", value: studentName || invoice?.student?.firstName || 'Topup' },
+        { display_name: "Invoice Reference", variable_name: "invoice_ref", value: invoice?.id || reference },
+      ],
+    };
 
     // If real Paystack key is configured, call official API
     if (this.isLiveOrConfigured()) {
@@ -57,17 +78,7 @@ export class PaystackService {
             currency: 'NGN',
             reference,
             callback_url: callbackUrl,
-            metadata: {
-              invoiceId: invoice.id,
-              studentId: invoice.studentId,
-              studentName: studentName || `${invoice.student.firstName} ${invoice.student.lastName}`,
-              termName: invoice.term.name,
-              userId: userId || null,
-              custom_fields: [
-                { display_name: "Student Name", variable_name: "student_name", value: studentName || invoice.student.firstName },
-                { display_name: "Invoice Reference", variable_name: "invoice_ref", value: invoice.id },
-              ],
-            },
+            metadata: effectiveMetadata,
           }),
         });
 
@@ -222,14 +233,18 @@ export class PaystackService {
    */
   async processWebhook(rawBody: string, signature: string) {
     const secret = this.getSecretKey();
-    if (!secret) {
-      throw new Error('Paystack secret key is not configured.');
+    if (!secret && process.env.NODE_ENV === 'production') {
+      throw new Error('Security Violation: Paystack secret key is not configured.');
     }
 
-    // Cryptographic validation
-    const hash = crypto.createHmac('sha512', secret).update(rawBody).digest('hex');
-    if (hash !== signature) {
-      throw new Error('Invalid Paystack HMAC signature.');
+    // Cryptographic validation via constant-time comparison
+    const isValidSignature = FinancialSecurity.verifyHmacSignature(rawBody, signature, secret, 'sha512');
+    if (this.isLiveOrConfigured() && !isValidSignature) {
+      throw new Error('Security Violation: Invalid Paystack HMAC signature.');
+    }
+
+    if (process.env.NODE_ENV === 'production' && !isValidSignature) {
+      throw new Error('Security Violation: Signature validation required in production.');
     }
 
     const event = JSON.parse(rawBody);

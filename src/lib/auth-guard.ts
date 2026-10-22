@@ -66,7 +66,8 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
   chartOfAccounts: { icon: 'BookMarked', label: 'Chart of Accounts', path: '/dashboard/finance/chart-of-accounts', requiredModule: 'FINANCE' },
   financialReports: { icon: 'BarChart2', label: 'Financial Reports', path: '/dashboard/finance/reports', requiredModule: 'FINANCE' },
   parentResults: { icon: 'BookOpen', label: 'Results', path: '/dashboard/performance' },
-  parentPayments: { icon: 'Wallet', label: 'Payments', path: '/dashboard/pay', requiredModule: 'FINANCE' },
+  parentWallet: { icon: 'Wallet', label: 'School Wallet', path: '/dashboard/parent/wallet', requiredModule: 'FINANCE' },
+  parentPayments: { icon: 'CreditCard', label: 'Pay Fees', path: '/dashboard/pay', requiredModule: 'FINANCE' },
   parentAnnouncements: { icon: 'Bell', label: 'Announcements', path: '/dashboard/announcements' },
   studentResults: { icon: 'Award', label: 'My Results', path: '/dashboard/performance' },
   studentAssignments: { icon: 'FileEdit', label: 'Assignments', path: '/student/lms/assignments', requiredModule: 'LMS' },
@@ -125,7 +126,7 @@ export const navConfig: Record<string, { group: string; links: (keyof typeof all
   ],
   PARENT: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
-    { group: 'My Child', links: ['parentResults', 'parentPayments', 'parentAnnouncements', 'timetable', 'messaging'] },
+    { group: 'My Child & Finances', links: ['parentWallet', 'parentPayments', 'parentResults', 'parentAnnouncements', 'timetable', 'messaging'] },
   ],
 };
 

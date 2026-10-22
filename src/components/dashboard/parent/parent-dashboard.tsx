@@ -10,6 +10,8 @@ import {
   CreditCard,
   CheckCircle2,
   AlertTriangle,
+  Zap,
+  ArrowRight,
 } from 'lucide-react';
 import {
   Card,
@@ -67,6 +69,7 @@ export function ParentDashboard() {
   const grades = data?.grades || [];
   const feeSummary = data?.feeSummary || { totalBilled: 0, totalPaid: 0, outstanding: 0 };
   const attendanceCount = data?.attendanceCount || 0;
+  const wallet = data?.wallet || { balance: 0, accountNumber: '' };
 
   const averageGrade = grades.length > 0
     ? (grades.reduce((acc: number, g: any) => acc + (g.total || 0), 0) / grades.length)
@@ -133,7 +136,7 @@ export function ParentDashboard() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {/* Academic Performance Card */}
         <Card className="rounded-2xl border-border bg-card">
           <CardHeader className="flex-row items-center justify-between pb-2">
@@ -207,7 +210,7 @@ export function ParentDashboard() {
             <CardTitle className="text-sm font-medium">
               {language === 'ar' ? 'حالة الرسوم الدراسية' : 'Tuition & Fee Status'}
             </CardTitle>
-            <Wallet className="h-6 w-6 text-indigo-500 shrink-0" />
+            <CreditCard className="h-6 w-6 text-indigo-500 shrink-0" />
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -240,6 +243,37 @@ export function ParentDashboard() {
                 <Button asChild variant="outline" size="sm" className="mt-3 rounded-lg w-full text-xs">
                   <Link href="/dashboard/finance/invoices">
                     {language === 'ar' ? 'عرض الإيصالات السابقة' : 'View Receipts'}
+                  </Link>
+                </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* School Tuition Wallet Card */}
+        <Card className="rounded-2xl border-border bg-card">
+          <CardHeader className="flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">
+              {language === 'ar' ? 'محفظة الرسوم المدرسية' : 'School Tuition Wallet'}
+            </CardTitle>
+            <Wallet className="h-6 w-6 text-emerald-500 shrink-0" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-16 w-full" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold font-mono text-foreground">
+                  ₦{(wallet.balance || 0).toLocaleString('en-NG', { minimumFractionDigits: 2 })}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                  <Zap className="h-3 w-3 text-emerald-500" />
+                  {language === 'ar' ? 'رصيد محفظة الطالب الفوري' : 'Pre-funded reserve for 1-click pay'}
+                </p>
+                <Button asChild size="sm" className="mt-3 rounded-lg w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium">
+                  <Link href="/dashboard/parent/wallet">
+                    <ArrowRight className="h-3.5 w-3.5 mr-1.5" />
+                    {language === 'ar' ? 'إدارة المحفظة وشحنها' : 'Manage & Fund Wallet'}
                   </Link>
                 </Button>
               </>

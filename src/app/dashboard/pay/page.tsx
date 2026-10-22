@@ -7,6 +7,7 @@ import {
   initiatePaystackPayment, 
   verifyPaystackReference 
 } from '@/actions/paystack-actions';
+import { getParentWalletDetails, payInvoiceWithWallet } from '@/actions/wallet-actions';
 import { 
   getInvoiceVirtualAccount, 
   confirmBankTransferArrival, 
@@ -30,7 +31,8 @@ import {
   Sparkles,
   Lock,
   RefreshCw,
-  FileText
+  FileText,
+  Zap
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -71,6 +73,8 @@ function ParentPaymentsContent() {
   const [manualSenderName, setManualSenderName] = useState('');
   const [manualTxRef, setManualTxRef] = useState('');
   const [isSubmittingProof, setIsSubmittingProof] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
+  const [isWalletPaying, setIsWalletPaying] = useState(false);
 
   // Card payment processing
   const [isCardProcessing, setIsCardProcessing] = useState(false);
@@ -134,7 +138,12 @@ function ParentPaymentsContent() {
     setPaymentType('FULL');
     setCustomAmount(invoice.balance.toString());
     setVirtualAccount(null);
-    setCheckoutTab('TRANSFER');
+    setCheckoutTab('WALLET');
+    getParentWalletDetails().then((res) => {
+      if (res.success && res.wallet) {
+        setWalletBalance(res.wallet.balance);
+      }
+    });
 
     // Fetch or generate dedicated virtual account
     setLoadingAccount(true);
@@ -221,6 +230,34 @@ function ParentPaymentsContent() {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     } finally {
       setIsSubmittingProof(false);
+    }
+  };
+
+  // Pay with School Wallet (Instant 1-Click)
+  const handlePayWithWallet = async () => {
+    if (!activeInvoice) return;
+    const amountToPay = paymentType === 'FULL' ? activeInvoice.balance : parseFloat(customAmount);
+    if (isNaN(amountToPay) || amountToPay <= 0) {
+      toast({ title: 'Invalid Amount', description: 'Please enter a valid amount.', variant: 'destructive' });
+      return;
+    }
+    setIsWalletPaying(true);
+    try {
+      const res = await payInvoiceWithWallet(activeInvoice.id, amountToPay);
+      if (res.success) {
+        toast({
+          title: 'Settled from School Wallet! 🎉',
+          description: `₦${amountToPay.toLocaleString()} settled. Receipt: ${res.receipt?.reference}`,
+        });
+        setActiveInvoice(null);
+        loadInvoices(selectedWardId);
+      } else {
+        toast({ title: 'Payment Failed', description: res.error || 'Could not pay from wallet.', variant: 'destructive' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Payment Failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsWalletPaying(false);
     }
   };
 
@@ -559,7 +596,11 @@ function ParentPaymentsContent() {
 
               {/* Multi-Channel Tabs */}
               <Tabs value={checkoutTab} onValueChange={setCheckoutTab} className="w-full">
-                <TabsList className="grid grid-cols-3 h-10 rounded-xl bg-muted p-1">
+                <TabsList className="grid grid-cols-4 h-10 rounded-xl bg-muted p-1">
+                  <TabsTrigger value="WALLET" className="text-xs rounded-lg gap-1.5">
+                    <Wallet className="h-3.5 w-3.5" />
+                    Wallet
+                  </TabsTrigger>
                   <TabsTrigger value="TRANSFER" className="text-xs rounded-lg gap-1.5">
                     <Landmark className="h-3.5 w-3.5" />
                     Auto-Transfer
@@ -573,6 +614,46 @@ function ParentPaymentsContent() {
                     School Bank
                   </TabsTrigger>
                 </TabsList>
+
+                {/* TAB 0: SCHOOL TUITION WALLET 1-CLICK PAY */}
+                <TabsContent value="WALLET" className="space-y-4 pt-2">
+                  <div className="p-4 rounded-xl bg-slate-900 text-white space-y-2 border border-primary/20">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[11px] text-slate-400 uppercase font-semibold">Available School Wallet</span>
+                      <Badge className="bg-emerald-600 text-white text-[10px]">Instant 1-Click</Badge>
+                    </div>
+                    <div className="text-3xl font-extrabold font-mono text-emerald-400">
+                      ₦{(walletBalance ?? 0).toLocaleString('en-NG', { minimumFractionDigits: 2 })}
+                    </div>
+                    <p className="text-[11px] text-slate-300">
+                      Instant settlement directly from your tuition wallet reserve.
+                    </p>
+                  </div>
+
+                  {(walletBalance ?? 0) >= (paymentType === 'FULL' ? activeInvoice.balance : (parseFloat(customAmount) || 0)) ? (
+                    <Button
+                      type="button"
+                      onClick={handlePayWithWallet}
+                      disabled={isWalletPaying}
+                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-10 rounded-xl flex items-center justify-center gap-2 shadow-md shadow-emerald-950/20"
+                    >
+                      {isWalletPaying ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+                      Pay ₦{(paymentType === 'FULL' ? activeInvoice.balance : (parseFloat(customAmount) || 0)).toLocaleString()} from Wallet
+                    </Button>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs">
+                        Insufficient wallet balance. You need an additional ₦{Math.max(0, (paymentType === 'FULL' ? activeInvoice.balance : (parseFloat(customAmount) || 0)) - (walletBalance ?? 0)).toLocaleString()} to pay this fee.
+                      </div>
+                      <Button asChild variant="outline" className="w-full text-xs rounded-xl">
+                        <Link href="/dashboard/parent/wallet">
+                          <ArrowRight className="h-3.5 w-3.5 mr-1" />
+                          Top Up School Wallet First
+                        </Link>
+                      </Button>
+                    </div>
+                  )}
+                </TabsContent>
 
                 {/* TAB 1: DEDICATED VIRTUAL ACCOUNT AUTO-CONFIRMATION */}
                 <TabsContent value="TRANSFER" className="space-y-3 pt-2">
