@@ -70,7 +70,7 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
   parentTimetable: { icon: 'Calendar', label: 'Class Timetable', path: '/dashboard/parent/timetable' },
   parentWallet: { icon: 'Wallet', label: 'Tuition Wallet', path: '/dashboard/parent/wallet', requiredModule: 'FINANCE' },
   parentInvoices: { icon: 'Receipt', label: 'Fee Invoices', path: '/dashboard/parent/invoices', requiredModule: 'FINANCE' },
-  parentPayments: { icon: 'CreditCard', label: 'Pay School Fees', path: '/dashboard/pay', requiredModule: 'FINANCE' },
+  parentPayments: { icon: 'CreditCard', label: 'Pay School Fees', path: '/dashboard/parent/invoices', requiredModule: 'FINANCE' },
   parentAnnouncements: { icon: 'Bell', label: 'Announcements', path: '/dashboard/announcements' },
   studentResults: { icon: 'Award', label: 'My Results', path: '/dashboard/performance' },
   studentAssignments: { icon: 'FileEdit', label: 'Assignments', path: '/student/lms/assignments', requiredModule: 'LMS' },
@@ -130,7 +130,7 @@ export const navConfig: Record<string, { group: string; links: (keyof typeof all
   PARENT: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
     { group: 'My Wards', links: ['parentResults', 'parentAttendance', 'parentTimetable'] },
-    { group: 'Tuition & Wallet', links: ['parentWallet', 'parentInvoices', 'parentPayments'] },
+    { group: 'Tuition & Wallet', links: ['parentWallet', 'parentInvoices'] },
     { group: 'School Communication', links: ['parentAnnouncements'] },
   ],
 };
