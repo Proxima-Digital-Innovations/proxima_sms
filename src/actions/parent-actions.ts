@@ -24,3 +24,83 @@ export async function getParentDashboardData(selectedStudentId?: string) {
     return { success: false, message: error.message };
   }
 }
+
+/**
+ * Fetches the complete terminal report card for the parent's ward
+ */
+export async function getWardReportCard(studentId?: string, termId?: string) {
+  try {
+    const session = await auth();
+    const userId = session?.user?.id;
+    const userEmail = session?.user?.email;
+
+    const data = await service.getWardReportCard(userId || undefined, userEmail || undefined, studentId, termId);
+
+    return {
+      success: true,
+      ...data
+    };
+  } catch (error: any) {
+    return { success: false, message: error.message };
+  }
+}
+
+/**
+ * Fetches invoices and official receipts for the parent's ward
+ */
+export async function getWardInvoicesAndReceipts(studentId?: string) {
+  try {
+    const session = await auth();
+    const userId = session?.user?.id;
+    const userEmail = session?.user?.email;
+
+    const data = await service.getWardInvoicesAndReceipts(userId || undefined, userEmail || undefined, studentId);
+
+    return {
+      success: true,
+      ...data
+    };
+  } catch (error: any) {
+    return { success: false, message: error.message };
+  }
+}
+
+/**
+ * Fetches daily attendance records and stats for the parent's ward
+ */
+export async function getWardAttendanceHistory(studentId?: string) {
+  try {
+    const session = await auth();
+    const userId = session?.user?.id;
+    const userEmail = session?.user?.email;
+
+    const data = await service.getWardAttendanceHistory(userId || undefined, userEmail || undefined, studentId);
+
+    return {
+      success: true,
+      ...data
+    };
+  } catch (error: any) {
+    return { success: false, message: error.message };
+  }
+}
+
+/**
+ * Fetches the class timetable for the parent's ward
+ */
+export async function getWardTimetable(studentId?: string) {
+  try {
+    const session = await auth();
+    const userId = session?.user?.id;
+    const userEmail = session?.user?.email;
+
+    const data = await service.getWardTimetable(userId || undefined, userEmail || undefined, studentId);
+
+    return {
+      success: true,
+      ...data
+    };
+  } catch (error: any) {
+    return { success: false, message: error.message };
+  }
+}

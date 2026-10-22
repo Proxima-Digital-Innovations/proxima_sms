@@ -65,9 +65,12 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
   reconciliation: { icon: 'Landmark', label: 'Reconciliation', path: '/dashboard/finance/ledger', requiredModule: 'FINANCE' },
   chartOfAccounts: { icon: 'BookMarked', label: 'Chart of Accounts', path: '/dashboard/finance/chart-of-accounts', requiredModule: 'FINANCE' },
   financialReports: { icon: 'BarChart2', label: 'Financial Reports', path: '/dashboard/finance/reports', requiredModule: 'FINANCE' },
-  parentResults: { icon: 'BookOpen', label: 'Results', path: '/dashboard/performance' },
-  parentWallet: { icon: 'Wallet', label: 'School Wallet', path: '/dashboard/parent/wallet', requiredModule: 'FINANCE' },
-  parentPayments: { icon: 'CreditCard', label: 'Pay Fees', path: '/dashboard/pay', requiredModule: 'FINANCE' },
+  parentResults: { icon: 'GraduationCap', label: 'Report Cards', path: '/dashboard/parent/results' },
+  parentAttendance: { icon: 'CalendarCheck', label: 'Attendance Log', path: '/dashboard/parent/attendance' },
+  parentTimetable: { icon: 'Calendar', label: 'Class Timetable', path: '/dashboard/parent/timetable' },
+  parentWallet: { icon: 'Wallet', label: 'Tuition Wallet', path: '/dashboard/parent/wallet', requiredModule: 'FINANCE' },
+  parentInvoices: { icon: 'Receipt', label: 'Fee Invoices', path: '/dashboard/parent/invoices', requiredModule: 'FINANCE' },
+  parentPayments: { icon: 'CreditCard', label: 'Pay School Fees', path: '/dashboard/pay', requiredModule: 'FINANCE' },
   parentAnnouncements: { icon: 'Bell', label: 'Announcements', path: '/dashboard/announcements' },
   studentResults: { icon: 'Award', label: 'My Results', path: '/dashboard/performance' },
   studentAssignments: { icon: 'FileEdit', label: 'Assignments', path: '/student/lms/assignments', requiredModule: 'LMS' },
@@ -126,7 +129,9 @@ export const navConfig: Record<string, { group: string; links: (keyof typeof all
   ],
   PARENT: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
-    { group: 'My Child & Finances', links: ['parentWallet', 'parentPayments', 'parentResults', 'parentAnnouncements', 'timetable', 'messaging'] },
+    { group: 'My Wards', links: ['parentResults', 'parentAttendance', 'parentTimetable'] },
+    { group: 'Tuition & Wallet', links: ['parentWallet', 'parentInvoices', 'parentPayments'] },
+    { group: 'School Communication', links: ['parentAnnouncements'] },
   ],
 };
 
