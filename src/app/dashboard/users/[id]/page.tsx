@@ -26,7 +26,7 @@ export default async function UserProfilePage(props: {
     include: {
       department: true,
       payroll: {
-        orderBy: { createdAt: 'desc' },
+        orderBy: { year: 'desc' },
         take: 3,
       },
     }

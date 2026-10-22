@@ -99,7 +99,7 @@ export function HodDashboard() {
         const { lessonNotes, staffCount, pendingCount, approvedCount, rejectedCount } = result.data as any;
         
         // Map lesson notes to display format
-        const notesList: LessonNoteDisplay[] = lessonNotes.map((note: any) => ({
+        const notesList: LessonNoteDisplay[] = (lessonNotes || []).map((note: any) => ({
           id: note.id,
           title: note.title,
           subject: note.subject?.name || 'Unknown Subject',

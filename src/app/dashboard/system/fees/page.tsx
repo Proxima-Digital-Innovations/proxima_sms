@@ -1,16 +1,15 @@
-
 'use client';
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
-// This component now acts as a redirect to the consolidated fee management page.
+// This component acts as a redirect to the consolidated fee management page.
 export default function SystemFeesRedirectPage() {
     const router = useRouter();
 
     useEffect(() => {
-        router.replace('/dashboard/accountant/fees');
+        router.replace('/dashboard/finance/fee-structures');
     }, [router]);
 
     return (
@@ -19,7 +18,7 @@ export default function SystemFeesRedirectPage() {
             <div className="space-y-1">
                 <h2 className="text-xl font-semibold text-foreground">Redirecting...</h2>
                 <p className="text-muted-foreground">
-                    Fee management has been moved to the Accountant dashboard.
+                    Fee management has been moved to Finance Fee Structures.
                 </p>
             </div>
         </div>

@@ -16,9 +16,9 @@ import { format } from 'date-fns';
 import Link from 'next/link';
 
 export default async function StudentProfilePage(props: {
-  params: Promise<{ id: string; school: string }>;
+  params: Promise<{ id: string }>;
 }) {
-  const { id, school: schoolSlug } = await props.params;
+  const { id } = await props.params;
 
   const student = await prisma.student.findUnique({
     where: { id: id },
@@ -40,7 +40,7 @@ export default async function StudentProfilePage(props: {
   return (
     <div className="space-y-6">
       <Button variant="outline" asChild>
-        <Link href={`/${schoolSlug}/dashboard/students`}>
+        <Link href="/dashboard/students">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Student List
         </Link>

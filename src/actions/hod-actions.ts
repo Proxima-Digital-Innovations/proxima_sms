@@ -1,99 +1,132 @@
 'use server';
 
-import { dbService } from '@/lib/dbService';
-import type { MockLessonNote, MockUser } from '@/lib/schema';
-import { requireSchoolId } from '@/lib/server-context';
+import { prisma } from '@/lib/prisma';
 
-export async function getHodDashboardData(uid: string) {
-  // Ensure tenant context is set or bypass it if this is global, 
-  // but dbService already uses prisma so we should be good.
-  
+export async function getHodDashboardData(uid?: string) {
+  try {
+    const user = uid ? await prisma.user.findUnique({
+      where: { id: uid },
+      include: { department: true },
+    }) : null;
 
-  const hodUser = await dbService.getDoc<MockUser>('users', uid);
-  if (!hodUser || !hodUser.department) {
-    return { error: 'Could not determine your department.' };
-  }
+    const departmentId = user?.departmentId;
+    const teacherWhere: any = { role: { in: ['TEACHER', 'HOD'] } };
+    if (departmentId) {
+      teacherWhere.departmentId = departmentId;
+    }
 
-  const departmentTeachers = await dbService.getDocs<MockUser>('users', {
-      department: hodUser.department,
-      role: 'Teacher',
-  });
-  const teacherIds = departmentTeachers.map(t => t.id);
+    const departmentTeachers = await prisma.user.findMany({
+      where: teacherWhere,
+      select: { id: true, firstName: true, lastName: true, role: true },
+    });
 
-  if (teacherIds.length === 0) {
+    const teacherIds = departmentTeachers.map(t => t.id);
+
+    const notesList = await prisma.lessonNote.findMany({
+      where: teacherIds.length > 0 ? { teacherId: { in: teacherIds } } : {},
+      orderBy: { submissionDate: 'desc' },
+      take: 20,
+      include: {
+        subject: { select: { id: true, name: true } },
+        teacher: { select: { id: true, firstName: true, lastName: true } },
+      },
+    });
+
+    const approved = notesList.filter(n => n.status.toUpperCase() === 'APPROVED').length;
+    const pending = notesList.filter(n => n.status.toUpperCase().includes('PENDING') || n.status.toUpperCase() === 'SUBMITTED').length;
+    const rejected = notesList.filter(n => n.status.toUpperCase().includes('REJECT') || n.status.toUpperCase().includes('REVIS')).length;
+
+    const recentNotes = notesList.slice(0, 5).map(n => ({
+      id: n.id,
+      title: n.title,
+      subject: n.subject?.name || 'General',
+      teacherName: `${n.teacher?.firstName || ''} ${n.teacher?.lastName || ''}`.trim(),
+      status: n.status,
+      submittedOn: n.submissionDate,
+    }));
+
+    return {
+      stats: {
+        pending,
+        approved,
+        rejected,
+        staffCount: departmentTeachers.length || 1,
+      },
+      notes: recentNotes,
+      staff: departmentTeachers,
+      submissionStatusData: [
+        { name: 'Approved', value: approved, fill: 'hsl(var(--chart-2))' },
+        { name: 'Pending', value: pending, fill: 'hsl(var(--chart-4))' },
+        { name: 'Rejected', value: rejected, fill: 'hsl(var(--destructive))' },
+      ],
+    };
+  } catch (error: any) {
     return {
       stats: { pending: 0, approved: 0, rejected: 0, staffCount: 0 },
       notes: [],
       staff: [],
-      submissionStatusData: []
+      submissionStatusData: [],
+      error: error.message,
     };
   }
-
-  // Simulate IN query for Prisma via dbService.
-  // Wait, dbService.getDocs currently takes a basic object for filters,
-  // so `{ teacherId: { in: teacherIds } }` works natively for Prisma.
-  const notesList = await dbService.getDocs<MockLessonNote>('lessonNotes', {
-    teacherId: { in: teacherIds }
-  });
-
-  // Sort notes
-  notesList.sort((a, b) => {
-    // Note: submittedOn in MockLessonNote is a Firestore timestamp object in some mock data?
-    // In Prisma it's a DateTime. Let's handle both safely.
-    const getSeconds = (date: any) => {
-      if (!date) return 0;
-      if (date.seconds) return date.seconds;
-      if (date instanceof Date) return date.getTime() / 1000;
-      return new Date(date).getTime() / 1000;
-    };
-    return getSeconds(b.submittedOn) - getSeconds(a.submittedOn);
-  });
-
-  const recentNotes = notesList.slice(0, 5);
-
-  const approved = notesList.filter(n => n.status === 'Approved').length;
-  const pending = notesList.filter(n => n.status.includes('Pending')).length;
-  const rejected = notesList.filter(n => n.status.includes('Rejected') || n.status.includes('Revision')).length;
-  
-  const submissionStatusData = [
-    { name: 'Approved', value: approved, fill: 'hsl(var(--chart-2))' },
-    { name: 'Pending', value: pending, fill: 'hsl(var(--chart-4))' },
-    { name: 'Rejected', value: rejected, fill: 'hsl(var(--destructive))' },
-  ];
-
-  return {
-    stats: {
-      pending,
-      approved,
-      rejected,
-      staffCount: departmentTeachers.length,
-    },
-    notes: recentNotes,
-    staff: departmentTeachers,
-    submissionStatusData,
-  };
 }
 
-export async function getHodAnalyticsData(uid: string) {
-  const hodUser = await dbService.getDoc<MockUser>('users', uid);
-  if (!hodUser || !hodUser.department) {
-    return { success: false, error: 'Could not determine your department.' };
+export async function getHodAnalyticsData(uid?: string) {
+  try {
+    const user = uid ? await prisma.user.findUnique({
+      where: { id: uid },
+      include: { department: true },
+    }) : null;
+
+    const departmentName = user?.department?.name || 'Science & Humanities';
+    const departmentId = user?.departmentId;
+
+    const teacherWhere: any = { role: { in: ['TEACHER', 'HOD'] } };
+    if (departmentId) {
+      teacherWhere.departmentId = departmentId;
+    }
+
+    const departmentTeachers = await prisma.user.findMany({
+      where: teacherWhere,
+      select: { id: true, firstName: true, lastName: true, role: true },
+    });
+
+    const teacherIds = departmentTeachers.map(t => t.id);
+
+    const allNotes = await prisma.lessonNote.findMany({
+      where: teacherIds.length > 0 ? { teacherId: { in: teacherIds } } : {},
+      orderBy: { submissionDate: 'desc' },
+      include: {
+        teacher: { select: { id: true, firstName: true, lastName: true } },
+      },
+    });
+
+    const examQuestions = allNotes.filter(n => n.evaluation?.startsWith('QUESTION_PAPER'));
+    const lessonNotes = allNotes.filter(n => !n.evaluation?.startsWith('QUESTION_PAPER'));
+
+    return {
+      success: true,
+      data: {
+        departmentName,
+        departmentTeachers: departmentTeachers.map(t => ({
+          id: t.id,
+          name: `${t.firstName} ${t.lastName}`,
+          role: t.role,
+        })),
+        lessonNotes,
+        examQuestions,
+      },
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message,
+      data: {
+        departmentName: 'General',
+        departmentTeachers: [],
+        lessonNotes: [],
+        examQuestions: [],
+      },
+    };
   }
-
-  const departmentTeachers = await dbService.getDocs<MockUser>('users', {
-      department: hodUser.department,
-      role: 'Teacher',
-  });
-  const teacherIds = departmentTeachers.map(t => t.id);
-
-  if (teacherIds.length === 0) {
-    return { success: true, data: { departmentName: hodUser.department, lessonNotes: [], examQuestions: [], departmentTeachers: [] } };
-  }
-
-  const [lessonNotes, examQuestions] = await Promise.all([
-    dbService.getDocs<MockLessonNote>('lessonNotes', { teacherId: { in: teacherIds } }),
-    dbService.getDocs<any>('examQuestions', { teacherId: { in: teacherIds } })
-  ]);
-
-  return { success: true, data: { departmentName: hodUser.department, lessonNotes, examQuestions, departmentTeachers } };
 }
