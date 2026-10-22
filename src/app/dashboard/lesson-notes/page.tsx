@@ -446,7 +446,7 @@ export default function LessonPlansPage() {
 
       {/* Start New Document Section */}
       <section className="bg-card px-6 md:px-8 py-8 border-b border-border">
-        <div className="max-w-7xl mx-auto">
+        <div className="w-full">
           <p className="text-xs font-bold text-muted-foreground mb-4 uppercase tracking-wider">Start a new document</p>
           <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
             {/* Blank Document Template */}
@@ -690,7 +690,7 @@ export default function LessonPlansPage() {
       </section>
 
       {/* Recent Documents Tabs */}
-      <section className="px-6 md:px-8 py-8 max-w-7xl mx-auto space-y-6">
+      <section className="w-full space-y-5">
         <Tabs defaultValue="my-docs" className="w-full">
           <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-border pb-4">
             <h2 className="text-lg font-bold text-foreground">Instructional Archive</h2>

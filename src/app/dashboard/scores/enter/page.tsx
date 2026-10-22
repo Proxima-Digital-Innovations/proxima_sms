@@ -327,7 +327,7 @@ export default function BasicScoreEntryPage() {
   }, [students, scores]);
 
   return (
-    <div className="space-y-6 p-4 md:p-8 max-w-7xl mx-auto">
+    <div className="w-full space-y-5">
       {/* Page Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}

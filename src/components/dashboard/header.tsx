@@ -69,6 +69,11 @@ const PAGE_TITLE_KEYS: { [key: string]: string } = {
     '/dashboard/messaging': 'messaging',
     '/dashboard/announcements': 'announcements',
     '/dashboard/analytics': 'reportsAndAnalytics',
+    '/dashboard/parent/results': 'reportCards',
+    '/dashboard/parent/invoices': 'feeInvoices',
+    '/dashboard/parent/attendance': 'attendanceLog',
+    '/dashboard/parent/timetable': 'classTimetable',
+    '/dashboard/parent/wallet': 'tuitionWallet',
 };
 
 const SEGMENT_ARABIC_MAP: Record<string, string> = {

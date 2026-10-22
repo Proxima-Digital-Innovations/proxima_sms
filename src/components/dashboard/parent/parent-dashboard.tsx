@@ -149,7 +149,7 @@ export function ParentDashboard() {
   };
 
   return (
-    <div className="flex flex-col gap-6 animate-in fade-in duration-300 pb-16 max-w-7xl mx-auto">
+    <div className="flex flex-col gap-5 animate-in fade-in duration-300 w-full">
       {/* Top Header & Multi-Child Selector */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>

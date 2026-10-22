@@ -200,7 +200,7 @@ export default function QuestionPapersPage() {
 
       {/* Start a new document section */}
       <section className="bg-background px-8 py-10 border-b border-border">
-        <div className="max-w-7xl mx-auto">
+        <div className="w-full">
           <p className="text-sm font-semibold text-foreground mb-6 uppercase tracking-wider">Start a new document</p>
           <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
             
@@ -298,7 +298,7 @@ export default function QuestionPapersPage() {
       </section>
 
       {/* Recent Documents */}
-      <section className="px-8 py-10 max-w-7xl mx-auto">
+      <section className="w-full space-y-5">
         <Tabs defaultValue="my-docs" className="w-full">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-lg font-bold text-foreground">Recent Documents</h2>

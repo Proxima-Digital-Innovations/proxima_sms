@@ -33,7 +33,7 @@ export default function SltAcademicOversightPage() {
     }, []);
 
     return (
-        <div className="space-y-6 max-w-7xl mx-auto p-4 md:p-6 pb-20">
+        <div className="w-full space-y-5">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight text-foreground">Academic Oversight</h1>
                 <p className="text-muted-foreground mt-1">High-level view of school-wide academic progress, score submissions, and lesson planning.</p>

@@ -299,7 +299,7 @@ function ParentPaymentsContent() {
   const stats = data?.stats || { totalBilled: 0, totalPaid: 0, outstanding: 0 };
 
   return (
-    <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+    <div className="w-full space-y-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>

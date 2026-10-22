@@ -90,7 +90,7 @@ function MainLayout({ children, isCheckingAuth, isAuthorized }: { children: Reac
             <MaintenanceBanner />
             <DashboardHeader />
           </div>
-          <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 flex flex-col max-w-7xl mx-auto w-full print:p-0 print:m-0 print:block min-w-0 overflow-x-hidden">
+          <main className="flex-1 p-4 md:p-6 flex flex-col w-full print:p-0 print:m-0 print:block min-w-0 overflow-x-hidden">
             {isCheckingAuth ? <AuthLoader /> : (isAuthorized ? children : <AccessDenied />)}
           </main>
       </div>

@@ -20,7 +20,7 @@ export default function PerformancePage() {
   }, [role, router]);
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-5 w-full">
       <div>
         <h1 className="font-headline text-3xl font-bold tracking-tight">Student Academic Oversight</h1>
         <p className="text-muted-foreground text-sm">

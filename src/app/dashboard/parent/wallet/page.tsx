@@ -153,7 +153,7 @@ export default function ParentWalletPage() {
 
   if (loading && !data) {
     return (
-      <div className="space-y-6 max-w-6xl pb-16">
+      <div className="space-y-5 w-full">
         <div className="space-y-2">
           <Skeleton className="h-8 w-64" />
           <Skeleton className="h-4 w-96" />
@@ -172,7 +172,7 @@ export default function ParentWalletPage() {
   const transactions = wallet?.transactions || [];
 
   return (
-    <div className="space-y-8 max-w-6xl pb-20">
+    <div className="space-y-5 w-full">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
