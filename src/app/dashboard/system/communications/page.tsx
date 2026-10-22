@@ -290,7 +290,7 @@ export default function CommunicationsSettingsPage() {
   }
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto pb-16">
+    <div className="w-full space-y-6 pb-16">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6">
         <div>

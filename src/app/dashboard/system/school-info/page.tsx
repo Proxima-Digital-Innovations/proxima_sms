@@ -222,7 +222,7 @@ export default function SchoolInfoPage() {
     };
 
     return (
-        <div className="space-y-8 max-w-4xl pb-16">
+        <div className="w-full space-y-6 pb-16">
             <div>
                 <h1 className="font-headline text-3xl font-bold tracking-tight text-foreground">
                     School Information

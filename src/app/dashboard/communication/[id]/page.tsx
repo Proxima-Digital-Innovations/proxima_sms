@@ -85,7 +85,7 @@ export default function MemoDetailsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-5xl mx-auto">
+    <div className="w-full space-y-6">
       <Button variant="ghost" onClick={() => router.back()} className="mb-2">
         <ArrowLeft className="mr-2 h-4 w-4" /> Back to Hub
       </Button>

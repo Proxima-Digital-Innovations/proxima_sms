@@ -185,7 +185,7 @@ export default function GradingSystemPage() {
   };
 
   return (
-    <div className="space-y-8 p-4 md:p-8 max-w-6xl mx-auto">
+    <div className="w-full space-y-6">
       <div>
         <div className="flex items-center gap-2">
           <h1 className="font-headline text-3xl font-bold tracking-tight">Curriculum Grading System</h1>

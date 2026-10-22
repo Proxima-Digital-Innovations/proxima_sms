@@ -1,6 +1,7 @@
 'use server';
 
 import { ParentService } from "@/lib/services/parent-service";
+import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 
 const service = new ParentService();
@@ -99,6 +100,43 @@ export async function getWardTimetable(studentId?: string) {
     return {
       success: true,
       ...data
+    };
+  } catch (error: any) {
+    return { success: false, message: error.message };
+  }
+}
+
+/**
+ * Fetches guardian profile details and linked wards for the parent profile page
+ */
+export async function getParentProfile() {
+  try {
+    const session = await auth();
+    const userId = session?.user?.id;
+    const userEmail = session?.user?.email;
+
+    const data = await service.getParentDashboardData(userId || undefined, userEmail || undefined);
+
+    const guardian = await prisma.guardian.findFirst({
+      where: {
+        OR: [
+          ...(userId ? [{ userId }] : []),
+          ...(userEmail ? [{ email: userEmail }] : [])
+        ]
+      }
+    });
+
+    return {
+      success: true,
+      guardian: guardian ? {
+        fullName: guardian.fullName,
+        phone: guardian.phone,
+        email: guardian.email,
+        address: guardian.address,
+        relationship: guardian.relationship,
+      } : null,
+      wards: data.wards || [],
+      wallet: data.wallet || null
     };
   } catch (error: any) {
     return { success: false, message: error.message };
