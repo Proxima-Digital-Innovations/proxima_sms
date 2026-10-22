@@ -287,13 +287,21 @@ export class BetastackService {
 
     const payload = JSON.parse(rawBody);
 
-    // Event: deposit.success
-    if (payload.event === 'deposit.success' || payload.type === 'deposit.success') {
+    // Event: deposit.success, virtualaccount.credit, collection.success, charge.success
+    const eventType = (payload.event || payload.type || '').toLowerCase();
+    const isCreditEvent = 
+      eventType === 'deposit.success' || 
+      eventType === 'virtualaccount.credit' || 
+      eventType === 'collection.success' || 
+      eventType === 'charge.success' ||
+      eventType === 'payment.success';
+
+    if (isCreditEvent) {
       const data = payload.data || payload;
-      const accountNumber = data.accountNumber;
+      const accountNumber = data.accountNumber || data.virtualAccountNumber || data.recipientAccount;
       const depositedAmount = parseFloat(data.depositedAmount || data.amount || '0');
-      const txnRef = data.txnRef || data.paymentRef || `ZAIN_TXN_${Date.now()}`;
-      const payerName = data.payerName || data.customerName;
+      const txnRef = data.txnRef || data.paymentRef || data.reference || data.transactionRef || `BETASTACK_${Date.now()}`;
+      const payerName = data.payerName || data.customerName || data.senderName || data.originatorAccountName;
 
       return await this.processDepositSuccess({
         accountNumber,

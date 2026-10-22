@@ -4,7 +4,13 @@ import { betastackService } from '@/lib/services/betastack-service';
 export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();
-    const signature = req.headers.get('zainpay-signature') || req.headers.get('Zainpay-Signature') || '';
+    const signature = 
+      req.headers.get('x-betastack-signature') ||
+      req.headers.get('betastack-signature') ||
+      req.headers.get('zainpay-signature') || 
+      req.headers.get('Zainpay-Signature') || 
+      req.headers.get('x-zainpay-signature') || 
+      '';
 
     const result = await betastackService.processWebhook(rawBody, signature);
 

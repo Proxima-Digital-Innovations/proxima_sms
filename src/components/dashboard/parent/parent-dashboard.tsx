@@ -12,6 +12,7 @@ import {
   Copy,
   Check,
   ArrowRight,
+  ArrowUpRight,
   BookOpen,
   Clock,
   Printer,
@@ -21,7 +22,9 @@ import {
   ShieldCheck,
   ChevronRight,
   ExternalLink,
-  Sparkles
+  RefreshCw,
+  Sparkles,
+  Lock
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,9 +32,12 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { getParentDashboardData } from '@/actions/parent-actions';
-import { payInvoiceWithWallet } from '@/actions/wallet-actions';
+import { payInvoiceWithWallet, confirmWalletTransferArrival } from '@/actions/wallet-actions';
 import Link from 'next/link';
 
 export function ParentDashboard() {
@@ -42,6 +48,12 @@ export function ParentDashboard() {
   const [payingInvoiceId, setPayingInvoiceId] = useState<string | null>(null);
   const [copiedAccount, setCopiedAccount] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('academics');
+
+  // Top-Up Dialog State
+  const [topupDialogOpen, setTopupDialogOpen] = useState(false);
+  const [topupAmount, setTopupAmount] = useState<number>(50000);
+  const [customAmount, setCustomAmount] = useState<string>('');
+  const [isProcessingTopup, setIsProcessingTopup] = useState(false);
 
   const fetchParentData = useCallback(async (childId?: string) => {
     setIsLoading(true);
@@ -92,13 +104,42 @@ export function ParentDashboard() {
     }
   };
 
+  const handleSimulateTopup = async (amount: number) => {
+    setIsProcessingTopup(true);
+    try {
+      const res = await confirmWalletTransferArrival({
+        amount,
+        payerName: data?.wallet?.accountName || 'Parent',
+      });
+
+      if (res.success) {
+        toast({
+          title: "Wallet Funded Successfully! 🎉",
+          description: `₦${amount.toLocaleString()} received via Betastack GTBank virtual collection.`,
+        });
+        setTopupDialogOpen(false);
+        fetchParentData(selectedChildId || undefined);
+      } else {
+        throw new Error(res.error || "Failed to fund wallet.");
+      }
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Funding Failed",
+        description: err.message || "Could not complete wallet credit.",
+      });
+    } finally {
+      setIsProcessingTopup(false);
+    }
+  };
+
   const copyAccountNumber = (accNo: string) => {
     if (!accNo) return;
     navigator.clipboard.writeText(accNo);
     setCopiedAccount(true);
     toast({
       title: "Account Number Copied!",
-      description: "Transfer funds to this account number from your bank app to fund your wallet.",
+      description: "Transfer funds to this account number from your bank app (GTBank, Access, Kuda, Zenith) to credit your wallet instantly via Betastack.",
     });
     setTimeout(() => setCopiedAccount(false), 2500);
   };
@@ -109,7 +150,7 @@ export function ParentDashboard() {
   const invoices = data?.invoices || [];
   const feeSummary = data?.feeSummary || { totalBilled: 0, totalPaid: 0, outstanding: 0 };
   const attendanceCount = data?.attendanceCount || 0;
-  const wallet = data?.wallet || { balance: 0, accountNumber: '', bankName: '' };
+  const wallet = data?.wallet || { balance: 0, accountNumber: '', bankName: '', accountName: '' };
   const activeTerm = data?.activeTerm;
 
   const averageGrade = grades.length > 0
@@ -132,12 +173,10 @@ export function ParentDashboard() {
   if (isLoading && !data) {
     return (
       <div className="w-full space-y-6">
-        <Skeleton className="h-12 w-72" />
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Skeleton className="h-32 rounded-2xl" />
-          <Skeleton className="h-32 rounded-2xl" />
-          <Skeleton className="h-32 rounded-2xl" />
-          <Skeleton className="h-32 rounded-2xl" />
+        <Skeleton className="h-10 w-72" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Skeleton className="h-64 lg:col-span-2 rounded-3xl" />
+          <Skeleton className="h-64 rounded-3xl" />
         </div>
         <Skeleton className="h-96 rounded-2xl" />
       </div>
@@ -147,33 +186,199 @@ export function ParentDashboard() {
   return (
     <div className="w-full space-y-6 animate-in fade-in duration-300">
       
-      {/* 1. Header with Child Selection Tabs */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card border border-border p-5 rounded-2xl shadow-sm">
+      {/* 1. TOP HEADER: School Tuition Wallet Priority Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <h1 className="font-headline text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">
-              Parent Portal
+              School Tuition Wallet
             </h1>
-            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs font-semibold">
-              {activeTerm?.name || 'Active Term'}
+            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-xs font-semibold px-2.5 py-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse mr-1.5 inline-block" />
+              Instant Settlement Active
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Track your children’s school results, pay fees, and manage attendance in one simple place.
+            Pre-fund school fees, manage tuition reserves for your children, and enjoy instant 1-click invoice clearance.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => fetchParentData(selectedChildId || undefined)} 
+            disabled={isLoading}
+            className="flex items-center gap-1.5 text-xs h-9"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+
+          <Button 
+            onClick={() => setTopupDialogOpen(true)} 
+            className="bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-1.5 text-xs font-semibold h-9 shadow-sm"
+          >
+            <ArrowUpRight className="h-4 w-4" />
+            Fund Wallet
+          </Button>
+        </div>
+      </div>
+
+      {/* 2. THE HERO WALLET & BETASTACK DEDICATED ACCOUNT SECTION (TOP PRIORITY) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* HERO CARD: Available Educational Balance */}
+        <div className="lg:col-span-2 relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-7 shadow-xl flex flex-col justify-between min-h-[230px]">
+          <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-12 -left-12 w-48 h-48 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
+
+          <div className="relative z-10">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1">
+                <span className="text-xs uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-1.5">
+                  <Wallet className="h-3.5 w-3.5 text-primary" />
+                  Available Educational Balance
+                </span>
+                <div className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white font-mono mt-1">
+                  ₦{(wallet?.balance || 0).toLocaleString('en-NG', { minimumFractionDigits: 2 })}
+                </div>
+              </div>
+
+              <div className="px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/10 text-xs font-medium text-slate-200 flex items-center gap-1.5 shadow-sm">
+                <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                NDIC Insured
+              </div>
+            </div>
+          </div>
+
+          <div className="relative z-10 pt-6 border-t border-white/10 mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <span className="text-[11px] text-slate-400 uppercase tracking-wider block">Wallet Holder</span>
+              <span className="text-sm font-semibold text-slate-100">{wallet?.accountName || 'Proxima SMS / Parent (Wallet)'}</span>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button 
+                size="sm" 
+                onClick={() => setTopupDialogOpen(true)}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs h-9 px-4 shadow-md shadow-emerald-950/40"
+              >
+                <ArrowUpRight className="h-4 w-4 mr-1.5" />
+                Add Funds
+              </Button>
+
+              <Button 
+                size="sm" 
+                variant="secondary"
+                onClick={() => {
+                  setActiveTab('invoices');
+                  const el = document.getElementById('invoices-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="bg-white/10 hover:bg-white/20 text-white border border-white/10 font-semibold text-xs h-9 px-4"
+              >
+                <Receipt className="h-4 w-4 mr-1.5" />
+                Direct Pay
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* DEDICATED VIRTUAL ACCOUNT CARD (Betastack & GTBank Auto-Credit) */}
+        <Card className="rounded-3xl border border-border bg-card p-6 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                  <Building2 className="w-4 h-4" />
+                </div>
+                <CardTitle className="text-sm font-bold text-foreground">
+                  Dedicated Virtual Account
+                </CardTitle>
+              </div>
+              <Badge variant="secondary" className="text-[10px] bg-emerald-500/10 text-emerald-600 border-0 font-semibold">
+                Auto-Credit
+              </Badge>
+            </div>
+            <CardDescription className="text-xs leading-relaxed text-muted-foreground">
+              Transfer funds from any Nigerian mobile bank app to credit your wallet in seconds via Betastack.
+            </CardDescription>
+
+            <div className="p-3.5 rounded-2xl bg-muted/40 border border-border/80 space-y-2.5 mt-4">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-muted-foreground">Bank Name</span>
+                <span className="font-bold text-foreground">Guaranty Trust Bank (GTBank)</span>
+              </div>
+
+              <div className="flex justify-between items-center pt-2 border-t border-border/60">
+                <span className="text-xs text-muted-foreground">Account Number</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-base font-extrabold tracking-wider text-primary">
+                    {wallet?.accountNumber || '0913090585'}
+                  </span>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted"
+                    onClick={() => copyAccountNumber(wallet?.accountNumber || '0913090585')}
+                  >
+                    {copiedAccount ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center pt-2 border-t border-border/60 text-xs">
+                <span className="text-muted-foreground">Account Name</span>
+                <span className="font-semibold text-foreground text-right text-[11px] truncate max-w-[170px]">
+                  {wallet?.accountName || 'Proxima Tuition / Parent'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleSimulateTopup(50000)}
+              disabled={isProcessingTopup}
+              className="w-full text-xs font-semibold h-8 rounded-xl border-dashed hover:border-primary"
+            >
+              <Zap className="w-3.5 h-3.5 mr-1.5 text-emerald-500" />
+              {isProcessingTopup ? 'Processing...' : 'Simulate Direct Bank Transfer (₦50k)'}
+            </Button>
+            <div className="text-[10px] text-center text-muted-foreground mt-2 flex items-center justify-center gap-1">
+              <Lock className="w-3 h-3 text-emerald-500" />
+              Wired to Betastack & Zainpay Automated Webhook
+            </div>
+          </div>
+        </Card>
+
+      </div>
+
+      {/* 3. MULTI-CHILD SELECTION BAR */}
+      <div className="bg-card border border-border p-4 rounded-2xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="font-bold text-base text-foreground flex items-center gap-2">
+            <GraduationCap className="w-4 h-4 text-primary" />
+            Enrolled Children & Academic Overview
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Select a child to view terminal grades, attendance, and settle specific class invoices.
           </p>
         </div>
 
         {/* Multi-Child Selector Chips */}
         {wards.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-semibold text-muted-foreground mr-1">Switch Child:</span>
             {wards.map((ward: any) => {
               const isSelected = selectedChildId === ward.id;
               return (
                 <button
                   key={ward.id}
                   onClick={() => setSelectedChildId(ward.id)}
-                  className={`flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ${
+                  className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
                     isSelected
                       ? 'bg-primary text-primary-foreground border-primary shadow-sm scale-[1.02]'
                       : 'bg-muted/40 hover:bg-muted text-foreground border-border/80'
@@ -197,7 +402,7 @@ export function ParentDashboard() {
         )}
       </div>
 
-      {/* 2. Urgent Attention Banner (Only shows when fees are due) */}
+      {/* 4. FEE DUE ALERT BANNER (Only shows when current ward has balance) */}
       {feeSummary.outstanding > 0 ? (
         <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 dark:bg-amber-500/15 p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-start gap-3.5">
@@ -213,8 +418,8 @@ export function ParentDashboard() {
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {wallet.balance >= feeSummary.outstanding
-                  ? `You have ₦${wallet.balance.toLocaleString()} in your wallet ready for instant 1-click settlement.`
-                  : `Your wallet balance is ₦${wallet.balance.toLocaleString()}. Fund your wallet or settle directly via bank transfer.`}
+                  ? `You have ₦${wallet.balance.toLocaleString()} in your Tuition Wallet ready for 1-click settlement.`
+                  : `Your wallet balance is ₦${wallet.balance.toLocaleString()}. Please add funds to settle this bill.`}
               </p>
             </div>
           </div>
@@ -267,147 +472,7 @@ export function ParentDashboard() {
         </div>
       )}
 
-      {/* 3. Four Core Simple Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        
-        {/* Card 1: Academic Standing */}
-        <Card className="rounded-2xl border-border bg-card shadow-sm hover:border-primary/40 transition-all flex flex-col justify-between">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              Academic Standing
-            </CardTitle>
-            <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-              <GraduationCap className="w-4 h-4" />
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <div className="text-3xl font-extrabold text-foreground font-mono">
-                {averageGrade > 0 ? `${averageGrade.toFixed(1)}%` : 'In Review'}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {grades.length > 0
-                  ? `Average across ${grades.length} evaluated subjects`
-                  : 'Term evaluation results in progress'}
-              </p>
-            </div>
-            <Button asChild size="sm" variant="outline" className="w-full text-xs font-semibold h-9 rounded-xl">
-              <Link href="/dashboard/parent/results">
-                View Report Card <ArrowRight className="w-3.5 h-3.5 ml-1" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Card 2: Tuition & Fees */}
-        <Card className="rounded-2xl border-border bg-card shadow-sm hover:border-indigo-500/40 transition-all flex flex-col justify-between">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              School Fees
-            </CardTitle>
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
-              <CreditCard className="w-4 h-4" />
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              {feeSummary.outstanding > 0 ? (
-                <>
-                  <div className="text-3xl font-extrabold text-destructive font-mono">
-                    ₦{feeSummary.outstanding.toLocaleString()}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Pending invoice balance
-                  </p>
-                </>
-              ) : (
-                <>
-                  <div className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono flex items-center gap-1.5">
-                    <CheckCircle2 className="w-6 h-6" /> Settled
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    All current term fees paid
-                  </p>
-                </>
-              )}
-            </div>
-            <Button asChild size="sm" variant="outline" className="w-full text-xs font-semibold h-9 rounded-xl">
-              <Link href="/dashboard/parent/invoices">
-                View Invoices & Pay <ArrowRight className="w-3.5 h-3.5 ml-1" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Card 3: School Tuition Wallet */}
-        <Card className="rounded-2xl border-border bg-card shadow-sm hover:border-emerald-500/40 transition-all flex flex-col justify-between">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              Tuition Wallet
-            </CardTitle>
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-              <Wallet className="w-4 h-4" />
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <div className="text-3xl font-extrabold text-foreground font-mono">
-                ₦{(wallet?.balance || 0).toLocaleString('en-NG', { minimumFractionDigits: 2 })}
-              </div>
-              <div className="flex items-center justify-between text-xs text-muted-foreground mt-1 bg-muted/50 p-1.5 rounded-lg">
-                <span className="font-mono font-bold text-foreground">
-                  GTB: {wallet?.accountNumber || '0913090585'}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => copyAccountNumber(wallet?.accountNumber || '0913090585')}
-                  className="hover:text-foreground text-primary flex items-center gap-1 font-semibold text-[11px]"
-                >
-                  {copiedAccount ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
-                  {copiedAccount ? 'Copied' : 'Copy'}
-                </button>
-              </div>
-            </div>
-            <Button asChild size="sm" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold h-9 rounded-xl shadow-sm">
-              <Link href="/dashboard/parent/wallet">
-                <Wallet className="w-3.5 h-3.5 mr-1.5" />
-                Fund Wallet
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Card 4: Attendance Rate */}
-        <Card className="rounded-2xl border-border bg-card shadow-sm hover:border-emerald-500/40 transition-all flex flex-col justify-between">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              Term Attendance
-            </CardTitle>
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-              <CalendarCheck className="w-4 h-4" />
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <div className="text-3xl font-extrabold text-foreground font-mono">
-                {attendanceRate}%
-              </div>
-              <Progress value={attendanceRate} className="h-1.5 mt-1.5 bg-muted" />
-              <p className="text-xs text-muted-foreground mt-1.5">
-                {attendanceCount > 0 ? `${attendanceCount} verified classroom days` : 'Regular attendance record'}
-              </p>
-            </div>
-            <Button asChild size="sm" variant="outline" className="w-full text-xs font-semibold h-9 rounded-xl">
-              <Link href="/dashboard/parent/attendance">
-                Attendance & Timetable <ArrowRight className="w-3.5 h-3.5 ml-1" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-      </div>
-
-      {/* 4. Three Dedicated Simple Tabs */}
+      {/* 5. THREE SIMPLE CONTENT TABS */}
       <Tabs defaultValue="academics" value={activeTab} onValueChange={setActiveTab} className="w-full space-y-4">
         <TabsList className="bg-card border border-border p-1 rounded-2xl h-12 w-full sm:w-auto grid grid-cols-3 sm:inline-flex">
           <TabsTrigger value="academics" className="rounded-xl font-bold text-xs gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
@@ -420,7 +485,7 @@ export function ParentDashboard() {
           </TabsTrigger>
           <TabsTrigger value="attendance" className="rounded-xl font-bold text-xs gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Clock className="w-4 h-4" />
-            Schedule
+            Attendance & Schedule
           </TabsTrigger>
         </TabsList>
 
@@ -432,10 +497,10 @@ export function ParentDashboard() {
                 <div>
                   <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
                     <BookOpen className="w-4 h-4 text-primary" />
-                    Academic Evaluation Summary — {currentWard?.firstName} {currentWard?.lastName}
+                    Academic Evaluation — {currentWard?.firstName} {currentWard?.lastName}
                   </CardTitle>
                   <CardDescription className="text-xs">
-                    Continuous Assessments (CA1 & CA2) and Terminal Examination scores.
+                    Continuous Assessments (CA1 & CA2) and Terminal Examination scores for {activeTerm?.name || 'Active Term'}.
                   </CardDescription>
                 </div>
                 <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold rounded-xl">
@@ -492,7 +557,7 @@ export function ParentDashboard() {
         </TabsContent>
 
         {/* Tab 2: Fee Invoices & Payment History */}
-        <TabsContent value="invoices" className="m-0 space-y-4">
+        <TabsContent value="invoices" id="invoices-section" className="m-0 space-y-4">
           <Card className="rounded-2xl border-border bg-card shadow-sm overflow-hidden">
             <CardHeader className="border-b border-border/80 pb-4 bg-muted/20">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -506,11 +571,14 @@ export function ParentDashboard() {
                   </CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button asChild size="sm" variant="outline" className="text-xs font-semibold rounded-xl">
-                    <Link href="/dashboard/parent/wallet">
-                      <Wallet className="w-3.5 h-3.5 mr-1.5 text-emerald-500" />
-                      Wallet (₦{(wallet?.balance || 0).toLocaleString()})
-                    </Link>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => setTopupDialogOpen(true)}
+                    className="text-xs font-semibold rounded-xl"
+                  >
+                    <Wallet className="w-3.5 h-3.5 mr-1.5 text-emerald-500" />
+                    Wallet (₦{(wallet?.balance || 0).toLocaleString()})
                   </Button>
                 </div>
               </div>
@@ -605,7 +673,7 @@ export function ParentDashboard() {
               <div className="flex items-center gap-2">
                 <Button asChild size="sm" variant="outline" className="text-xs rounded-xl">
                   <Link href="/dashboard/parent/attendance">
-                    View Full Attendance Log
+                    Full Attendance Log
                   </Link>
                 </Button>
                 <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs rounded-xl">
@@ -638,14 +706,14 @@ export function ParentDashboard() {
 
               <div className="p-4 rounded-xl bg-muted/40 border border-border/80 flex flex-col justify-between">
                 <div>
-                  <div className="text-xs font-semibold text-muted-foreground mb-1">Quick Actions:</div>
+                  <div className="text-xs font-semibold text-muted-foreground mb-1">Weekly Timetable Schedule</div>
                   <p className="text-xs text-muted-foreground">
-                    Check which subjects and teachers your child has scheduled for each day of the week.
+                    View subject periods, class timings, and subject teachers for each school day.
                   </p>
                 </div>
                 <Button asChild size="sm" variant="outline" className="w-full text-xs mt-3 rounded-lg">
                   <Link href="/dashboard/parent/timetable">
-                    Open Class Schedule (Timetable) <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                    Open Weekly Timetable <ArrowRight className="w-3.5 h-3.5 ml-1" />
                   </Link>
                 </Button>
               </div>
@@ -654,6 +722,85 @@ export function ParentDashboard() {
         </TabsContent>
 
       </Tabs>
+
+      {/* 6. FUND WALLET DIALOG (Modal directly on Dashboard) */}
+      <Dialog open={topupDialogOpen} onOpenChange={setTopupDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl font-bold">
+              <Wallet className="h-5 w-5 text-primary" />
+              Fund School Tuition Wallet
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Select or enter an amount to credit to your school tuition reserve.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div>
+              <Label className="text-xs text-muted-foreground">Preset Amounts</Label>
+              <div className="grid grid-cols-3 gap-2 mt-1.5">
+                {[20000, 50000, 100000, 200000, 350000, 500000].map((amt) => (
+                  <Button
+                    key={amt}
+                    type="button"
+                    variant={topupAmount === amt ? 'default' : 'outline'}
+                    size="sm"
+                    className="text-xs font-mono font-medium"
+                    onClick={() => {
+                      setTopupAmount(amt);
+                      setCustomAmount('');
+                    }}
+                  >
+                    ₦{amt.toLocaleString()}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="customAmt" className="text-xs">Custom Amount (₦)</Label>
+              <Input
+                id="customAmt"
+                type="number"
+                placeholder="e.g. 75000"
+                value={customAmount}
+                onChange={(e) => {
+                  setCustomAmount(e.target.value);
+                  const parsed = parseFloat(e.target.value);
+                  if (!isNaN(parsed) && parsed > 0) setTopupAmount(parsed);
+                }}
+              />
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-muted/60 border border-border text-xs space-y-1.5 text-muted-foreground">
+              <span className="font-semibold text-foreground block">Funding Options:</span>
+              <div>1. <strong>Direct Bank Transfer:</strong> Transfer to your dedicated GTBank account <span className="font-mono font-bold text-foreground">{wallet?.accountNumber || '0913090585'}</span>. Funds arrive instantly via Betastack.</div>
+              <div>2. <strong>Instant Online Top-Up:</strong> Simulate or trigger instant payment credit below.</div>
+            </div>
+          </div>
+
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => handleSimulateTopup(topupAmount)}
+              disabled={isProcessingTopup}
+              className="w-full sm:w-auto text-xs"
+            >
+              Simulate Instant Credit
+            </Button>
+
+            <Button
+              onClick={() => handleSimulateTopup(topupAmount)}
+              disabled={isProcessingTopup}
+              className="w-full sm:w-auto bg-primary text-primary-foreground font-semibold text-xs flex items-center justify-center gap-1.5"
+            >
+              {isProcessingTopup ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
+              Top Up ₦{topupAmount.toLocaleString()}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );

@@ -1,5 +1,6 @@
 import { ParentRepository } from "../dal/parent-repository";
 import { prisma } from "../prisma";
+import { parentWalletService } from "./parent-wallet-service";
 
 export class ParentService {
   private repo = new ParentRepository();
@@ -72,19 +73,18 @@ export class ParentService {
     const totalPaid = studentInvoices.reduce((sum, inv) => sum + (inv.amountPaid || 0), 0);
     const outstanding = Math.max(0, totalBilled - totalPaid);
 
-    let wallet = null;
-    if (userId) {
-      wallet = await prisma.parentWallet.findUnique({
-        where: { userId },
-        select: { id: true, balance: true, accountNumber: true, bankName: true }
-      });
-    } else if (email) {
+    let targetUserId = userId;
+    if (!targetUserId && email) {
       const parentUser = await prisma.user.findUnique({ where: { email }, select: { id: true } });
-      if (parentUser) {
-        wallet = await prisma.parentWallet.findUnique({
-          where: { userId: parentUser.id },
-          select: { id: true, balance: true, accountNumber: true, bankName: true }
-        });
+      targetUserId = parentUser?.id;
+    }
+
+    let wallet: any = null;
+    if (targetUserId) {
+      try {
+        wallet = await parentWalletService.getOrCreateWallet(targetUserId);
+      } catch (err) {
+        console.warn('Could not load or create wallet:', err);
       }
     }
 
@@ -287,19 +287,18 @@ export class ParentService {
     const totalPaid = invoices.reduce((sum, inv) => sum + (inv.amountPaid || 0), 0);
     const outstanding = Math.max(0, totalBilled - totalPaid);
 
-    let wallet = null;
-    if (userId) {
-      wallet = await prisma.parentWallet.findUnique({
-        where: { userId },
-        select: { id: true, balance: true, accountNumber: true, bankName: true }
-      });
-    } else if (email) {
+    let targetUserId = userId;
+    if (!targetUserId && email) {
       const parentUser = await prisma.user.findUnique({ where: { email }, select: { id: true } });
-      if (parentUser) {
-        wallet = await prisma.parentWallet.findUnique({
-          where: { userId: parentUser.id },
-          select: { id: true, balance: true, accountNumber: true, bankName: true }
-        });
+      targetUserId = parentUser?.id;
+    }
+
+    let wallet: any = null;
+    if (targetUserId) {
+      try {
+        wallet = await parentWalletService.getOrCreateWallet(targetUserId);
+      } catch (err) {
+        console.warn('Could not load or create wallet:', err);
       }
     }
 
