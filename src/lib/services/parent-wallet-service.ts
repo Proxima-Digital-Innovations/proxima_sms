@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { betastackService } from './betastack-service';
 import { paymentRepository } from '@/lib/dal/payment-repository';
 import { FinancialSecurity } from '../security/financial-security';
+import { ledgerService } from './ledger-service';
 
 export interface WalletDetails {
   id: string;
@@ -264,6 +265,16 @@ export class ParentWalletService {
           payerName: `${user.firstName} ${user.lastName} (School Wallet)`,
           date: new Date(),
         },
+      });
+
+      // 6. Record Double-Entry Journal Entry in General Ledger
+      await ledgerService.recordPaymentGlEntry(tx, {
+        amount: validPaymentAmount,
+        reference: txnRef,
+        description: `Tuition settlement via Parent Wallet for ${invoice.student.firstName} ${invoice.student.lastName} (Invoice #${invoice.id.slice(0, 8)})`,
+        recordedById: userId,
+        method: 'Parent School Wallet',
+        date: new Date(),
       });
 
       return {

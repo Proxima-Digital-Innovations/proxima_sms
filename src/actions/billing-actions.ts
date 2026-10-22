@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { CommEngine } from "@/lib/services/comm-engine";
+import { ledgerService } from "@/lib/services/ledger-service";
 
 function safeRevalidatePath(path: string) {
   try {
@@ -580,8 +581,8 @@ export async function recordPayment(data: {
     return { success: true, receipt };
   }
 
-  const [receipt] = await prisma.$transaction([
-    prisma.paymentReceipt.create({
+  const receipt = await prisma.$transaction(async (tx) => {
+    const r = await tx.paymentReceipt.create({
       data: {
         invoiceId: data.invoiceId,
         amount: data.amount,
@@ -600,21 +601,36 @@ export async function recordPayment(data: {
         },
         loggedBy: { select: { firstName: true, lastName: true } }
       }
-    }),
-    prisma.invoice.update({
+    });
+
+    await tx.invoice.update({
       where: { id: data.invoiceId },
       data: {
         amountPaid: newAmountPaid,
         balance: Math.max(0, newBalance),
         status: newStatus,
       },
-    }),
-  ]);
+    });
+
+    // Automatically post double-entry Journal Entry to General Ledger
+    await ledgerService.recordPaymentGlEntry(tx, {
+      amount: data.amount,
+      reference: data.reference || `REC-${r.id.slice(-6).toUpperCase()}`,
+      description: `Bursary collection via ${data.method} for ${r.invoice.student.firstName} ${r.invoice.student.lastName}`,
+      recordedById: userId,
+      method: data.method,
+      date: new Date(),
+    });
+
+    return r;
+  });
 
   safeRevalidatePath(`/dashboard/finance/invoices/${data.invoiceId}`);
   safeRevalidatePath("/dashboard/finance/invoices");
   safeRevalidatePath("/dashboard/finance/payments");
   safeRevalidatePath("/dashboard/finance/reports");
+  safeRevalidatePath("/dashboard/finance/ledger");
+  safeRevalidatePath("/dashboard/finance/chart-of-accounts");
 
   // Asynchronously dispatch digital receipt notification to guardian
   try {

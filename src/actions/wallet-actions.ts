@@ -224,6 +224,9 @@ export async function payInvoiceWithWallet(invoiceId: string, amount?: number) {
       revalidatePath('/parent/dashboard');
       revalidatePath('/dashboard/finance/invoices');
       revalidatePath('/dashboard/finance/payments');
+      revalidatePath('/dashboard/finance/ledger');
+      revalidatePath('/dashboard/finance/chart-of-accounts');
+      revalidatePath('/dashboard/finance/reports');
     } catch {}
 
     return {
