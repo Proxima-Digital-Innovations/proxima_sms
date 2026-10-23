@@ -134,7 +134,7 @@ export default function TeacherAttendancePage() {
         const res = await getClassAttendanceRoster(selectedClassId, selectedDate);
         if (res.success) {
           setRoster(res.roster.map(r => ({ ...r, status: r.status as AttendanceStatus })));
-          setIsRecorded(res.isRecorded);
+          setIsRecorded(Boolean((res as any).isRecorded || (res as any).stats?.alreadySubmitted));
         } else {
           toast({ variant: 'destructive', title: 'Error', description: res.error });
         }
