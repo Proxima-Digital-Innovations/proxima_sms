@@ -4,13 +4,15 @@ import {
   Activity, BarChart2, Bell, Book, Building, Calendar, Wallet, LayoutDashboard, LogOut, MessageSquare, Server, Settings, Shield, User, Users,
   UsersRound, FileQuestion, BookCopy, Edit3, CheckSquare, Award, BookOpen, TrendingUp, Landmark, Briefcase, FileText, CreditCard,
   Receipt, Ticket, Grid, BookMarked, Wrench, GraduationCap, Sparkles, UploadCloud, CalendarCheck, Heart, ClipboardCheck, BookText, Megaphone,
+  Fingerprint, LineChart, FileEdit, HelpCircle,
 } from 'lucide-react';
 import type { ElementType } from 'react';
 
 export const iconMap: { [key: string]: ElementType } = {
   LayoutDashboard, User, Users, UsersRound, Building, Server, Activity, Book, FileText, BarChart2, BookOpen, Edit3, Wallet, Calendar, Bell, MessageSquare,
   FileQuestion, BookCopy, CheckSquare, Award, Shield, Settings, LogOut, TrendingUp, Landmark, Briefcase, Receipt, CreditCard, Ticket, Grid,
-  BookMarked, Wrench, GraduationCap, Sparkles, UploadCloud, CalendarCheck, Heart, ClipboardCheck, BookText, Megaphone
+  BookMarked, Wrench, GraduationCap, Sparkles, UploadCloud, CalendarCheck, Heart, ClipboardCheck, BookText, Megaphone,
+  Fingerprint, LineChart, FileEdit, HelpCircle
 };
 
 export const allNavLinks: Record<string, { icon: string; label: string; path: string; requiredModule?: string; subLinks?: { label: string; path: string; requiredModule?: string }[] }> = {
