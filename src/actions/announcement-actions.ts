@@ -68,17 +68,24 @@ export const saveAnnouncement = createSecureAction(
   async (data, session) => {
     await service.saveAnnouncement(session, data);
     
-    // If user checked 'notifyParents', send email to all guardians
-    if (data.notifyParents) {
-      // In a background or non-blocking way, or wait for it.
-      await sendEmailToGuardians({
-        subject: `New Announcement: ${data.title}`,
-        body: data.content
-      });
+    let emailResult: any = null;
+    // Dispatch email to parents: default to true for new announcements, or if explicitly checked
+    const shouldSendEmail = (!data.id && data.notifyParents !== false) || (data.id && data.notifyParents === true);
+
+    if (shouldSendEmail) {
+      try {
+        emailResult = await sendEmailToGuardians({
+          subject: `${data.id ? 'Updated Announcement' : 'Announcement'}: ${data.title}`,
+          body: data.content,
+        });
+      } catch (err: any) {
+        console.error('Failed to dispatch announcement emails:', err);
+        emailResult = { success: false, error: err.message };
+      }
     }
 
     revalidatePath('/dashboard/announcements');
-    return { success: true };
+    return { success: true, emailResult };
   }
 );
 

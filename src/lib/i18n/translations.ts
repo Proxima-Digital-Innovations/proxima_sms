@@ -134,6 +134,35 @@ export interface TranslationDictionary {
   courseRegistration: string;
   senateApprovals: string;
   tertiaryStudentHub: string;
+
+  // Parent Portal
+  reportCards: string;
+  feeInvoices: string;
+  attendanceLog: string;
+  classTimetable: string;
+  tuitionWallet: string;
+
+  // Extended ERP & Management
+  staffLoans: string;
+  expenses: string;
+  inventoryOrders: string;
+  inventorySuppliers: string;
+  inventoryTransactions: string;
+  aiSettings: string;
+  feeSetup: string;
+  gradingPolicy: string;
+  systemMaintenance: string;
+  communicationsSetup: string;
+  uploadScores: string;
+  uploadMidterm: string;
+  resultTokens: string;
+  printResults: string;
+  printMidterm: string;
+  classResults: string;
+  sltDashboard: string;
+  sltAcademics: string;
+  hodDashboard: string;
+  hodAnalytics: string;
 }
 
 export const translations: Record<Language, TranslationDictionary> = {
@@ -261,6 +290,35 @@ export const translations: Record<Language, TranslationDictionary> = {
     courseRegistration: 'Course Registration',
     senateApprovals: 'Senate Broadsheet & CGPA',
     tertiaryStudentHub: 'Student Portal & Activities',
+
+    // Parent Portal
+    reportCards: 'Student Report Cards',
+    feeInvoices: 'Tuition & Fee Invoices',
+    attendanceLog: 'Student Attendance Log',
+    classTimetable: 'Weekly Class Timetable',
+    tuitionWallet: 'Tuition Wallet',
+
+    // Extended ERP & Management
+    staffLoans: 'Staff Loans & Advances',
+    expenses: 'Operating Expenses',
+    inventoryOrders: 'Purchase Orders',
+    inventorySuppliers: 'Suppliers Directory',
+    inventoryTransactions: 'Stock Movements',
+    aiSettings: 'AI Assistant & Automation',
+    feeSetup: 'Fee Categories & Policies',
+    gradingPolicy: 'Grading Scales & Policy',
+    systemMaintenance: 'System Maintenance',
+    communicationsSetup: 'Mail & SMS Gateway',
+    uploadScores: 'Upload Scores Spreadsheet',
+    uploadMidterm: 'Upload Mid-Term Scores',
+    resultTokens: 'Result Scratch Cards & Tokens',
+    printResults: 'Print Term Report Cards',
+    printMidterm: 'Print Mid-Term Slips',
+    classResults: 'Class Results Sheet',
+    sltDashboard: 'Executive Leadership Console',
+    sltAcademics: 'Academic Performance Monitor',
+    hodDashboard: 'Department Overview',
+    hodAnalytics: 'Department Analytics',
   },
   ar: {
     schoolPortal: 'بروكسيما لإدارة المدارس',
@@ -386,5 +444,34 @@ export const translations: Record<Language, TranslationDictionary> = {
     courseRegistration: 'تسجيل المقررات',
     senateApprovals: 'اعتماد نتائج مجلس الكلية',
     tertiaryStudentHub: 'بوابة وأنشطة الطالب',
+
+    // Parent Portal
+    reportCards: 'بطاقات درجات وتقارير الطلاب',
+    feeInvoices: 'فواتير الرسوم المدرسية',
+    attendanceLog: 'سجل حضور وغياب الطالب',
+    classTimetable: 'جدول الحصص الأسبوعي',
+    tuitionWallet: 'محفظة الرسوم الدراسية',
+
+    // Extended ERP & Management
+    staffLoans: 'سلف وقروض الموظفين',
+    expenses: 'المصروفات التشغيلية',
+    inventoryOrders: 'أوامر الشراء والتوريد',
+    inventorySuppliers: 'دليل الموردين المعتمدين',
+    inventoryTransactions: 'حركات وإدخالات المخزون',
+    aiSettings: 'إعدادات الذكاء الاصطناعي',
+    feeSetup: 'هياكل وفئات الرسوم',
+    gradingPolicy: 'سلالم وسياسة التقديرات',
+    systemMaintenance: 'صيانة وترقية النظام',
+    communicationsSetup: 'بوابات البريد والرسائل',
+    uploadScores: 'رفع كشوف الدرجات',
+    uploadMidterm: 'رفع درجات الميدتيرم',
+    resultTokens: 'بطاقات وكروت الاستعلام',
+    printResults: 'طباعة الشهادات المدرسية',
+    printMidterm: 'طباعة كشوف الميدتيرم',
+    classResults: 'كشف درجات الفصل',
+    sltDashboard: 'لوحة القيادة المدرسية',
+    sltAcademics: 'مراقبة التحصيل الأكاديمي',
+    hodDashboard: 'إدارة القسم الأكاديمي',
+    hodAnalytics: 'إحصائيات وتحليلات القسم',
   },
 };

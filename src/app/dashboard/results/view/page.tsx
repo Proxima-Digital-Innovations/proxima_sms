@@ -371,6 +371,68 @@ function ReportCardCanvas({
         </div>
       </div>
 
+      {/* Official Grading Scale Key */}
+      <div className="relative z-10 space-y-1.5 pt-1">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-black uppercase tracking-wider text-slate-800">
+            Grading System Key & Performance Scale
+          </span>
+          <div className="h-px flex-1 bg-slate-200" />
+        </div>
+        <div className="border border-slate-300 rounded-lg overflow-hidden">
+          <table className="w-full text-center text-[10px] border-collapse">
+            <thead>
+              <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-300">
+                <th className="py-1 px-1.5 border-r border-slate-300">Grade</th>
+                <th className="py-1 px-1.5 border-r border-slate-300">Range</th>
+                <th className="py-1 px-1.5 border-r border-slate-300">Remark</th>
+                <th className="py-1 px-1.5 border-r border-slate-300">Grade</th>
+                <th className="py-1 px-1.5 border-r border-slate-300">Range</th>
+                <th className="py-1 px-1.5 border-r border-slate-300">Remark</th>
+                <th className="py-1 px-1.5 border-r border-slate-300">Grade</th>
+                <th className="py-1 px-1.5 border-r border-slate-300">Range</th>
+                <th className="py-1 px-1.5">Remark</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200 font-medium text-slate-800">
+              <tr>
+                <td className="py-0.5 font-black text-emerald-800 border-r border-slate-200">A1</td>
+                <td className="py-0.5 border-r border-slate-200">75 - 100%</td>
+                <td className="py-0.5 border-r border-slate-200 text-slate-600">Excellent</td>
+                <td className="py-0.5 font-black text-blue-800 border-r border-slate-200">B2</td>
+                <td className="py-0.5 border-r border-slate-200">70 - 74%</td>
+                <td className="py-0.5 border-r border-slate-200 text-slate-600">Very Good</td>
+                <td className="py-0.5 font-black text-blue-800 border-r border-slate-200">B3</td>
+                <td className="py-0.5 border-r border-slate-200">65 - 69%</td>
+                <td className="py-0.5 text-slate-600">Good</td>
+              </tr>
+              <tr>
+                <td className="py-0.5 font-black text-cyan-800 border-r border-slate-200">C4</td>
+                <td className="py-0.5 border-r border-slate-200">60 - 64%</td>
+                <td className="py-0.5 border-r border-slate-200 text-slate-600">Credit</td>
+                <td className="py-0.5 font-black text-cyan-800 border-r border-slate-200">C5</td>
+                <td className="py-0.5 border-r border-slate-200">55 - 59%</td>
+                <td className="py-0.5 border-r border-slate-200 text-slate-600">Credit</td>
+                <td className="py-0.5 font-black text-cyan-800 border-r border-slate-200">C6</td>
+                <td className="py-0.5 border-r border-slate-200">50 - 54%</td>
+                <td className="py-0.5 text-slate-600">Credit</td>
+              </tr>
+              <tr>
+                <td className="py-0.5 font-black text-amber-800 border-r border-slate-200">D7</td>
+                <td className="py-0.5 border-r border-slate-200">45 - 49%</td>
+                <td className="py-0.5 border-r border-slate-200 text-slate-600">Pass</td>
+                <td className="py-0.5 font-black text-amber-800 border-r border-slate-200">E8</td>
+                <td className="py-0.5 border-r border-slate-200">40 - 44%</td>
+                <td className="py-0.5 border-r border-slate-200 text-slate-600">Pass</td>
+                <td className="py-0.5 font-black text-rose-800 border-r border-slate-200">F9</td>
+                <td className="py-0.5 border-r border-slate-200">0 - 39%</td>
+                <td className="py-0.5 text-rose-700">Fail</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Remarks Section */}
       <div className="relative z-10 space-y-3 pt-3 border-t border-slate-200 text-xs">
         <div className="flex flex-col sm:flex-row gap-1.5 sm:items-baseline">

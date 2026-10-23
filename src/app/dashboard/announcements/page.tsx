@@ -310,9 +310,10 @@ export default function AnnouncementsPage() {
             variant={selectedFilter === 'urgent' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setSelectedFilter('urgent')}
-            className="h-8 text-xs rounded-xl font-semibold"
+            className="h-8 text-xs rounded-xl font-semibold gap-1.5"
           >
-            ⚡ Important
+            <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+            Important
           </Button>
           <Button
             variant={selectedFilter === 'academic' ? 'default' : 'outline'}
@@ -400,8 +401,9 @@ export default function AnnouncementsPage() {
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Badge className="bg-primary text-primary-foreground text-xs font-semibold px-2.5 py-0.5">
-                      📌 Featured Circular
+                    <Badge className="bg-primary text-primary-foreground text-xs font-semibold px-2.5 py-0.5 gap-1.5 inline-flex items-center">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Featured Circular
                     </Badge>
                     {(() => {
                       const catKey = getCategoryForAnnouncement(featured.title, featured.content);

@@ -246,7 +246,7 @@ function ParentPaymentsContent() {
       const res = await payInvoiceWithWallet(activeInvoice.id, amountToPay);
       if (res.success) {
         toast({
-          title: 'Settled from School Wallet! 🎉',
+          title: 'Settled from School Wallet',
           description: `₦${amountToPay.toLocaleString()} settled. Receipt: ${res.receipt?.reference}`,
         });
         setActiveInvoice(null);

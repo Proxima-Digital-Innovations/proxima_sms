@@ -18,7 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { saveAnnouncement } from '@/actions/announcement-actions';
 import { useState, useTransition } from 'react';
-import { Loader2, Send, Sparkles } from 'lucide-react';
+import { Loader2, Send, Sparkles, Mail } from 'lucide-react';
 import { useRole } from '@/context/role-context';
 import type { Announcement } from '@/lib/schema';
 import { aiEngine } from '@/ai';
@@ -28,7 +28,7 @@ const formSchema = z.object({
   id: z.string().optional(),
   title: z.string().min(3, 'Title must be at least 3 characters long.'),
   content: z.string().min(10, 'Content must be at least 10 characters long.'),
-  notifyParents: z.boolean().default(false).optional(),
+  notifyParents: z.boolean().default(true),
 });
 
 type AnnouncementFormValues = z.infer<typeof formSchema>;
@@ -55,6 +55,7 @@ export function AnnouncementForm({ initialData, onFormSubmit }: AnnouncementForm
       id: initialData?.id,
       title: initialData?.title || '',
       content: initialData?.content || '',
+      notifyParents: initialData ? false : true,
     },
   });
 
@@ -97,7 +98,20 @@ export function AnnouncementForm({ initialData, onFormSubmit }: AnnouncementForm
           throw new Error('Validation failed.');
       }
       
-      toast({ title: 'Success', description: 'Announcement saved successfully.' });
+      const emailResult = (result as any)?.emailResult;
+      if (emailResult && emailResult.sentCount > 0) {
+        toast({
+          title: 'Announcement Published',
+          description: `Announcement posted and emailed to ${emailResult.sentCount} parent/guardian address(es).`,
+        });
+      } else if (emailResult && !emailResult.success && emailResult.errors?.[0]) {
+        toast({
+          title: 'Announcement Published',
+          description: `Announcement saved. Email status: ${emailResult.errors[0]}`,
+        });
+      } else {
+        toast({ title: 'Success', description: 'Announcement saved successfully.' });
+      }
       onFormSubmit(true);
     } catch (error: any) {
       if (error.message !== 'Validation failed.') {
@@ -178,11 +192,14 @@ export function AnnouncementForm({ initialData, onFormSubmit }: AnnouncementForm
             control={form.control}
             name="notifyParents"
             render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+            <FormItem className="flex flex-row items-center justify-between rounded-xl border border-border p-4 bg-muted/40">
                 <div className="space-y-0.5">
-                    <FormLabel className="text-base">Notify Parents</FormLabel>
+                    <FormLabel className="text-sm font-bold text-foreground flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-primary" />
+                        Send Email to Parents & Guardians
+                    </FormLabel>
                     <p className="text-sm text-muted-foreground">
-                        Automatically send this announcement to all parents/guardians via email.
+                        Automatically dispatch this announcement to all registered parent and guardian email addresses.
                     </p>
                 </div>
                 <FormControl>

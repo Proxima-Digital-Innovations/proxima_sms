@@ -82,7 +82,7 @@ export function ParentDashboard() {
       const res = await payInvoiceWithWallet(invoiceId);
       if (res.success) {
         toast({
-          title: "Payment Successful! 🎉",
+          title: "Payment Successful",
           description: `₦${res.amountPaid?.toLocaleString()} settled directly from your School Wallet.`,
         });
         fetchParentData(selectedChildId || undefined);
@@ -114,7 +114,7 @@ export function ParentDashboard() {
 
       if (res.success) {
         toast({
-          title: "Wallet Funded Successfully! 🎉",
+          title: "Wallet Funded Successfully",
           description: `₦${amount.toLocaleString()} received via Betastack GTBank virtual collection.`,
         });
         setTopupDialogOpen(false);
@@ -601,8 +601,9 @@ export function ParentDashboard() {
                           <div className="font-bold text-sm text-foreground flex items-center gap-2">
                             <span>{inv.description}</span>
                             {isPaid ? (
-                              <Badge className="bg-emerald-600/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-[11px] font-semibold">
-                                ✓ Paid in Full
+                              <Badge className="bg-emerald-600/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-[11px] font-semibold gap-1 inline-flex items-center">
+                                <CheckCircle2 className="w-3 h-3" />
+                                Paid in Full
                               </Badge>
                             ) : (
                               <Badge variant="destructive" className="text-[11px] font-semibold">

@@ -306,6 +306,14 @@ export default function ParentResultsPage() {
               )}
             </div>
 
+            {/* Official Grading Rubric Key */}
+            <div className="border border-border/80 rounded-xl p-3 bg-muted/20 text-[11px]">
+              <span className="font-bold text-foreground uppercase tracking-wider mr-2">Grading System:</span>
+              <span className="text-muted-foreground">
+                <strong>A1</strong> (75-100% Distinction) • <strong>B2</strong> (70-74% Very Good) • <strong>B3</strong> (65-69% Good) • <strong>C4</strong> (60-64% Credit) • <strong>C5</strong> (55-59% Credit) • <strong>C6</strong> (50-54% Credit) • <strong>D7</strong> (45-49% Pass) • <strong>E8</strong> (40-44% Fair) • <strong>F9</strong> (0-39% Fail)
+              </span>
+            </div>
+
             {/* Official Remarks & Endorsements */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
               <div className="p-5 rounded-xl border border-border bg-muted/20 space-y-2">
@@ -314,10 +322,10 @@ export default function ParentResultsPage() {
                   Class Teacher's Remark
                 </div>
                 <p className="text-sm text-foreground italic font-medium leading-relaxed">
-                  "{summary.teacherRemark}"
+                  "{summary.teacherRemark || 'Commendable diligence and discipline throughout the term.'}"
                 </p>
                 <div className="pt-3 flex items-center justify-between border-t border-border/60 text-xs text-muted-foreground">
-                  <span>Signatory: <strong>{student.classTeacher}</strong></span>
+                  <span>Signatory: <strong>{student.classTeacher || 'Form Tutor'}</strong></span>
                   <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30">Verified</Badge>
                 </div>
               </div>
@@ -328,17 +336,52 @@ export default function ParentResultsPage() {
                   Principal's Endorsement & Decision
                 </div>
                 <p className="text-sm text-foreground italic font-medium leading-relaxed">
-                  "{summary.principalRemark}"
+                  "{summary.principalRemark || 'Promoted with good academic standing.'}"
                 </p>
                 <div className="pt-3 flex items-center justify-between border-t border-border/60 text-xs text-muted-foreground">
-                  <span>Signatory: <strong>Office of Academic Directorate</strong></span>
+                  <span>Signatory: <strong>Academic Directorate</strong></span>
                   <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30">Official Stamp</Badge>
                 </div>
+              </div>
+            </div>
+
+            {/* Signatures & Seal (Printed view) */}
+            <div className="hidden print:grid grid-cols-3 gap-6 pt-6 text-center text-[10px] font-bold uppercase tracking-wider text-slate-600 border-t border-slate-300">
+              <div>
+                <div className="h-8 flex items-end justify-center pb-1 font-serif italic text-slate-400">Signed</div>
+                <div className="border-t border-slate-400 pt-1">Form Teacher Signature</div>
+              </div>
+              <div>
+                <div className="h-8 flex items-end justify-center pb-1 font-serif italic text-slate-400">Approved</div>
+                <div className="border-t border-slate-400 pt-1">Principal / Head of School</div>
+              </div>
+              <div>
+                <div className="h-8 flex items-end justify-center pb-1 text-[9px] text-slate-400 font-mono">DIGITALLY VERIFIED</div>
+                <div className="border-t border-slate-400 pt-1">Official Seal & Date</div>
               </div>
             </div>
           </CardContent>
         </Card>
       )}
+
+      {/* Print CSS for Parent Report Card */}
+      <style jsx global>{`
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 8mm 10mm;
+          }
+          body {
+            background: white !important;
+            color: #0f172a !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          nav, aside, header, .print\\:hidden {
+            display: none !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
