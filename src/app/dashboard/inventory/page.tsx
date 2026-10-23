@@ -75,7 +75,7 @@ export default async function InventoryDashboardPage({ params }: { params: Promi
            </div>
           ) : (
             <div className="rounded-md border">
-              <table className="w-full text-sm">
+              <div className="w-full overflow-x-auto custom-scrollbar"><table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/50 text-left font-medium text-muted-foreground">
                     <th className="px-4 py-3">Item Name</th>
@@ -107,7 +107,7 @@ export default async function InventoryDashboardPage({ params }: { params: Promi
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             </div>
           )}
         </CardContent>

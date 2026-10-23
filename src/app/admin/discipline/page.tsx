@@ -262,7 +262,7 @@ export default function DisciplineDashboard() {
                 <>
                   <div>
                     <label className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Severity</label>
-                    <div className="grid grid-cols-3 gap-3 mt-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
                       {['MINOR', 'MAJOR', 'CRITICAL'].map(s => (
                         <button 
                           key={s} onClick={() => setSeverity(s)}

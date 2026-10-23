@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useTransition, useRef, useEffect } from 'react';
@@ -19,13 +18,11 @@ type Message = {
     content: string;
 };
 
-// Function to parse the bot's response and create links
 const renderMessageContent = (content: string) => {
   const urlRegex = /\("([^"]+)"\s*(\/[^)]+)\)/g;
   const parts = content.split(urlRegex);
 
   return parts.map((part, index) => {
-    // Every 3rd part is the path, and the one before it is the label
     if (index % 3 === 2) {
       const label = parts[index - 1].replace(/"/g, '').trim();
       const path = part.trim();
@@ -35,9 +32,7 @@ const renderMessageContent = (content: string) => {
         </Link>
       );
     }
-    // Render the text parts that are not links
     if (index % 3 === 0) {
-      // Clean up leftover quote from the regex split
       return part.replace(/"/g, '');
     }
     return null;
@@ -57,7 +52,6 @@ export function SupportBot() {
   const { user, role } = useRole();
   const scrollViewportRef = useRef<HTMLDivElement>(null);
   
-  // Create a unique ID for this chat session
   const [contextId] = useState(() => `support-session-${Date.now()}-${Math.random().toString(36).substring(7)}`);
 
   useEffect(() => {
@@ -81,8 +75,8 @@ export function SupportBot() {
             const response = await aiEngine.support.answer({
                 question: currentInput,
                 role: role,
-                history: messages.slice(-4), // Send recent history for context
-                contextId: contextId, // Pass the session ID to the agent
+                history: messages.slice(-4),
+                contextId: contextId,
             });
 
             const botMessage: Message = { role: 'bot', content: response.answer };
@@ -99,49 +93,49 @@ export function SupportBot() {
   return (
     <>
       <Button
-        className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg z-50 transition-transform duration-300 ease-in-out hover:scale-110"
+        className="fixed bottom-20 lg:bottom-6 right-4 sm:right-6 h-12 w-12 sm:h-14 sm:w-14 rounded-full shadow-lg z-40 transition-transform duration-300 ease-in-out hover:scale-105"
         size="icon"
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Toggle chat"
       >
-        <MessageSquare className={cn("h-7 w-7 transition-all duration-300", isOpen && "rotate-90 scale-0")} />
-        <X className={cn("absolute h-7 w-7 transition-all duration-300", !isOpen && "-rotate-90 scale-0")} />
+        <MessageSquare className={cn("h-6 w-6 transition-all duration-300", isOpen && "rotate-90 scale-0")} />
+        <X className={cn("absolute h-6 w-6 transition-all duration-300", !isOpen && "-rotate-90 scale-0")} />
       </Button>
       
       <div className={cn(
-          "fixed bottom-24 right-6 z-50 transition-all duration-500 ease-in-out",
+          "fixed bottom-36 lg:bottom-24 right-3 left-3 sm:left-auto sm:right-6 z-50 transition-all duration-300 ease-in-out",
           isOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"
       )}>
-        <Card className="w-full max-w-sm h-[60vh] flex flex-col shadow-2xl">
-          <CardHeader className="border-b">
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="text-primary" />
+        <Card className="w-full sm:w-96 max-h-[65dvh] h-[460px] flex flex-col shadow-2xl">
+          <CardHeader className="border-b p-4">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Sparkles className="text-primary h-4 w-4" />
               SCHOOL Support Bot
             </CardTitle>
-             <CardDescription>
+             <CardDescription className="text-xs">
               Your AI-powered guide to the SCHOOL Portal.
             </CardDescription>
           </CardHeader>
           
           <CardContent className="flex-1 p-0 overflow-hidden">
             <ScrollArea className="h-full p-4" viewportRef={scrollViewportRef}>
-                <div className="space-y-6">
+                <div className="space-y-4">
                     {messages.map((message, index) => (
                         <div
                             key={index}
                             className={cn(
-                                "flex items-start gap-3",
+                                "flex items-start gap-2.5",
                                 message.role === 'user' && "justify-end"
                             )}
                         >
                             {message.role === 'bot' && (
-                                <Avatar className="h-8 w-8">
-                                    <AvatarFallback><Bot /></AvatarFallback>
+                                <Avatar className="h-7 w-7 shrink-0">
+                                    <AvatarFallback><Bot className="h-4 w-4" /></AvatarFallback>
                                 </Avatar>
                             )}
                             <div
                                 className={cn(
-                                    "max-w-[75%] rounded-lg p-3 text-sm whitespace-pre-wrap",
+                                    "max-w-[80%] rounded-xl p-3 text-xs sm:text-sm whitespace-pre-wrap",
                                     message.role === 'user'
                                     ? "bg-primary text-primary-foreground"
                                     : "bg-muted"
@@ -150,20 +144,20 @@ export function SupportBot() {
                                 {message.role === 'bot' ? renderMessageContent(message.content) : message.content}
                             </div>
                             {message.role === 'user' && (
-                                <Avatar className="h-8 w-8">
+                                <Avatar className="h-7 w-7 shrink-0">
                                     <AvatarImage src={user?.personalInfo?.profilePicture || ''} />
-                                    <AvatarFallback><User /></AvatarFallback>
+                                    <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
                                 </Avatar>
                             )}
                         </div>
                     ))}
                     {isAiThinking && (
-                         <div className="flex items-start gap-3">
-                             <Avatar className="h-8 w-8">
-                                <AvatarFallback><Bot /></AvatarFallback>
+                         <div className="flex items-start gap-2.5">
+                             <Avatar className="h-7 w-7 shrink-0">
+                                <AvatarFallback><Bot className="h-4 w-4" /></AvatarFallback>
                              </Avatar>
-                             <div className="bg-muted rounded-lg p-3 text-sm">
-                                <Loader2 className="h-5 w-5 animate-spin" />
+                             <div className="bg-muted rounded-xl p-3 text-sm">
+                                <Loader2 className="h-4 w-4 animate-spin" />
                              </div>
                          </div>
                     )}
@@ -171,7 +165,7 @@ export function SupportBot() {
             </ScrollArea>
           </CardContent>
 
-          <CardFooter className="p-4 border-t">
+          <CardFooter className="p-3 border-t">
             <form onSubmit={handleSendMessage} className="flex w-full items-center gap-2">
                 <Input
                     value={input}

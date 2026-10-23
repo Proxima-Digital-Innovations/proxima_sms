@@ -99,7 +99,7 @@ export function ReportCardTemplate({ reportCard, schoolInfo }: ReportCardTemplat
                     <h3 className="text-xl font-bold uppercase tracking-wider text-black">Student Report Card</h3>
                     <p className="font-medium text-gray-800">{reportCard.term} - {reportCard.session} Session</p>
                 </div>
-                <div className="grid grid-cols-3 gap-4 text-sm pt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 print:grid-cols-3 gap-4 text-sm pt-4">
                     <div><strong className="text-gray-600">Student Name:</strong> {reportCard.studentName}</div>
                     <div><strong className="text-gray-600">Student ID:</strong> {reportCard.studentId}</div>
                     <div><strong className="text-gray-600">Class:</strong> {reportCard.class}</div>
@@ -134,7 +134,7 @@ export function ReportCardTemplate({ reportCard, schoolInfo }: ReportCardTemplat
 
                 <Separator className="my-6 bg-gray-200" />
 
-                <div className="grid grid-cols-3 gap-6 text-center">
+                <div className="grid grid-cols-1 sm:grid-cols-3 print:grid-cols-3 gap-6 text-center">
                     <div className="rounded-lg bg-gray-100 p-4">
                         <p className="text-sm text-gray-600">Total Marks</p>
                         <p className="text-2xl font-bold text-black">{reportCard.totalMarks} / {reportCard.subjects.length * 100}</p>

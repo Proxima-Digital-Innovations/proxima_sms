@@ -200,7 +200,7 @@ export default function StudentExamDocketPage() {
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
               Authorized Course Offerings for Examination
             </h3>
-            <table className="w-full text-left text-xs border border-slate-900">
+            <div className="w-full overflow-x-auto custom-scrollbar"><table className="w-full text-left text-xs border border-slate-900">
               <thead className="bg-slate-100 border-b border-slate-900 font-bold uppercase text-[10px]">
                 <tr>
                   <th className="py-2 px-3 border-r border-slate-900">S/N</th>
@@ -223,7 +223,7 @@ export default function StudentExamDocketPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           </div>
 
           {/* Candidate Attestation & Signatures */}

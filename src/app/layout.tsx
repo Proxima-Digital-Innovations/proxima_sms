@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { AppProviders } from '@/components/providers';
 import { Toaster } from '@/components/ui/toaster';
@@ -8,12 +8,33 @@ import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import { Poppins, Cairo } from 'next/font/google';
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  viewportFit: 'cover',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f8fafc' },
+    { media: '(prefers-color-scheme: dark)', color: '#090d16' },
+  ],
+};
+
 export const metadata: Metadata = {
   title: {
     template: "%s | Proxima SMS",
     default: "Proxima SMS Dashboard",
   },
   description: "Global Oversight and School Management System",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Proxima SMS",
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 const poppins = Poppins({ 
@@ -51,7 +72,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${poppins.variable} ${cairo.variable} font-body antialiased`}>
+      <body className={`${poppins.variable} ${cairo.variable} font-body antialiased overflow-x-hidden`}>
         <AppProviders>
           <NavigationProgress />
           {children}

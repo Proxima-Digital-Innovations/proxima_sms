@@ -157,7 +157,7 @@ export default function AdmissionsPage() {
                     {/* Step 1: Student Info */}
                     {step === 1 && (
                         <>
-                            <div className="grid grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <div>
                                     <Label htmlFor="firstName">First Name *</Label>
                                     <Input

@@ -124,7 +124,7 @@ export default function StudentDegreeCertificatePage() {
           </p>
 
           {/* Signatures & Tamper-Evident QR Verification */}
-          <div className="grid grid-cols-3 items-end pt-8 border-t border-amber-900/20 text-xs text-slate-700">
+          <div className="grid grid-cols-1 sm:grid-cols-3 print:grid-cols-3 items-end pt-8 border-t border-amber-900/20 text-xs text-slate-700">
             {/* Chancellor / VC Signature */}
             <div className="space-y-2 text-center">
               <div className="font-serif italic text-base text-slate-900 font-bold border-b border-slate-400 pb-1 mx-4">

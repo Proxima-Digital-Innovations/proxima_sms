@@ -214,7 +214,7 @@ export default function StudentTranscriptPage() {
                   </div>
                 </div>
 
-                <table className="w-full text-left text-xs border border-slate-300">
+                <div className="w-full overflow-x-auto custom-scrollbar"><table className="w-full text-left text-xs border border-slate-300">
                   <thead className="bg-slate-100 border-b border-slate-300 font-bold uppercase text-[10px] text-slate-700">
                     <tr>
                       <th className="py-2 px-3 border-r border-slate-300">Course Code</th>
@@ -241,13 +241,13 @@ export default function StudentTranscriptPage() {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </table></div>
               </div>
             ))}
           </div>
 
           {/* Transcript Authentication Footer */}
-          <div className="border-t-2 border-slate-900 pt-6 grid grid-cols-3 gap-6 text-center text-xs">
+          <div className="border-t-2 border-slate-900 pt-6 grid grid-cols-1 sm:grid-cols-3 print:grid-cols-3 gap-6 text-center text-xs">
             <div>
               <div className="h-12 border-b border-dashed border-slate-400"></div>
               <span className="text-[10px] uppercase font-semibold text-slate-500 mt-1 block">Head of Department</span>

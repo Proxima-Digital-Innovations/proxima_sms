@@ -392,7 +392,7 @@ function ReportCardCanvas({
       </div>
 
       {/* Signatures & Seal */}
-      <div className="relative z-10 grid grid-cols-3 gap-6 pt-10 text-center text-[11px] font-bold uppercase tracking-wider text-slate-600">
+      <div className="relative z-10 grid grid-cols-1 sm:grid-cols-3 print:grid-cols-3 gap-6 pt-10 text-center text-[11px] font-bold uppercase tracking-wider text-slate-600">
         <div className="border-t border-slate-400 pt-2">Form Teacher Signature</div>
         <div className="border-t border-slate-400 pt-2">Principal Signature</div>
         <div className="border-t border-slate-400 pt-2">Official Stamp & Date</div>

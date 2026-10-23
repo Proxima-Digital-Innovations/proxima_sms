@@ -64,7 +64,7 @@ const PrintableMidtermCard = forwardRef<HTMLDivElement, PrintableMidtermCardProp
                 )}
 
                 <div className="relative z-10">
-                    <table className="w-full border-collapse border border-black text-[10px]">
+                    <div className="w-full overflow-x-auto custom-scrollbar"><table className="w-full border-collapse border border-black text-[10px]">
                         {/* Header Image */}
                         <thead>
                             <tr>
@@ -199,7 +199,7 @@ const PrintableMidtermCard = forwardRef<HTMLDivElement, PrintableMidtermCardProp
                                 </td>
                             </tr>
                         </thead>
-                    </table>
+                    </table></div>
                 </div>
             </div>
         );

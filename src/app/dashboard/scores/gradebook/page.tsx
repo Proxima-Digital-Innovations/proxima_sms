@@ -314,7 +314,7 @@ export default function GradebookPage() {
                 <p className="text-sm">Click &quot;Add Assignment&quot; to create gradebook columns.</p>
               </div>
             ) : (
-              <table className="w-full text-sm">
+              <div className="w-full overflow-x-auto custom-scrollbar"><table className="w-full text-sm">
                 <thead>
                   {/* Category header row */}
                   <tr className="border-b bg-slate-100">
@@ -380,7 +380,7 @@ export default function GradebookPage() {
                     );
                   })}
                 </tbody>
-              </table>
+              </table></div>
             )}
           </CardContent>
         </Card>

@@ -1,21 +1,17 @@
 {
-  "name": "InsightConnect Portal",
-  "short_name": "InsightConnect",
-  "description": "A role-based portal for staff and parents of Great Insight International Academy (GIIA).",
-  "start_url": "/",
+  "name": "Proxima SMS — Enterprise School & University ERP",
+  "short_name": "Proxima SMS",
+  "description": "Unified K-12, Secondary, and Tertiary Institution Management System with Online Payments, Hostels, CBT, and LMS.",
+  "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#F0F2F5",
-  "theme_color": "#091929",
+  "orientation": "portrait-primary",
+  "background_color": "#090d16",
+  "theme_color": "#4f46e5",
   "icons": [
     {
-      "src": "/icons/icon-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/icon-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
     }
   ]
 }

@@ -11,14 +11,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Users, Check, Sparkles, ExternalLink, ShieldCheck } from 'lucide-react';
+import { Check, Sparkles } from 'lucide-react';
 import { getDemoPersonas, DemoPersona } from '@/actions/demo-auth-actions';
 import { useRole } from '@/context/role-context';
 import { useRouter } from 'next/navigation';
 
 export function DemoRoleSwitcher() {
   const [personas, setPersonas] = useState<DemoPersona[]>([]);
-  const { role, user } = useRole();
+  const { role } = useRole();
   const router = useRouter();
 
   useEffect(() => {
@@ -43,15 +43,16 @@ export function DemoRoleSwitcher() {
         <Button
           variant="outline"
           size="sm"
-          className="h-8 gap-1.5 border-dashed border-primary/40 bg-primary/5 hover:bg-primary/10 text-xs font-medium"
+          className="h-9 px-2 sm:px-2.5 gap-1.5 border-dashed border-primary/40 bg-primary/5 hover:bg-primary/10 text-xs font-medium shrink-0"
+          title={`Switch Role (${currentPersona.label})`}
         >
-          <Sparkles className="h-3.5 w-3.5 text-primary" />
-          <span className="hidden sm:inline">Role Sandbox:</span>
-          <span className="font-bold text-primary">{currentPersona.label}</span>
+          <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
+          <span className="hidden lg:inline">Role Sandbox:</span>
+          <span className="hidden sm:inline font-bold text-primary max-w-[100px] truncate">{currentPersona.label}</span>
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-80 p-2 shadow-xl">
+      <DropdownMenuContent align="end" className="w-[calc(100vw-2rem)] sm:w-80 max-w-80 p-2 shadow-xl max-h-[75dvh] overflow-y-auto">
         <DropdownMenuLabel className="flex items-center justify-between text-xs pb-1">
           <span className="font-bold">Institutional Personas</span>
           <Badge variant="outline" className="text-[10px] font-mono">
@@ -91,7 +92,7 @@ export function DemoRoleSwitcher() {
                   {p.description}
                 </p>
 
-                <div className="text-[9px] font-mono text-slate-500 mt-0.5">
+                <div className="text-[9px] font-mono text-slate-500 mt-0.5 truncate max-w-full">
                   Account: {p.email}
                 </div>
               </DropdownMenuItem>

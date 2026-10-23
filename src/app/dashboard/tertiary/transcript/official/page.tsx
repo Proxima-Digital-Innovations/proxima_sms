@@ -117,7 +117,7 @@ export default function OfficialTranscriptPage() {
                 <span className="font-mono">Semester GPA: {term.gpa}</span>
               </div>
 
-              <table className="w-full text-left text-xs">
+              <div className="w-full overflow-x-auto custom-scrollbar"><table className="w-full text-left text-xs">
                 <thead className="border-b text-[10px] uppercase text-slate-600">
                   <tr>
                     <th className="py-1">Course Code</th>
@@ -140,7 +140,7 @@ export default function OfficialTranscriptPage() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             </div>
           ))}
         </div>
@@ -166,7 +166,7 @@ export default function OfficialTranscriptPage() {
         </div>
 
         {/* Official Signatures & Verification Seal */}
-        <div className="grid grid-cols-3 items-end pt-12 border-t-2 border-slate-900 mt-8 text-xs text-slate-700">
+        <div className="grid grid-cols-1 sm:grid-cols-3 print:grid-cols-3 items-end pt-12 border-t-2 border-slate-900 mt-8 text-xs text-slate-700">
           <div className="text-center space-y-1">
             <div className="font-serif italic font-bold border-b border-slate-400 pb-1 mx-4">
               Prof. A. S. Garba

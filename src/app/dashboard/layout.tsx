@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 
 import { DashboardHeader } from '@/components/dashboard/header';
 import DashboardSidebar from '@/components/dashboard/sidebar';
+import { MobileBottomNav } from '@/components/dashboard/mobile-bottom-nav';
 import { SidebarProvider, useSidebar } from '@/components/ui/sidebar';
 import { useRole } from '@/context/role-context';
 import { useLanguage } from '@/context/language-context';
@@ -134,7 +135,7 @@ function MainLayout({
             <MaintenanceBanner />
             <DashboardHeader />
           </div>
-          <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 flex flex-col w-full print:p-0 print:m-0 print:block min-w-0 overflow-x-hidden">
+          <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 pb-24 lg:pb-8 flex flex-col w-full print:p-0 print:m-0 print:block min-w-0 overflow-x-hidden">
             {isCheckingAuth ? (
               <AuthLoader />
             ) : disabledModuleName ? (
@@ -145,6 +146,7 @@ function MainLayout({
               <AccessDenied />
             )}
           </main>
+          <MobileBottomNav />
       </div>
     </div>
   );
@@ -171,7 +173,6 @@ export default function DashboardLayout({
       return;
     }
 
-    // Check if the route is blocked because its required module is inactive
     const matchingModule = ROUTE_MODULE_MAP.find(m => pathname === m.prefix || pathname.startsWith(m.prefix + '/'));
     if (matchingModule && activeModules && activeModules.length > 0 && !activeModules.includes(matchingModule.module) && pathname !== '/dashboard/system/modules') {
       setIsAuthorized(false);
@@ -205,7 +206,7 @@ export default function DashboardLayout({
 
   if (isRoleLoading || !role) {
     return (
-      <div className="flex h-screen w-full flex-col items-center justify-center bg-background gap-4">
+      <div className="flex h-[100dvh] w-full flex-col items-center justify-center bg-background gap-4">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
         <div className="text-center space-y-1">
             <h2 className="text-xl font-semibold text-foreground">Loading Portal...</h2>
@@ -218,7 +219,7 @@ export default function DashboardLayout({
   return (
     <LicenseProvider status={licenseStatus} message={licenseMessage}>
       <SidebarProvider>
-      <div className="font-body h-screen flex flex-col print:h-auto print:overflow-visible">
+      <div className="font-body h-[100dvh] flex flex-col print:h-auto print:overflow-visible">
         <style jsx global>{`
           @media print {
             body {

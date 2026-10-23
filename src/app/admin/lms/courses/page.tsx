@@ -206,7 +206,7 @@ export default function LmsCourseBuilder() {
                     )}
                     
                     {/* Inline Quick Actions */}
-                    <div className="grid grid-cols-4 gap-2 p-2 pt-4 border-t border-white/5">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-2 pt-4 border-t border-white/5">
                       <button onClick={() => handleAddContent(mod.id, 'PAGE')} className="flex items-center justify-center gap-2 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase text-neutral-400 transition-colors">
                         <Plus className="w-3 h-3" /> Page
                       </button>

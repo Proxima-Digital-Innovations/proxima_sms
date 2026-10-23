@@ -107,7 +107,7 @@ export default function GenerateTokensPage() {
                     <CardDescription>Tokens will be generated for all active students in the selected class</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                             <Label>Class</Label>
                             <Select value={selectedClass} onValueChange={setSelectedClass}>

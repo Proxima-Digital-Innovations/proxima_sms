@@ -89,7 +89,7 @@ export function PrintableExamResultCard({
         {/* Academic Performance */}
         <div className="mb-6">
             <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 mb-2 border-b-2 border-slate-900 inline-block pb-1">Academic Performance</h3>
-            <table className="w-full text-sm border-collapse border-2 border-slate-900">
+            <div className="w-full overflow-x-auto custom-scrollbar"><table className="w-full text-sm border-collapse border-2 border-slate-900">
             <thead>
                 <tr className="bg-background text-foreground print:bg-slate-200 print:text-slate-900">
                 <th className="border border-border print:border-slate-400 p-2 text-left uppercase tracking-wider text-xs w-2/5">Subject</th>
@@ -117,7 +117,7 @@ export function PrintableExamResultCard({
                 </tr>
                 )}
             </tbody>
-            </table>
+            </table></div>
         </div>
 
         {/* Summary & Behavioural Grid */}

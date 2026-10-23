@@ -385,7 +385,7 @@ export default function PublicAdmissionApplyPage() {
 
         {/* Wizard Step Progress Tracker */}
         {currentStep < 5 && (
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {[
               { num: 1, title: 'Bio & JAMB ID', desc: 'Personal details' },
               { num: 2, title: 'UTME Scores', desc: 'Subject combinations' },

@@ -67,7 +67,7 @@ export default function TahfeezResultsPage() {
                     <CardTitle>Select Filters</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                             <Label>Class</Label>
                             <Select value={selectedClass} onValueChange={setSelectedClass}>
@@ -119,7 +119,7 @@ export default function TahfeezResultsPage() {
                                 }
                             `}</style>
 
-                            <table className="w-full border-collapse border border-black">
+                            <div className="w-full overflow-x-auto"><table className="w-full border-collapse border border-black">
                                 <thead>
                                     <tr>
                                         <th colSpan={8} className="border border-black p-2">
@@ -168,7 +168,7 @@ export default function TahfeezResultsPage() {
                                         </td>
                                     </tr>
                                 </tfoot>
-                            </table>
+                            </table></div>
                         </div>
                     ))}
                 </div>

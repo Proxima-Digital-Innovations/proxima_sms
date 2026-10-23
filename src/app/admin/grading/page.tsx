@@ -289,7 +289,7 @@ export default function GradingDashboard() {
                 </div>
               </div>
 
-              <table className="w-full text-left border-collapse border border-neutral-300">
+              <div className="w-full overflow-x-auto custom-scrollbar"><table className="w-full text-left border-collapse border border-neutral-300">
                 <thead>
                   <tr className="bg-neutral-100 text-xs font-bold text-neutral-600 uppercase tracking-widest">
                     <th className="p-4 border border-neutral-300">Subject</th>
@@ -312,7 +312,7 @@ export default function GradingDashboard() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
 
               <div className="mt-8 flex justify-end">
                 <div className="bg-neutral-100 p-6 rounded-2xl border border-neutral-200 w-64 text-center">

@@ -69,7 +69,7 @@ export default function ClassResultsPage() {
                     <CardTitle>Select Filters</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                             <Label>Class</Label>
                             <Select value={selectedClass} onValueChange={setSelectedClass}>
@@ -128,7 +128,7 @@ export default function ClassResultsPage() {
                             </div>
 
                             {/* Student Info */}
-                            <table className="w-full border-collapse border border-black text-xs mb-4">
+                            <div className="w-full overflow-x-auto"><table className="w-full border-collapse border border-black text-xs mb-4">
                                 <thead>
                                     <tr><th colSpan={14} className="border border-black p-2 text-center bg-gray-100">STUDENT INFORMATION</th></tr>
                                 </thead>
@@ -146,10 +146,10 @@ export default function ClassResultsPage() {
                                         <td colSpan={3} className="border border-black p-1">{selectedSession}</td>
                                     </tr>
                                 </tbody>
-                            </table>
+                            </table></div>
 
                             {/* Results */}
-                            <table className="w-full border-collapse border border-black text-xs mb-4">
+                            <div className="w-full overflow-x-auto"><table className="w-full border-collapse border border-black text-xs mb-4">
                                 <thead>
                                     <tr><th colSpan={14} className="border border-black p-2 text-center bg-gray-100">ACADEMIC REPORT</th></tr>
                                     <tr className="bg-gray-50">
@@ -179,11 +179,11 @@ export default function ClassResultsPage() {
                                         <td className="border border-black p-1 text-center">{data.overall_grade}</td>
                                     </tr>
                                 </tbody>
-                            </table>
+                            </table></div>
 
                             {/* Behavioural */}
                             {data.behavioral_assessment && (
-                                <table className="w-full border-collapse border border-black text-xs mb-4">
+                                <div className="w-full overflow-x-auto"><table className="w-full border-collapse border border-black text-xs mb-4">
                                     <thead>
                                         <tr><th colSpan={8} className="border border-black p-2 text-center bg-gray-100">BEHAVIOURAL ASSESSMENT</th></tr>
                                         <tr className="bg-gray-50">
@@ -219,7 +219,7 @@ export default function ClassResultsPage() {
                                             <td className="border border-black p-1 text-center">{data.behavioral_assessment.physical}</td>
                                         </tr>
                                     </tbody>
-                                </table>
+                                </table></div>
                             )}
 
                             {/* Signature */}

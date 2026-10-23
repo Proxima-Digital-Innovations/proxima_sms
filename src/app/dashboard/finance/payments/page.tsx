@@ -1831,7 +1831,7 @@ STANBIC-0012, 25000, PTA Levy`}
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">Transaction Breakdown</h3>
                 <div className="h-px flex-1 bg-slate-200" />
               </div>
-              <table className="w-full text-xs text-left border border-slate-300 border-collapse">
+              <div className="w-full overflow-x-auto custom-scrollbar"><table className="w-full text-xs text-left border border-slate-300 border-collapse">
                 <thead>
                   <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-300">
                     <th className="p-3">Payment Description</th>
@@ -1861,11 +1861,11 @@ STANBIC-0012, 25000, PTA Levy`}
                     </td>
                   </tr>
                 </tbody>
-              </table>
+              </table></div>
             </div>
 
             {/* Financial Status Summary */}
-            <div className="grid grid-cols-3 gap-3 p-4 rounded-xl border-2 border-slate-900 bg-slate-50 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-3 print:grid-cols-3 gap-3 p-4 rounded-xl border-2 border-slate-900 bg-slate-50 text-xs">
               <div>
                 <span className="font-semibold text-slate-600 uppercase text-[10px] block">Total Invoiced</span>
                 <span className="text-base font-bold font-mono text-slate-900">

@@ -126,7 +126,7 @@ export default async function AssetsPage() {
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead className="w-[300px]">Asset Details</TableHead>
+                <TableHead className="min-w-[200px] sm:w-[300px]">Asset Details</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Assignment</TableHead>
                 <TableHead>Status</TableHead>

@@ -458,7 +458,7 @@ export default function HostelDetailsPage({ params }: { params: Promise<{ id: st
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Room Prefix</Label>
                 <Input placeholder="e.g. A" value={batchPrefix} onChange={e => setBatchPrefix(e.target.value)} />
@@ -473,7 +473,7 @@ export default function HostelDetailsPage({ params }: { params: Promise<{ id: st
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Capacity (Beds)</Label>
                 <Input type="number" min="1" max="12" value={batchCapacity} onChange={e => setBatchCapacity(Number(e.target.value))} required />

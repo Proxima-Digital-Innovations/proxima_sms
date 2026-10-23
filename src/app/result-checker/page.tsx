@@ -222,7 +222,7 @@ export default function ResultCheckerPage() {
                             {resultData.behavioural && (
                                 <div>
                                     <h3 className="font-bold mb-2">Behavioural Assessment</h3>
-                                    <div className="grid grid-cols-4 gap-2 text-sm">
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
                                         <div className="border p-2 rounded">
                                             <p className="text-muted-foreground">Conduct</p>
                                             <p className="font-bold">{resultData.behavioural.conduct}/10</p>

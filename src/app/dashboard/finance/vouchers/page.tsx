@@ -1157,7 +1157,7 @@ export default function VouchersPage() {
 
             {/* Line Items Table */}
             <div>
-              <table className="w-full text-left text-xs border border-gray-300">
+              <div className="w-full overflow-x-auto custom-scrollbar"><table className="w-full text-left text-xs border border-gray-300">
                 <thead className="bg-gray-100 font-bold border-b border-gray-300">
                   <tr>
                     <th className="py-2 px-3">GL Account Code</th>
@@ -1194,7 +1194,7 @@ export default function VouchersPage() {
                     </td>
                   </tr>
                 </tfoot>
-              </table>
+              </table></div>
             </div>
 
             {/* 5-Stage Official Signature Block */}

@@ -507,7 +507,7 @@ export default function IdCardGeneratorPage() {
                 /* PORTRAIT CARD (CR80: 336px x 532px ~ 54mm x 85.6mm)            */
                 /* ============================================================== */
                 <div
-                  className={`w-[340px] h-[538px] rounded-[24px] shadow-2xl p-5 relative overflow-hidden flex flex-col justify-between border border-white/20 bg-gradient-to-b ${theme.bgGradient} ${theme.textColor} transition-all`}
+                  className={`w-[340px] max-w-full h-[538px] rounded-[24px] shadow-2xl p-5 relative overflow-hidden flex flex-col justify-between border border-white/20 bg-gradient-to-b ${theme.bgGradient} ${theme.textColor} transition-all`}
                   style={{
                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.1) inset'
                   }}
@@ -686,7 +686,7 @@ export default function IdCardGeneratorPage() {
                 /* LANDSCAPE CARD (CR80: 538px x 340px ~ 85.6mm x 54mm)           */
                 /* ============================================================== */
                 <div
-                  className={`w-[538px] h-[340px] rounded-[24px] shadow-2xl p-5 relative overflow-hidden flex flex-col justify-between border border-white/20 bg-gradient-to-br ${theme.bgGradient} ${theme.textColor} transition-all`}
+                  className={`w-[538px] max-w-full overflow-x-auto h-[340px] rounded-[24px] shadow-2xl p-5 relative overflow-hidden flex flex-col justify-between border border-white/20 bg-gradient-to-br ${theme.bgGradient} ${theme.textColor} transition-all`}
                   style={{
                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.1) inset'
                   }}
@@ -861,7 +861,7 @@ export default function IdCardGeneratorPage() {
             {filteredCandidates.map((cand, idx) => (
               <div
                 key={cand.id}
-                className={`w-[320px] h-[500px] rounded-2xl shadow-md p-4 relative overflow-hidden flex flex-col justify-between border border-gray-300 bg-gradient-to-b ${theme.bgGradient} text-white`}
+                className={`w-[320px] max-w-full h-[500px] rounded-2xl shadow-md p-4 relative overflow-hidden flex flex-col justify-between border border-gray-300 bg-gradient-to-b ${theme.bgGradient} text-white`}
               >
                 {/* Header */}
                 <div className="text-center border-b border-white/10 pb-2">

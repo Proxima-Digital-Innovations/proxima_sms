@@ -220,7 +220,7 @@ export function ExecutiveCharts({
                 </div>
 
                 {/* Details Breakdown */}
-                <div className="grid grid-cols-3 gap-3 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                   <div className="p-3 bg-muted/40 rounded-xl border border-border/80">
                     <span className="text-[10px] uppercase font-bold text-muted-foreground block">Total Invoiced</span>
                     <span className="text-sm font-black font-mono text-foreground mt-0.5 block">

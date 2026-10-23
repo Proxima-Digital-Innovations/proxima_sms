@@ -596,7 +596,7 @@ function ParentPaymentsContent() {
 
               {/* Multi-Channel Tabs */}
               <Tabs value={checkoutTab} onValueChange={setCheckoutTab} className="w-full">
-                <TabsList className="grid grid-cols-4 h-10 rounded-xl bg-muted p-1">
+                <TabsList className="grid grid-cols-2 sm:grid-cols-4 h-auto sm:h-10 gap-1 rounded-xl bg-muted p-1">
                   <TabsTrigger value="WALLET" className="text-xs rounded-lg gap-1.5">
                     <Wallet className="h-3.5 w-3.5" />
                     Wallet

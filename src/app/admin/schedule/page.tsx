@@ -134,7 +134,7 @@ export default function MasterSchedule() {
 
         {/* The Visual Grid */}
         <div className="bg-neutral-900/40 border border-white/10 rounded-3xl overflow-hidden backdrop-blur-xl">
-          <div className="grid grid-cols-6 border-b border-white/10 bg-black/40">
+          <div className="grid grid-cols-6 min-w-[640px] border-b border-white/10 bg-black/40">
             <div className="p-4 flex items-center justify-center border-r border-white/10">
               <Clock className="w-5 h-5 text-neutral-500" />
             </div>
@@ -151,7 +151,7 @@ export default function MasterSchedule() {
               if (timeIdx === TIME_SLOTS.length - 1) return null; 
               
               return (
-                <div key={timeStr} className="grid grid-cols-6 divide-x divide-white/5">
+                <div key={timeStr} className="grid grid-cols-6 min-w-[640px] divide-x divide-white/5">
                   {/* Time Label */}
                   <div className="p-4 flex flex-col items-center justify-center bg-black/20 text-neutral-400 font-medium">
                     <span>{timeStr}</span>
