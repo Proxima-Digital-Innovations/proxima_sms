@@ -233,6 +233,9 @@ for (const role in navConfig) {
 // Add common pages that don't appear in nav but should be accessible
 const commonPages = [
     '/dashboard/settings',
+    '/dashboard/admissions',
+    '/dashboard/tertiary/admissions',
+    '/dashboard/hr',
     '/dashboard/teacher/attendance',
     '/dashboard/timetable',
     '/dashboard/tertiary/timetable',

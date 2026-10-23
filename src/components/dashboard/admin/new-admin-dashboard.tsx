@@ -271,14 +271,14 @@ export function NewAdminDashboard() {
 
     const quickActions = [
         {
-            href: hasTertiary && !hasSecondary ? '/dashboard/tertiary/admissions' : '/dashboard/students/admissions',
+            href: hasTertiary && !hasSecondary ? '/dashboard/admissions' : '/dashboard/students/admissions',
             title: hasTertiary && !hasSecondary ? 'Post-UTME Admissions' : 'Student Admissions',
             subtitle: hasTertiary && !hasSecondary ? 'Screen JAMB candidates & issue letters' : 'Enroll new students & assign classes',
             icon: PlusCircle,
             iconStyle: 'bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400',
         },
         {
-            href: hasHr ? '/dashboard/hr' : '/dashboard/users',
+            href: '/dashboard/users',
             title: hasHr ? 'HR & Personnel' : 'Staff Directory',
             subtitle: 'Manage faculty profiles, roles & payroll',
             icon: Users,
@@ -377,7 +377,7 @@ export function NewAdminDashboard() {
                             </Button>
                         </Link>
                     )}
-                    <Link href={hasTertiary && !hasSecondary ? '/dashboard/tertiary/admissions' : '/dashboard/students/admissions'}>
+                    <Link href={hasTertiary && !hasSecondary ? '/dashboard/admissions' : '/dashboard/students/admissions'}>
                         <Button size="sm" className="h-9 text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white dark:bg-primary dark:hover:bg-primary/90 gap-1.5 shadow-xs">
                             <PlusCircle className="w-3.5 h-3.5" />
                             {hasTertiary && !hasSecondary ? 'Manage Admissions' : 'New Admission'}
