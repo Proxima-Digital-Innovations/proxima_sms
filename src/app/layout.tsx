@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { AppProviders } from '@/components/providers';
 import { Toaster } from '@/components/ui/toaster';
+import { NavigationProgress } from '@/components/navigation-progress';
 import { Analytics } from "@vercel/analytics/react"
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
@@ -46,6 +47,7 @@ export default async function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${poppins.variable} font-body antialiased`}>
         <AppProviders>
+          <NavigationProgress />
           {children}
           <Toaster />
         </AppProviders>

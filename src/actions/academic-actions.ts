@@ -3,38 +3,82 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { STAFF_FILTER } from '@/lib/dal/staff-repository';
-
+import { getActiveInstitutionalModules } from '@/lib/modules/module-registry';
 import { getFinancialSummary, getRevenueVsExpenseData } from './report-actions';
 
 export async function getAdminDashboardStats() {
     try {
-        const totalStudents = await prisma.student.count({ where: { status: { in: ['ACTIVE', 'Active'] } } });
-        const totalStaff = await prisma.user.count({ where: STAFF_FILTER });
-        const activeClasses = await prisma.class.count();
+        const activeModules = await getActiveInstitutionalModules();
+        const hasSecondary = activeModules.includes('SECONDARY_SCHOOL');
+        const hasTertiary = activeModules.includes('TERTIARY_INSTITUTION');
+        const hasFinance = activeModules.includes('FINANCE');
 
-        const currentTerm = await prisma.term.findFirst({
-            where: { isActive: true },
-            select: { id: true }
-        });
-
-        // Use the centralized financial logic so main dashboard and finance dashboard are perfectly in sync
-        const finSummary = await getFinancialSummary();
-        const revExpData = await getRevenueVsExpenseData();
-        const totalRevenue = finSummary.totalRevenue;
-
-        let pendingPayments = 0;
-        if (currentTerm) {
-            const pending = await prisma.invoice.aggregate({
-                _sum: { balance: true },
-                where: { termId: currentTerm.id, status: { not: 'PAID' } }
-            });
-            pendingPayments = pending._sum.balance || 0;
+        // Student counts based on active module domains
+        let totalStudents = 0;
+        if (hasSecondary && hasTertiary) {
+            const [sec, ter] = await Promise.all([
+                prisma.student.count({ where: { status: { in: ['ACTIVE', 'Active'] } } }),
+                prisma.studentProfile.count()
+            ]);
+            totalStudents = sec + ter;
+        } else if (hasTertiary) {
+            totalStudents = await prisma.studentProfile.count();
         } else {
-            const pending = await prisma.invoice.aggregate({
-                _sum: { balance: true },
-                where: { status: { not: 'PAID' } }
+            totalStudents = await prisma.student.count({ where: { status: { in: ['ACTIVE', 'Active'] } } });
+        }
+
+        const totalStaff = await prisma.user.count({ where: STAFF_FILTER });
+        
+        let activeClasses = 0;
+        let totalPrograms = 0;
+        let totalCourses = 0;
+        let totalBooks = 0;
+        let totalApplicants = 0;
+
+        if (hasSecondary) {
+            activeClasses = await prisma.class.count();
+        } 
+        if (hasTertiary) {
+            totalPrograms = await prisma.academicProgram.count();
+            if (!hasSecondary) {
+                activeClasses = totalPrograms;
+            }
+            totalCourses = await prisma.course.count();
+            totalApplicants = await prisma.admissionApplicant.count();
+        }
+        if (activeModules.includes('E_LIBRARY')) {
+            totalBooks = await prisma.eLibraryBook.count();
+        }
+
+        let totalRevenue = 0;
+        let pendingPayments = 0;
+        let chartRevenueData: any[] = [];
+
+        if (hasFinance) {
+            const currentTerm = await prisma.term.findFirst({
+                where: { isActive: true },
+                select: { id: true }
             });
-            pendingPayments = pending._sum.balance || 0;
+
+            // Use the centralized financial logic so main dashboard and finance dashboard are perfectly in sync
+            const finSummary = await getFinancialSummary();
+            const revExpData = await getRevenueVsExpenseData();
+            totalRevenue = finSummary.totalRevenue;
+
+            if (currentTerm) {
+                const pending = await prisma.invoice.aggregate({
+                    _sum: { balance: true },
+                    where: { termId: currentTerm.id, status: { not: 'PAID' } }
+                });
+                pendingPayments = pending._sum.balance || 0;
+            } else {
+                const pending = await prisma.invoice.aggregate({
+                    _sum: { balance: true },
+                    where: { status: { not: 'PAID' } }
+                });
+                pendingPayments = pending._sum.balance || 0;
+            }
+            chartRevenueData = revExpData.map(d => ({ name: d.name, total: d.Revenue }));
         }
 
         const recentActivities = await prisma.auditLog.findMany({
@@ -49,9 +93,6 @@ export async function getAdminDashboardStats() {
             type: 'system'
         }));
         
-        // Map the standardized revenue chart data to the format expected by the main dashboard
-        const chartRevenueData = revExpData.map(d => ({ name: d.name, total: d.Revenue }));
-
         const attendanceData = [
             { name: 'Mon', present: 0, absent: 0 },
             { name: 'Tue', present: 0, absent: 0 },
@@ -83,9 +124,14 @@ export async function getAdminDashboardStats() {
                 totalRevenue,
                 pendingPayments,
                 activeClasses,
+                totalPrograms,
+                totalCourses,
+                totalBooks,
+                totalApplicants,
                 recentActivities: formattedActivities,
                 revenueData: chartRevenueData,
-                attendanceData
+                attendanceData,
+                activeModules
             } 
         };
     } catch (error: any) {

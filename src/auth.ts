@@ -6,6 +6,7 @@ import argon2 from "argon2";
 import { z } from "zod";
 import { authConfig } from "./auth.config";
 import { validateSystemLicense } from "./lib/license-utils";
+import { getActiveInstitutionalModules } from "./lib/modules/module-registry";
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MINUTES = 15;
@@ -22,21 +23,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!parsedCredentials.success) return null;
 
         const { identifier, password, rememberMe } = parsedCredentials.data;
+        const normalizedId = identifier.trim();
         
         // Find user in DB with Roles and Permissions
+        // Supports: email, staff ID, username, student matric number, or lecturer staff code
         const user = await prisma.user.findFirst({
           where: {
             OR: [
-              { email: identifier.toLowerCase() },
-              { staffId: identifier.toUpperCase() },
-              { username: identifier }
+              { email: normalizedId.toLowerCase() },
+              { staffId: normalizedId.toUpperCase() },
+              { username: normalizedId },
+              { studentProfile: { matricNumber: normalizedId.toUpperCase() } },
+              { staffProfile: { staffCode: normalizedId.toUpperCase() } }
             ]
           },
           include: {
             permissions: true,
             accessRoles: {
               include: { permissions: true }
-            }
+            },
+            studentProfile: true,
+            staffProfile: true,
           }
         });
 
@@ -47,8 +54,33 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
-        // Verify password with Argon2
-        const isValid = await argon2.verify(user.passwordHash, password);
+        // Verify password supporting Argon2, BCrypt, or plain demo
+        let isValid = false;
+        try {
+          if (user.passwordHash.startsWith('$argon2')) {
+            isValid = await argon2.verify(user.passwordHash, password);
+          } else if (
+            user.passwordHash.startsWith('$2a$') ||
+            user.passwordHash.startsWith('$2b$') ||
+            user.passwordHash.startsWith('$2y$')
+          ) {
+            const bcrypt = await import('bcryptjs');
+            isValid = await bcrypt.default.compare(password, user.passwordHash);
+            // Auto-upgrade bcrypt hash to Argon2 on successful login
+            if (isValid) {
+              const newHash = await argon2.hash(password);
+              await prisma.user.update({
+                where: { id: user.id },
+                data: { passwordHash: newHash },
+              }).catch(() => {});
+            }
+          } else if (user.passwordHash === password) {
+            isValid = true;
+          }
+        } catch (e) {
+          console.warn("Password verification error:", e);
+          isValid = false;
+        }
 
         if (!isValid) {
           // Increment failed login attempts
@@ -90,16 +122,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           console.warn("Failed to record successful login metadata due to DB restriction.");
         }
 
-        // Validate License and extract Modules
-        const licenseResult = await validateSystemLicense();
-        let activeModules = licenseResult.status === 'ACTIVE' && licenseResult.payload?.features 
-            ? licenseResult.payload.features 
-            : ['CORE'];
-            
-        // If enterprise, grant everything
-        if (licenseResult.payload?.tier === 'ENTERPRISE') {
-           activeModules = ['CORE', 'FINANCE', 'HR', 'CBT', 'LMS'];
-        }
+        // Fetch active institutional modules
+        const institutionalModules = await getActiveInstitutionalModules();
+        let activeModules = Array.from(new Set(['CORE', ...institutionalModules]));
 
         // Flatten all permissions (direct + role-based) into string array
         const userPerms = new Set<string>();

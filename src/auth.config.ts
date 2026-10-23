@@ -20,7 +20,17 @@ export const authConfig = {
       }
       return true;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
+      // Support session.update({ requiresPasswordChange: false })
+      if (trigger === "update" && session) {
+        if (session.requiresPasswordChange !== undefined) {
+          token.requiresPasswordChange = session.requiresPasswordChange;
+        }
+        if (session.role) {
+          token.role = session.role;
+        }
+      }
+
       if (user) {
         token.role = user.role;
         token.isSuperAdmin = user.isSuperAdmin;

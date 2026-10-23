@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "mysql"
+  url      = env("DATABASE_URL")
 }
 
 // --- SYSTEM SETTINGS ---
@@ -21,12 +21,14 @@ model SystemProfile {
   loginBgUrl      String?
   licenseStatus   String    @default("ACTIVE")
   expiresAt       DateTime?
-  gradingScale    String?
-  aiConfig        String?
-  commConfig      String? // JSON configuration for SMTP and WhatsApp gateways
+  gradingScale    String?   @db.LongText
+  aiConfig        String?   @db.LongText
+  commConfig      String?   @db.LongText // JSON configuration for SMTP and WhatsApp gateways
+  paymentConfig   String?   @db.LongText // JSON configuration for Paystack, Remita RRR, Monnify, and Bank Accounts
   currency        String?   @default("NGN")
   currencySymbol  String?   @default("₦")
   maintenanceMode Boolean   @default(false)
+  enabledModules  String?   @db.LongText
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 }
@@ -128,6 +130,11 @@ model User {
 
   routesAsDriver   TransportRoute[]   @relation("DriverRoutes")
   dispatches       VehicleDispatch[]  @relation("DriverDispatches")
+
+  studentProfile              StudentProfile?
+  staffProfile                StaffProfile?
+  gradeAuditLogs              GradeAuditTrail[]
+  borrowedBooks               ELibraryBorrowRecord[]
   fuelLogs         FuelLog[]          @relation("FuelLogsRecorded")
   interviews       Interview[]        @relation("InterviewsConducted")
   loans            StaffLoan[]        @relation("StaffLoans")
@@ -136,6 +143,14 @@ model User {
   journalEntries   JournalEntry[]     @relation("JournalEntriesRecorded")
   assetAssignments AssetAssignment[]  @relation("AssetsAssigned")
   scoreAuditsModified ScoreAuditLog[] @relation("ScoreAuditsModified")
+  senateSeals         SenateBatchSeal[]
+  vouchersCreated     PaymentVoucher[] @relation("VoucherCreatedBy")
+  vouchersChecked     PaymentVoucher[] @relation("VoucherCheckedBy")
+  vouchersVerified    PaymentVoucher[] @relation("VoucherVerifiedBy")
+  vouchersApproved    PaymentVoucher[] @relation("VoucherApprovedBy")
+  vouchersPosted      PaymentVoucher[] @relation("VoucherPostedBy")
+  vouchersCancelled   PaymentVoucher[] @relation("VoucherCancelledBy")
+  voucherAudits       PaymentVoucherAudit[] @relation("VoucherAuditActor")
 }
 
 model Department {
@@ -147,6 +162,10 @@ model Department {
   subjects  Subject[]
 
   jobPostings JobPosting[]
+  programs    AcademicProgram[]
+  staffProfiles StaffProfile[]
+  facultyId     String?
+  faculty       Faculty?               @relation(fields: [facultyId], references: [id])
 
   @@unique([name])
 }
@@ -160,6 +179,8 @@ model AcademicSession {
   endDate   DateTime
   isActive  Boolean  @default(false)
   terms     Term[]
+  admissionCampaigns AdmissionCampaign[]
+  hostelAllocations  HostelAllocation[]
   createdAt DateTime @default(now())
 
   @@unique([name])
@@ -168,7 +189,7 @@ model AcademicSession {
 model CalendarEvent {
   id          String    @id @default(cuid())
   title       String
-  description String?
+  description String?   @db.Text
   eventType   String
   startDate   DateTime
   endDate     DateTime?
@@ -300,6 +321,7 @@ model Student {
   guardians              Guardian[]
   attendance             Attendance[]
   invoices               Invoice[]
+  hostelAllocations      HostelAllocation[]
   healthRecord           HealthRecord?
   incidents              BehavioralIncident[]
   termGrades             TermGrade[]
@@ -341,14 +363,14 @@ model LessonNote {
   status         String    @default("DRAFT") // DRAFT, SUBMITTED, APPROVED, REJECTED
   submissionDate DateTime  @default(now())
   fileUrl        String?
-  content        String?
+  content        String?   @db.Text
   termId         String?
   term           Term?     @relation(fields: [termId], references: [id])
   weekNumber     Int?
-  objectives     String? // Learning objectives
-  activities     String? // Planned activities
-  resources      String? // Materials needed
-  evaluation     String? // Assessment strategy
+  objectives     String?   @db.Text // Learning objectives
+  activities     String?   @db.Text // Planned activities
+  resources      String?   @db.Text // Materials needed
+  evaluation     String?   @db.Text // Assessment strategy
   reviewerId     String?
   reviewer       User?     @relation("LessonNoteReviewer", fields: [reviewerId], references: [id])
   reviewNote     String?
@@ -546,7 +568,7 @@ model Transaction {
   fund        Fund     @relation(fields: [fundId], references: [id])
   amount      Float
   type        String
-  description String
+  description String   @db.Text
   createdAt   DateTime @default(now())
 }
 
@@ -562,7 +584,7 @@ model Invoice {
   balance     Float
   dueDate     DateTime
   status      String   @default("UNPAID")
-  description String
+  description String   @db.Text
 
   receipts PaymentReceipt[]
 
@@ -604,7 +626,7 @@ model Notification {
 model Announcement {
   id        String   @id @default(cuid())
   title     String
-  content   String
+  content   String   @db.Text
   authorId  String
   author    User     @relation(fields: [authorId], references: [id])
   createdAt DateTime @default(now())
@@ -679,7 +701,7 @@ model BehavioralIncident {
   reporter   User    @relation("ReportedIncidents", fields: [reporterId], references: [id])
 
   title       String
-  description String
+  description String   @db.Text
   severity    String   @default("MINOR")
   date        DateTime @default(now())
   status      String   @default("OPEN")
@@ -864,7 +886,7 @@ model LmsContent {
 model Assignment {
   id          String       @id @default(cuid())
   title       String
-  description String?
+  description String?   @db.Text
   points      Int          @default(100)
   dueDate     DateTime?
   moduleId    String
@@ -899,7 +921,7 @@ model Submission {
 model Quiz {
   id          String         @id @default(cuid())
   title       String
-  description String?
+  description String?   @db.Text
   points      Int            @default(100)
   timeLimit   Int?
   moduleId    String
@@ -1215,7 +1237,7 @@ model StaffMemo {
   reference String @unique
   type      String // "MESSAGE", "LEAVE_REQUEST", "CASH_VOUCHER"
   title     String
-  content   String
+  content   String @db.Text
 
   senderId String
   sender   User   @relation("MemoSender", fields: [senderId], references: [id])
@@ -1473,6 +1495,8 @@ model AccountCode {
 
   category     AccountCategory @relation(fields: [categoryId], references: [id])
   journalLines JournalLine[]
+  sourceVouchers PaymentVoucher[] @relation("VoucherSourceAccount")
+  voucherLines   PaymentVoucherLine[] @relation("VoucherLineAccount")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1487,6 +1511,7 @@ model JournalEntry {
 
   recordedBy User          @relation("JournalEntriesRecorded", fields: [recordedById], references: [id])
   lines      JournalLine[]
+  voucher    PaymentVoucher? @relation("VoucherJournalEntry")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1566,7 +1591,7 @@ model AssetAssignment {
 
 model SystemLicense {
   id                   String    @id @default(cuid())
-  licenseKey           String    // The base64 payload + signature
+  licenseKey           String    @db.Text // The base64 payload + signature
   schoolName           String
   tier                 String    @default("BASIC") // BASIC, PREMIUM, ENTERPRISE
   billingFrequency     String    @default("PER_TERM") // PER_TERM, PER_SESSION
@@ -1581,4 +1606,1012 @@ model SystemLicense {
   lastValidatedAt      DateTime  @default(now())
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
+}
+
+
+// ==============================================================================
+// TERTIARY INSTITUTION MANAGEMENT SYSTEM (TIMS) & EXAMINATION ENGINE
+// ==============================================================================
+
+enum RegistrationStatus {
+  DRAFT
+  SUBMITTED
+  ADVISOR_APPROVED
+  REJECTED
+  LOCKED
+}
+
+enum GradeStatus {
+  DRAFT
+  SUBMITTED
+  HOD_APPROVED
+  DEAN_APPROVED
+  SENATE_RATIFIED
+  PUBLISHED
+}
+
+enum AccreditationStandard {
+  US_4_0
+  UK_HONOURS
+  NIGERIA_NUC_5_0
+}
+
+model StudentProfile {
+  id                   String                       @id @default(uuid())
+  userId               String                       @unique
+  user                 User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matricNumber         String                       @unique
+  programId            String
+  program              AcademicProgram              @relation(fields: [programId], references: [id])
+  currentLevel         Int                          @default(100) // 100, 200, 300, 400, 500
+  registrations        SemesterRegistration[]
+  grades               StudentGrade[]
+  candidateTokens      ExamCandidateToken[]
+  academicStandings    StudentAcademicStanding[]
+  clearance            GraduationClearance?
+  cbtSubmissions       CbtSubmission[]
+  invoices             TertiaryInvoice[]
+  addDropRequests      CourseAddDropRequest[]
+  assignmentSubmissions TertiaryAssignmentSubmission[]
+  hostelAllocations     HostelAllocation[]
+  createdAt            DateTime                     @default(now())
+  updatedAt            DateTime                     @updatedAt
+}
+
+model StaffProfile {
+  id             String                 @id @default(uuid())
+  userId         String                 @unique
+  user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  staffCode      String                 @unique
+  departmentId   String?
+  department     Department?            @relation(fields: [departmentId], references: [id])
+  advisedRegs    SemesterRegistration[] @relation("AdvisorRelation")
+  deanedFaculties Faculty[]              @relation("FacultyDean")
+  reviewedAddDrops CourseAddDropRequest[]
+  assignedCourses       CourseLecturer[]
+  uploadedMaterials     TertiaryLectureMaterial[]
+  assignedAssignments   TertiaryAssignment[]
+  gradedSubmissions     TertiaryAssignmentSubmission[] @relation("SubmissionGrader")
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+}
+
+model AcademicProgram {
+  id                   String                @id @default(uuid())
+  code                 String                @unique
+  name                 String
+  gradingStandard      AccreditationStandard @default(NIGERIA_NUC_5_0)
+  totalCreditsRequired Int                   @default(120)
+  departmentId         String?
+  department           Department?           @relation(fields: [departmentId], references: [id])
+  students             StudentProfile[]
+  courses              Course[]
+  facultyId            String?
+  faculty              Faculty?               @relation(fields: [facultyId], references: [id])
+  feeStructures        TertiaryFeeStructure[]
+  firstChoiceApplicants AdmissionApplicant[] @relation("FirstChoiceProgram")
+  secondChoiceApplicants AdmissionApplicant[] @relation("SecondChoiceProgram")
+  admittedApplicants   AdmissionApplicant[] @relation("AdmittedProgram")
+  cutOffs              DepartmentalCutOff[]
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+}
+
+model Course {
+  id              String               @id @default(uuid())
+  code            String               @unique // e.g. "CSC301"
+  title           String
+  creditUnits     Int                  @default(3)
+  level           Int                  @default(100)
+  semester        Int                  @default(1)
+  programId       String?
+  program         AcademicProgram?     @relation(fields: [programId], references: [id])
+  prerequisites   CoursePrerequisite[] @relation("CourseToPrereq")
+  prerequisiteFor CoursePrerequisite[] @relation("PrereqToCourse")
+  offerings       CourseOffering[]
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+}
+
+model CoursePrerequisite {
+  courseId         String
+  prerequisiteId   String
+  minGradeRequired String  @default("D")
+
+  course           Course  @relation("CourseToPrereq", fields: [courseId], references: [id], onDelete: Cascade)
+  prerequisite     Course  @relation("PrereqToCourse", fields: [prerequisiteId], references: [id], onDelete: Cascade)
+
+  @@id([courseId, prerequisiteId])
+}
+
+model CourseOffering {
+  id                 String                     @id @default(uuid())
+  courseId           String
+  course             Course                     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  academicSession    String                     // e.g. "2025/2026"
+  semester           Int                        // 1 or 2
+  maxCapacity        Int                        @default(100)
+  enrolledCount      Int                        @default(0)
+  isRegistrationOpen Boolean                    @default(true)
+  registeredCourses  StudentRegisteredCourse[]
+  grades             StudentGrade[]
+  candidateTokens    ExamCandidateToken[]
+  cbtExams           CbtExam[]
+  schedules          CourseSchedule[]
+  addDropRequests    CourseAddDropRequest[]
+  lecturers          CourseLecturer[]
+  materials          TertiaryLectureMaterial[]
+  assignments        TertiaryAssignment[]
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+
+  @@unique([courseId, academicSession, semester])
+}
+
+model SemesterRegistration {
+  id                     String                    @id @default(uuid())
+  studentId              String
+  student                StudentProfile            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  academicSession        String
+  semester               Int
+  status                 RegistrationStatus        @default(DRAFT)
+  totalCredits           Int                       @default(0)
+  advisorId              String?
+  advisor                StaffProfile?             @relation("AdvisorRelation", fields: [advisorId], references: [id])
+  rejectionReason        String?                   @db.Text
+  isDeanApprovedOverload Boolean                   @default(false)
+  isBursaryCleared       Boolean                   @default(false)
+  bursaryClearedAt       DateTime?
+  bursaryReference       String?
+  courses                StudentRegisteredCourse[]
+  addDropRequests        CourseAddDropRequest[]
+  createdAt              DateTime                  @default(now())
+  updatedAt              DateTime                  @updatedAt
+
+  @@unique([studentId, academicSession, semester])
+}
+
+model StudentRegisteredCourse {
+  id                String               @id @default(uuid())
+  registrationId    String
+  registration      SemesterRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  offeringId        String
+  offering          CourseOffering       @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+  creditUnits       Int
+  isClearedForExam  Boolean              @default(false)
+  examDocketBarcode String?              @unique
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  @@unique([registrationId, offeringId])
+}
+
+model ExamCandidateToken {
+  id             String         @id @default(uuid())
+  studentId      String
+  student        StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  offeringId     String
+  offering       CourseOffering @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+  anonymousToken String         @unique // e.g. "CIN-83921"
+  createdAt      DateTime       @default(now())
+
+  @@unique([studentId, offeringId])
+}
+
+model StudentGrade {
+  id                    String            @id @default(uuid())
+  studentId             String
+  student               StudentProfile    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  offeringId            String
+  offering              CourseOffering    @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+  caScore               Decimal           @db.Decimal(5, 2) // Max 40.00
+  examScore             Decimal           @db.Decimal(5, 2) // Max 60.00
+  totalScore            Decimal           @db.Decimal(5, 2) // caScore + examScore
+  letterGrade           String            @db.VarChar(5)
+  gradePoint            Decimal           @db.Decimal(3, 2)
+  status                GradeStatus       @default(DRAFT)
+  dataHash              String            @db.VarChar(64)   // Tamper-proof SHA-256
+  isDoubleBlind         Boolean           @default(false)
+  secondGraderExamScore Decimal?          @db.Decimal(5, 2)
+  auditTrail            GradeAuditTrail[]
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  @@unique([studentId, offeringId])
+}
+
+model GradeAuditTrail {
+  id                 String       @id @default(uuid())
+  gradeId            String
+  grade              StudentGrade @relation(fields: [gradeId], references: [id], onDelete: Cascade)
+  previousScore      Decimal      @db.Decimal(5, 2)
+  newScore           Decimal      @db.Decimal(5, 2)
+  reason             String       @db.Text
+  senateApprovalRef  String
+  changedById        String
+  changedBy          User         @relation(fields: [changedById], references: [id])
+  previousRecordHash String?      @db.VarChar(64)
+  newRecordHash      String       @db.VarChar(64)
+  createdAt          DateTime     @default(now())
+}
+
+model StudentAcademicStanding {
+  id                   String         @id @default(uuid())
+  studentId            String
+  student              StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  academicSession      String
+  semester             Int
+  gpa                  Decimal        @db.Decimal(4, 3)
+  cgpa                 Decimal        @db.Decimal(4, 3)
+  totalCreditsEarned   Int            @default(0)
+  standing             String         // "GOOD_STANDING", "PROBATION", "WITHDRAWN"
+  degreeClassification String?        // e.g., "First Class", "Summa Cum Laude"
+  isRatified           Boolean        @default(false)
+  ratifiedAt           DateTime?
+  senateBatchRef       String?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  @@unique([studentId, academicSession, semester])
+}
+
+// ==============================================================================
+// E-LIBRARY MODULE
+// ==============================================================================
+
+model ELibraryBook {
+  id              String                 @id @default(uuid())
+  isbn            String?                @unique
+  title           String
+  author          String
+  category        String                 // e.g. "Computer Science", "Engineering", "Medicine", "General"
+  edition         String?
+  publisher       String?
+  fileUrl         String?                // Digital access link
+  coverUrl        String?
+  description     String?                @db.Text
+  totalCopies     Int                    @default(1)
+  availableCopies Int                    @default(1)
+  isDigital       Boolean                @default(true)
+  borrows         ELibraryBorrowRecord[]
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+}
+
+model ELibraryBorrowRecord {
+  id         String       @id @default(uuid())
+  bookId     String
+  book       ELibraryBook @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  borrowDate DateTime     @default(now())
+  dueDate    DateTime
+  returnDate DateTime?
+  status     String       @default("BORROWED") // BORROWED, RETURNED, OVERDUE
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+}
+
+// ==============================================================================
+// GRADUATION & DEGREE VERIFICATION
+// ==============================================================================
+
+model GraduationClearance {
+  id                      String         @id @default(uuid())
+  studentId               String         @unique
+  student                 StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  academicSession         String         // e.g. "2025/2026"
+  bursaryCleared          Boolean        @default(false)
+  bursaryNote             String?
+  bursaryClearedAt        DateTime?
+  libraryCleared          Boolean        @default(false)
+  libraryNote             String?
+  libraryClearedAt        DateTime?
+  departmentCleared       Boolean        @default(false)
+  departmentNote          String?
+  departmentClearedAt     DateTime?
+  facultyCleared          Boolean        @default(false)
+  facultyNote             String?
+  facultyClearedAt        DateTime?
+  studentAffairsCleared    Boolean        @default(false)
+  studentAffairsNote      String?
+  studentAffairsClearedAt DateTime?
+  overallStatus           String         @default("PENDING") // PENDING, APPROVED, REJECTED
+  certificateIssued       Boolean        @default(false)
+  certificateNumber       String?        @unique
+  certificateQrCode       String?        @db.LongText
+  certificateHash         String?        @db.VarChar(64)
+  issuedAt                DateTime?
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
+}
+
+// ==============================================================================
+// COMPUTER-BASED TESTING (CBT) ENGINE
+// ==============================================================================
+
+model CbtExam {
+  id               String            @id @default(uuid())
+  courseOfferingId String?
+  courseOffering   CourseOffering?   @relation(fields: [courseOfferingId], references: [id], onDelete: Cascade)
+  title            String
+  description      String?           @db.Text
+  durationMinutes  Int               @default(60)
+  totalMarks       Float             @default(40.0) // E.g., Continuous Assessment (CA)
+  targetCategory   String            @default("CA") // "CA" or "EXAM"
+  passPercentage   Float             @default(50.0)
+  isPublished      Boolean           @default(false)
+  allowRetake      Boolean           @default(false)
+  antiCheatLevel   String            @default("STRICT") // NONE, STANDARD, STRICT
+  maxTabSwitches   Int               @default(3)
+  questions        CbtQuestion[]
+  submissions      CbtSubmission[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model CbtQuestion {
+  id            String      @id @default(uuid())
+  examId        String
+  exam          CbtExam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  questionText  String      @db.Text
+  questionType  String      @default("MULTIPLE_CHOICE")
+  optionsJson   String      @db.Text // JSON: [{"id": "A", "text": "..."}]
+  correctOption String      // "A", "B", "C", "D"
+  points        Float       @default(2.0)
+  orderIndex    Int         @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model CbtSubmission {
+  id               String         @id @default(uuid())
+  examId           String
+  exam             CbtExam        @relation(fields: [examId], references: [id], onDelete: Cascade)
+  studentProfileId String
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  startedAt        DateTime       @default(now())
+  submittedAt      DateTime?
+  scoreAchieved    Float          @default(0.0)
+  percentageScore  Float          @default(0.0)
+  answersJson      String         @db.LongText
+  tabSwitchCount   Int            @default(0)
+  isAutoSubmitted  Boolean        @default(false)
+  isPipedToGrades  Boolean        @default(false)
+  status           String         @default("IN_PROGRESS") // IN_PROGRESS, SUBMITTED, DISQUALIFIED
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@unique([examId, studentProfileId])
+}
+
+// ==============================================================================
+// MULTI-CAMPUS & FACULTY MANAGEMENT
+// ==============================================================================
+
+model Campus {
+  id          String         @id @default(uuid())
+  code        String         @unique // e.g. "MAIN", "MED", "CITY"
+  name        String
+  address     String?
+  isMain      Boolean        @default(false)
+  faculties   Faculty[]
+  venues      LectureVenue[]
+  hostels     Hostel[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model Faculty {
+  id          String            @id @default(uuid())
+  code        String            @unique // e.g. "FCI", "ENG", "LAW"
+  name        String
+  campusId    String?
+  campus      Campus?           @relation(fields: [campusId], references: [id])
+  deanId      String?
+  dean        StaffProfile?     @relation("FacultyDean", fields: [deanId], references: [id])
+  departments Department[]
+  programs    AcademicProgram[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model LectureVenue {
+  id          String           @id @default(uuid())
+  campusId    String?
+  campus      Campus?          @relation(fields: [campusId], references: [id])
+  name        String           // e.g. "Auditorium A", "Computing Lab 1"
+  capacity    Int              @default(100)
+  building    String?
+  schedules   CourseSchedule[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+// ==============================================================================
+// TIMETABLE & CLASH DETECTION ENGINE
+// ==============================================================================
+
+model CourseSchedule {
+  id               String         @id @default(uuid())
+  courseOfferingId String
+  courseOffering   CourseOffering @relation(fields: [courseOfferingId], references: [id], onDelete: Cascade)
+  venueId          String?
+  venue            LectureVenue?  @relation(fields: [venueId], references: [id])
+  dayOfWeek        String         // "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"
+  startTime        String         // e.g. "08:00"
+  endTime          String         // e.g. "10:00"
+  scheduleType     String         @default("LECTURE") // LECTURE, LAB, TUTORIAL, EXAM
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}
+
+// ==============================================================================
+// TERTIARY BURSARY & TUITION BILLING
+// ==============================================================================
+
+model TertiaryFeeStructure {
+  id              String          @id @default(uuid())
+  programId       String
+  program         AcademicProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  academicSession String
+  semester        Int
+  tuitionFee      Float           @default(150000.0)
+  acceptanceFee   Float           @default(0.0)
+  labFee          Float           @default(20000.0)
+  ictFee          Float           @default(15000.0)
+  totalAmount     Float           @default(185000.0)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@unique([programId, academicSession, semester])
+}
+
+model TertiaryInvoice {
+  id               String         @id @default(uuid())
+  studentId        String
+  student          StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  academicSession  String
+  semester         Int
+  totalAmount      Float
+  amountPaid       Float          @default(0.0)
+  balanceDue       Float
+  status           String         @default("UNPAID") // UNPAID, PARTIALLY_PAID, PAID
+  paymentReference String?
+  paymentDate      DateTime?
+  paymentMethod    String?        // "PAYSTACK", "FLUTTERWAVE", "BANK_TRANSFER"
+  receiptUrl       String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@unique([studentId, academicSession, semester])
+}
+
+// ==============================================================================
+// COURSE ADD / DROP & LATE REGISTRATION
+// ==============================================================================
+
+model CourseAddDropRequest {
+  id               String               @id @default(uuid())
+  studentId        String
+  student          StudentProfile       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  registrationId   String
+  registration     SemesterRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  offeringId       String
+  offering         CourseOffering       @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+  requestType      String               // "ADD" or "DROP"
+  reason           String               @db.Text
+  status           String               @default("PENDING") // PENDING, APPROVED, REJECTED
+  lateFeeAmount    Float                @default(0.0)
+  isLateFeePaid    Boolean              @default(false)
+  reviewedById     String?
+  reviewedBy       StaffProfile?        @relation(fields: [reviewedById], references: [id])
+  reviewedAt       DateTime?
+  rejectionNote    String?              @db.Text
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+}
+
+// ==============================================================================
+// SENATE MERKLE SEALING & CRYPTOGRAPHIC PROOFS
+// ==============================================================================
+
+model SenateBatchSeal {
+  id              String        @id @default(uuid())
+  academicSession String
+  semester        Int
+  batchReference  String        @unique // e.g. "SEN/SEAL/20252026/S1"
+  merkleRootHash  String        @db.VarChar(64)
+  totalRecords    Int
+  sealedById      String
+  sealedBy        User          @relation(fields: [sealedById], references: [id])
+  sealedAt        DateTime      @default(now())
+  isImmutable     Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+}
+
+// ==============================================================================
+// TERTIARY LECTURER PORTAL & STUDENT ACTIVITY HUB (LMS & DIGITAL CLASSROOM)
+// ==============================================================================
+
+model CourseLecturer {
+  id               String         @id @default(uuid())
+  courseOfferingId String
+  courseOffering   CourseOffering @relation(fields: [courseOfferingId], references: [id], onDelete: Cascade)
+  staffId          String
+  staff            StaffProfile   @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  role             String         @default("PRIMARY_LECTURER") // PRIMARY_LECTURER, CO_LECTURER, TEACHING_ASSISTANT
+  createdAt        DateTime       @default(now())
+
+  @@unique([courseOfferingId, staffId])
+}
+
+model TertiaryLectureMaterial {
+  id               String         @id @default(uuid())
+  courseOfferingId String
+  courseOffering   CourseOffering @relation(fields: [courseOfferingId], references: [id], onDelete: Cascade)
+  uploadedById     String
+  uploadedBy       StaffProfile   @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  title            String         @db.Text
+  description      String?        @db.Text
+  weekNumber       Int?           @default(1)
+  materialType     String         @default("DOCUMENT") // DOCUMENT, SLIDES, AUDIO_RECORDING, VIDEO_LINK
+  fileUrl          String         @db.Text
+  fileName         String         @db.Text
+  fileSize         Int?
+  mimeType         String?
+  durationSeconds  Int?
+  isPublished      Boolean        @default(true)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}
+
+model TertiaryAssignment {
+  id               String                         @id @default(uuid())
+  courseOfferingId String
+  courseOffering   CourseOffering                 @relation(fields: [courseOfferingId], references: [id], onDelete: Cascade)
+  lecturerId       String
+  lecturer         StaffProfile                   @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
+  title            String                         @db.Text
+  description      String                         @db.Text
+  maxScore         Float                          @default(20.0)
+  dueDate          DateTime
+  attachmentUrl    String?                        @db.Text
+  attachmentName   String?                        @db.Text
+  status           String                         @default("PUBLISHED") // DRAFT, PUBLISHED, CLOSED
+  submissions      TertiaryAssignmentSubmission[]
+  createdAt        DateTime                       @default(now())
+  updatedAt        DateTime                       @updatedAt
+}
+
+model TertiaryAssignmentSubmission {
+  id               String             @id @default(uuid())
+  assignmentId     String
+  assignment       TertiaryAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  studentId        String
+  student          StudentProfile     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  submissionText   String?            @db.Text
+  fileUrl          String?            @db.Text
+  fileName         String?            @db.Text
+  fileSize         Int?
+  status           String             @default("SUBMITTED") // SUBMITTED, GRADED, RESUBMITTED, LATE
+  score            Float?
+  feedback         String?            @db.Text
+  gradedById       String?
+  gradedBy         StaffProfile?      @relation("SubmissionGrader", fields: [gradedById], references: [id])
+  gradedAt         DateTime?
+  submittedAt      DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@unique([assignmentId, studentId])
+}
+
+// ==============================================================================
+// ENTERPRISE PAYMENT VOUCHER & DISBURSEMENT HUB (APPROVAL LIFECYCLE)
+// ==============================================================================
+
+model PaymentVoucher {
+  id                 String                @id @default(uuid())
+  voucherNumber      String                @unique // e.g. PV2026102200001
+  voucherClass       String                @default("PAYMENT") // PAYMENT, RECEIPT, JOURNAL
+  voucherDate        DateTime              @default(now())
+  branchOrCampus     String                @default("Main Campus")
+  paymentMethod      String                @default("BANK_TRANSFER") // BANK_TRANSFER, CASH, CHEQUE, ELECTRONIC
+  payeeCategory      String                @default("SUPPLIER") // SUPPLIER, STAFF, STUDENT, CONTRACTOR, OTHER
+  payeeName          String                @db.Text
+  payeeAddress       String?               @db.Text
+  payeePhone         String?
+  sourceAccountId    String
+  sourceAccount      AccountCode           @relation("VoucherSourceAccount", fields: [sourceAccountId], references: [id])
+  bankTransferRef    String?
+  chequeNumber       String?
+  narration          String                @db.Text
+  grossAmount        Float                 @default(0.0)
+  whtRate            Float                 @default(0.0) // 0%, 5%, 10%
+  whtAmount          Float                 @default(0.0)
+  netAmount          Float                 @default(0.0)
+  status             String                @default("DRAFT") // DRAFT, CHECKED, VERIFIED, APPROVED, POSTED, CANCELLED
+  currentStage       String                @default("CREATION") // CREATION, CHECKING, VERIFICATION, APPROVAL, POSTED, CANCELLED
+
+  // Lifecycle Actors & Timestamps
+  createdById        String
+  createdBy          User                  @relation("VoucherCreatedBy", fields: [createdById], references: [id])
+  createdAt          DateTime              @default(now())
+
+  checkedById        String?
+  checkedBy          User?                 @relation("VoucherCheckedBy", fields: [checkedById], references: [id])
+  checkedAt          DateTime?
+
+  verifiedById       String?
+  verifiedBy         User?                 @relation("VoucherVerifiedBy", fields: [verifiedById], references: [id])
+  verifiedAt         DateTime?
+
+  approvedById       String?
+  approvedBy         User?                 @relation("VoucherApprovedBy", fields: [approvedById], references: [id])
+  approvedAt         DateTime?
+
+  postedById         String?
+  postedBy           User?                 @relation("VoucherPostedBy", fields: [postedById], references: [id])
+  postedAt           DateTime?
+
+  journalEntryId     String?               @unique
+  journalEntry       JournalEntry?         @relation("VoucherJournalEntry", fields: [journalEntryId], references: [id])
+
+  cancelledById      String?
+  cancelledBy        User?                 @relation("VoucherCancelledBy", fields: [cancelledById], references: [id])
+  cancelledAt        DateTime?
+  cancellationReason String?               @db.Text
+
+  updatedAt          DateTime              @default(now()) @updatedAt
+
+  lines              PaymentVoucherLine[]
+  auditTrail         PaymentVoucherAudit[]
+}
+
+model PaymentVoucherLine {
+  id          String         @id @default(uuid())
+  voucherId   String
+  voucher     PaymentVoucher @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  accountId   String
+  account     AccountCode    @relation("VoucherLineAccount", fields: [accountId], references: [id])
+  description String?        @db.Text
+  amount      Float          @default(0.0)
+  createdAt   DateTime       @default(now())
+}
+
+model PaymentVoucherAudit {
+  id          String         @id @default(uuid())
+  voucherId   String
+  voucher     PaymentVoucher @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  actorId     String
+  actor       User           @relation("VoucherAuditActor", fields: [actorId], references: [id])
+  fromStatus  String
+  toStatus    String
+  action      String         // CREATED, EDITED, CHECKED, RETURNED_TO_CREATOR, VERIFIED, RETURNED_TO_CHECKER, APPROVED, POSTED, CANCELLED
+  remarks     String?        @db.Text
+  createdAt   DateTime       @default(now())
+}
+
+// ============================================================================
+// NIGERIAN TERTIARY ADMISSIONS, JAMB CAPS & POST-UTME MODELS
+// ============================================================================
+
+enum ApplicationMode {
+  UTME
+  DIRECT_ENTRY
+  TRANSFER
+}
+
+enum AdmissionStatus {
+  APPLIED
+  SCREENED
+  RECOMMENDED
+  PROVISIONALLY_ADMITTED
+  OFFER_ACCEPTED
+  OFFER_DECLINED
+  MATRICULATED
+  REJECTED
+}
+
+enum ScreeningMethod {
+  CBT_EXAM
+  CREDENTIAL_AGGREGATE
+}
+
+enum OLevelExamBody {
+  WAEC
+  NECO
+  NABTEB
+  CAMBRIDGE
+}
+
+enum AdmissionQuotaCategory {
+  MERIT
+  CATCHMENT
+  ELDS
+  DISCRETIONARY
+}
+
+model AdmissionCampaign {
+  id                 String              @id @default(uuid())
+  academicSessionId  String
+  academicSession    AcademicSession     @relation(fields: [academicSessionId], references: [id])
+  title              String              // e.g. "2025/2026 Undergraduate Admissions"
+  startDate          DateTime
+  endDate            DateTime
+  applicationFee     Float               @default(2000.0) // Post-UTME statutory fee (N2,000 standard)
+  acceptanceFee      Float               @default(50000.0)
+  screeningMethod    ScreeningMethod     @default(CREDENTIAL_AGGREGATE)
+  isActive           Boolean             @default(true)
+  batches            AdmissionBatch[]
+  applicants         AdmissionApplicant[]
+  cutOffs            DepartmentalCutOff[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+}
+
+model DepartmentalCutOff {
+  id                 String              @id @default(uuid())
+  campaignId         String
+  campaign           AdmissionCampaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  programId          String
+  program            AcademicProgram     @relation(fields: [programId], references: [id])
+  minJambScore       Int                 @default(160)
+  minCompositeScore  Float               @default(50.0) // e.g. 50.0%
+  meritQuota         Int                 @default(50)
+  catchmentQuota     Int                 @default(35)
+  eldsQuota          Int                 @default(15)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@unique([campaignId, programId])
+}
+
+model AdmissionApplicant {
+  id                 String              @id @default(uuid())
+  campaignId         String
+  campaign           AdmissionCampaign   @relation(fields: [campaignId], references: [id])
+  applicationNumber  String              @unique // e.g. "PROX/ADM/2025/00142"
+  jambRegNumber      String              @unique // e.g. "202410493821AB"
+  mode               ApplicationMode     @default(UTME)
+  
+  // Biodata
+  firstName          String
+  lastName           String
+  otherNames         String?
+  email              String
+  phone              String
+  gender             String
+  dateOfBirth        DateTime
+  stateOfOrigin      String
+  lga                String
+  passportPhotoUrl   String?
+  
+  // Direct Entry Details (If mode is DIRECT_ENTRY)
+  deInstitution      String?
+  deQualification    String?             // ND, HND, IJMB, JUPEB, NCE
+  deGradeOrCgpa      String?             // Distinction, Upper Credit, 12 Points
+
+  // Program Choices
+  firstChoiceId      String
+  firstChoice        AcademicProgram     @relation("FirstChoiceProgram", fields: [firstChoiceId], references: [id])
+  secondChoiceId     String?
+  secondChoice       AcademicProgram?    @relation("SecondChoiceProgram", fields: [secondChoiceId], references: [id])
+  
+  // Scores & Screening
+  jambScore          Int                 // Out of 400
+  jambSubjects       Json                // [{"subject": "Use of English", "score": 72}, ...]
+  postUtmeScore      Float?              // CBT score out of 100 or screening grade
+  oLevelAggregate    Float?              // Calculated points from 5 core credits
+  compositeScore     Float?              // Weighted aggregate: e.g. (JAMB/8) + (PUTME/2) + OLevel
+  
+  // Admission & Quota Allocation
+  quotaCategory      AdmissionQuotaCategory?
+  status             AdmissionStatus     @default(APPLIED)
+  admittedProgramId  String?
+  admittedProgram    AcademicProgram?    @relation("AdmittedProgram", fields: [admittedProgramId], references: [id])
+  batchId            String?
+  batch              AdmissionBatch?     @relation(fields: [batchId], references: [id])
+  
+  // JAMB CAPS Sync
+  jambCapsStatus     String?             @default("PENDING_RECOMMENDATION") // PENDING_RECOMMENDATION, RECOMMENDED_TO_JAMB, APPROVED_BY_JAMB, ACCEPTED_BY_CANDIDATE
+  jambAdmissionLetterUrl String?
+  
+  // Financial Records
+  applicationFeePaid Boolean             @default(false)
+  acceptanceFeePaid  Boolean             @default(false)
+  
+  // Relations
+  oLevelResults      ApplicantOLevel[]
+  screeningSchedule  ScreeningSchedule?
+  offerLetter        AdmissionOffer?
+  
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+}
+
+model ApplicantOLevel {
+  id                 String              @id @default(uuid())
+  applicantId        String
+  applicant          AdmissionApplicant  @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  examBody           OLevelExamBody
+  examYear           Int
+  examCenterNumber   String
+  candidateNumber    String
+  scratchCardPin     String?             // For automated WAEC/NECO API verification
+  scratchCardSerial  String?
+  isVerified         Boolean             @default(false)
+  grades             Json                // [{"subject": "English Language", "grade": "B2", "points": 7}, ...]
+  resultSlipUrl      String?
+  sittingNumber      Int                 @default(1) // 1 or 2
+  createdAt          DateTime            @default(now())
+}
+
+model ScreeningSchedule {
+  id                 String              @id @default(uuid())
+  applicantId        String              @unique
+  applicant          AdmissionApplicant  @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  venue              String
+  examDate           DateTime
+  batchTime          String              // e.g. "08:30 AM"
+  seatNumber         String
+  attendanceStatus   Boolean             @default(false)
+  createdAt          DateTime            @default(now())
+}
+
+model AdmissionBatch {
+  id                 String              @id @default(uuid())
+  campaignId         String
+  campaign           AdmissionCampaign   @relation(fields: [campaignId], references: [id])
+  batchName          String              // e.g. "First Batch Merit", "Supplementary Batch", "Direct Entry Batch"
+  batchNumber        Int                 @default(1)
+  isPublished        Boolean             @default(false)
+  publishedAt        DateTime?
+  applicants         AdmissionApplicant[]
+  offers             AdmissionOffer[]
+  createdAt          DateTime            @default(now())
+}
+
+model AdmissionOffer {
+  id                 String              @id @default(uuid())
+  applicantId        String              @unique
+  applicant          AdmissionApplicant  @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  batchId            String
+  batch              AdmissionBatch      @relation(fields: [batchId], references: [id])
+  provisionalLetterCode String           @unique // Cryptographic Verification Token
+  acceptanceDeadline DateTime
+  isAccepted         Boolean             @default(false)
+  acceptedAt         DateTime?
+  matricNumberAssigned String?           @unique
+  studentProfileId   String?             @unique
+  createdAt          DateTime            @default(now())
+}
+
+// ==========================================
+// HOSTEL & BEDSPACE ALLOCATION ENGINE
+// ==========================================
+
+model Hostel {
+  id                 String             @id @default(uuid())
+  name               String             // e.g. "Prof. Kenneth Dike Hall", "Queen Moremi Hall"
+  code               String             @unique // e.g. "HL-DIKE", "HL-MOREMI"
+  campusId           String?
+  campus             Campus?            @relation(fields: [campusId], references: [id], onDelete: SetNull)
+  gender             String             @default("MIXED") // "MALE" | "FEMALE" | "MIXED"
+  category           String             @default("UNDERGRADUATE") // "UNDERGRADUATE" | "POSTGRADUATE" | "BASIC_BOARDING"
+  description        String?            @db.Text
+  wardenName         String?
+  wardenPhone        String?
+  wardenEmail        String?
+  status             String             @default("ACTIVE") // "ACTIVE" | "MAINTENANCE" | "DECOMMISSIONED"
+  blocks             HostelBlock[]
+  rooms              HostelRoom[]
+  allocations        HostelAllocation[]
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+model HostelBlock {
+  id                 String             @id @default(uuid())
+  hostelId           String
+  hostel             Hostel             @relation(fields: [hostelId], references: [id], onDelete: Cascade)
+  name               String             // e.g. "Block A", "Wing 1"
+  floors             Int                @default(1)
+  rooms              HostelRoom[]
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+model HostelRoom {
+  id                 String             @id @default(uuid())
+  hostelId           String
+  hostel             Hostel             @relation(fields: [hostelId], references: [id], onDelete: Cascade)
+  blockId            String?
+  block              HostelBlock?       @relation(fields: [blockId], references: [id], onDelete: SetNull)
+  roomNumber         String             // e.g. "A101", "B204"
+  floor              Int                @default(0) // 0 = Ground Floor, 1 = First Floor
+  capacity           Int                @default(4)
+  feePerSession      Float              @default(0)
+  type               String             @default("STANDARD") // "STANDARD", "EXECUTIVE", "ENSUITE", "SPECIAL_NEEDS"
+  status             String             @default("AVAILABLE") // "AVAILABLE", "FULL", "MAINTENANCE"
+  bedSpaces          HostelBedSpace[]
+  allocations        HostelAllocation[]
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@unique([hostelId, roomNumber])
+}
+
+model HostelBedSpace {
+  id                 String             @id @default(uuid())
+  roomId             String
+  room               HostelRoom         @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  bedNumber          String             // e.g. "Bed 1 (Lower Bunk)", "Bed 2 (Upper Bunk)"
+  isOccupied         Boolean            @default(false)
+  status             String             @default("AVAILABLE") // "AVAILABLE", "RESERVED", "OCCUPIED", "MAINTENANCE"
+  allocations        HostelAllocation[]
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@unique([roomId, bedNumber])
+}
+
+model HostelAllocation {
+  id                 String             @id @default(uuid())
+  allocationRef      String             @unique // e.g. "HA-2026-98124"
+  academicSessionId  String?
+  academicSession    AcademicSession?   @relation(fields: [academicSessionId], references: [id], onDelete: SetNull)
+  hostelId           String
+  hostel             Hostel             @relation(fields: [hostelId], references: [id])
+  roomId             String
+  room               HostelRoom         @relation(fields: [roomId], references: [id])
+  bedSpaceId         String
+  bedSpace           HostelBedSpace     @relation(fields: [bedSpaceId], references: [id])
+  studentProfileId   String?
+  studentProfile     StudentProfile?    @relation(fields: [studentProfileId], references: [id], onDelete: SetNull)
+  studentId          String?
+  student            Student?           @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  status             String             @default("ALLOCATED") // "ALLOCATED", "CHECKED_IN", "CHECKED_OUT", "CANCELLED", "REVOKED"
+  allocatedAt        DateTime           @default(now())
+  expiresAt          DateTime?
+  checkedInAt        DateTime?
+  checkedInBy        String?
+  checkedOutAt       DateTime?
+  checkedOutBy       String?
+  keyTag             String?
+  inventoryNotes     String?            @db.Text
+  clearanceNotes     String?            @db.Text
+  qrToken            String?            @unique
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+// ==========================================
+// ONLINE STUDENT PAYMENTS & GATEWAY AUDIT
+// ==========================================
+
+model OnlinePaymentLog {
+  id               String    @id @default(uuid())
+  reference        String    @unique // e.g. "PRX-PAY-2026-98124"
+  rrrCode          String?   // Remita Retrieval Reference (12 digits)
+  gateway          String    // "PAYSTACK" | "REMITA" | "MONNIFY" | "FLUTTERWAVE" | "BANK_TRANSFER"
+  amount           Float
+  currency         String    @default("NGN")
+  status           String    @default("PENDING") // "PENDING", "SUCCESS", "FAILED", "ABANDONED"
+  channel          String?   // "card", "bank_transfer", "ussd", "rrr_bank_branch", "virtual_account"
+  invoiceType      String    @default("TERTIARY") // "TERTIARY" | "SECONDARY"
+  invoiceId        String
+  studentId        String?
+  payerEmail       String?
+  payerName        String?
+  payerPhone       String?
+  gatewayPayload   String?   @db.LongText
+  paidAt           DateTime?
+  bursaryCleared   Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([reference])
+  @@index([rrrCode])
+  @@index([invoiceId])
 }

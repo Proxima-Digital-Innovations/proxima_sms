@@ -49,7 +49,7 @@ export default async function StudentsPage(props: {
     };
 
     // Fetch students using Prisma with relational links
-    const [students, totalFiltered] = await Promise.all([
+    const [students, totalFiltered, totalActive, maleActive, femaleActive] = await Promise.all([
         prisma.student.findMany({
             where,
             include: {
@@ -63,14 +63,17 @@ export default async function StudentsPage(props: {
             skip,
         }),
         prisma.student.count({ where }),
+        prisma.student.count({ where: { status: 'Active' } }),
+        prisma.student.count({ where: { gender: 'Male', status: 'Active' } }),
+        prisma.student.count({ where: { gender: 'Female', status: 'Active' } }),
     ]);
 
     const totalPages = Math.ceil(totalFiltered / pageSize);
 
     const stats = {
-        total: await prisma.student.count({ where: { status: 'Active' } }),
-        male: await prisma.student.count({ where: { gender: 'Male', status: 'Active' } }),
-        female: await prisma.student.count({ where: { gender: 'Female', status: 'Active' } }),
+        total: totalActive,
+        male: maleActive,
+        female: femaleActive,
     };
 
     return (

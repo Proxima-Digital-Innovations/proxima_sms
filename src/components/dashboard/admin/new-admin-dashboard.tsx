@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, GraduationCap, Wallet, BookOpen, TrendingUp, TrendingDown, Activity, ArrowUpRight, BarChart3, Clock, PlusCircle, Settings, FileText } from 'lucide-react';
+import { Users, GraduationCap, Wallet, BookOpen, TrendingUp, TrendingDown, Activity, ArrowUpRight, BarChart3, Clock, PlusCircle, Settings, FileText, School, Library, Award } from 'lucide-react';
 import Link from 'next/link';
 import { getAdminDashboardStats } from '@/actions/academic-actions';
 import { motion } from 'framer-motion';
@@ -18,6 +18,10 @@ type DashboardStats = {
     totalRevenue: number;
     pendingPayments: number;
     activeClasses: number;
+    totalPrograms?: number;
+    totalCourses?: number;
+    totalBooks?: number;
+    totalApplicants?: number;
     recentActivities: Array<{ title: string; time: string; type: string }>;
     revenueData: Array<{ name: string; total: number }>;
     attendanceData: Array<{ name: string; present: number; absent: number }>;
@@ -25,9 +29,15 @@ type DashboardStats = {
 
 export function NewAdminDashboard() {
     const { data: session } = useSession();
-    const { role: contextRole } = useRole();
+    const { role: contextRole, activeModules } = useRole();
 
     const role = String((session?.user as any)?.role || contextRole || 'ADMIN').toUpperCase();
+    const hasTertiary = activeModules?.includes('TERTIARY_INSTITUTION');
+    const hasSecondary = activeModules?.includes('SECONDARY_SCHOOL');
+    const hasFinance = activeModules?.includes('FINANCE');
+    const hasHr = activeModules?.includes('HR');
+    const hasBas = activeModules?.includes('BAS_BIOMETRICS');
+    const hasElibrary = activeModules?.includes('E_LIBRARY');
 
     const roleLabels: Record<string, string> = {
         SUPER_ADMIN: 'Super Administrator',
@@ -84,6 +94,10 @@ export function NewAdminDashboard() {
                     totalRevenue: (result.data as any).totalRevenue || 0,
                     pendingPayments: (result.data as any).pendingPayments || 0,
                     activeClasses: (result.data as any).activeClasses || 0,
+                    totalPrograms: (result.data as any).totalPrograms || 0,
+                    totalCourses: (result.data as any).totalCourses || 0,
+                    totalBooks: (result.data as any).totalBooks || 0,
+                    totalApplicants: (result.data as any).totalApplicants || 0,
                     recentActivities: (result.data as any).recentActivities || [
                         { title: 'System initialized successfully', time: 'Just now', type: 'system' },
                     ],
@@ -100,7 +114,7 @@ export function NewAdminDashboard() {
 
     const statCards = [
         {
-            title: 'Total Students',
+            title: hasTertiary && !hasSecondary ? 'Enrolled Undergrads' : 'Total Students',
             value: stats.totalStudents,
             icon: Users,
             trend: '+12%',
@@ -109,7 +123,7 @@ export function NewAdminDashboard() {
             iconColor: 'text-blue-600'
         },
         {
-            title: 'Total Staff',
+            title: hasTertiary ? 'Faculty & Staff' : 'Total Staff',
             value: stats.totalStaff,
             icon: GraduationCap,
             trend: '+3%',
@@ -117,24 +131,66 @@ export function NewAdminDashboard() {
             gradient: 'from-indigo-500/20 to-indigo-600/5',
             iconColor: 'text-indigo-600'
         },
-        {
-            title: 'YTD Revenue',
-            value: `₦${stats.totalRevenue.toLocaleString()}`,
-            icon: Wallet,
-            trend: '+8%',
-            trendUp: true,
-            gradient: 'from-emerald-500/20 to-emerald-600/5',
-            iconColor: 'text-emerald-600'
-        },
-        {
-            title: 'Pending Invoices',
-            value: stats.pendingPayments,
-            icon: Activity,
-            trend: '-5%',
-            trendUp: false,
-            gradient: 'from-rose-500/20 to-rose-600/5',
-            iconColor: 'text-rose-600'
-        }
+        ...(hasFinance ? [
+            {
+                title: 'YTD Revenue',
+                value: `₦${stats.totalRevenue.toLocaleString()}`,
+                icon: Wallet,
+                trend: '+8%',
+                trendUp: true,
+                gradient: 'from-emerald-500/20 to-emerald-600/5',
+                iconColor: 'text-emerald-600'
+            },
+            {
+                title: 'Pending Invoices',
+                value: stats.pendingPayments,
+                icon: Activity,
+                trend: '-5%',
+                trendUp: false,
+                gradient: 'from-rose-500/20 to-rose-600/5',
+                iconColor: 'text-rose-600'
+            }
+        ] : [
+            ...(hasTertiary ? [
+                {
+                    title: 'Degree Programs',
+                    value: stats.totalPrograms || stats.activeClasses,
+                    icon: School,
+                    trend: 'Accredited',
+                    trendUp: true,
+                    gradient: 'from-emerald-500/20 to-emerald-600/5',
+                    iconColor: 'text-emerald-600'
+                },
+                {
+                    title: hasElibrary ? 'Digital Library' : 'Post-UTME Applicants',
+                    value: hasElibrary ? (stats.totalBooks || 0) : (stats.totalApplicants || 0),
+                    icon: hasElibrary ? Library : Award,
+                    trend: hasElibrary ? 'Catalog' : 'Screening',
+                    trendUp: true,
+                    gradient: 'from-violet-500/20 to-violet-600/5',
+                    iconColor: 'text-violet-600'
+                }
+            ] : [
+                {
+                    title: 'Active Classes',
+                    value: stats.activeClasses,
+                    icon: School,
+                    trend: 'In Session',
+                    trendUp: true,
+                    gradient: 'from-emerald-500/20 to-emerald-600/5',
+                    iconColor: 'text-emerald-600'
+                },
+                {
+                    title: 'Academic Health',
+                    value: '98%',
+                    icon: Activity,
+                    trend: 'Optimal',
+                    trendUp: true,
+                    gradient: 'from-violet-500/20 to-violet-600/5',
+                    iconColor: 'text-violet-600'
+                }
+            ])
+        ])
     ];
 
     if (isLoading) {
@@ -214,81 +270,103 @@ export function NewAdminDashboard() {
                 ))}
             </div>
 
-            {/* Quick Actions - 2x2 grid on mobile */}
+            {/* Quick Actions - Responsive grid adapted to active institutional domains */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
-                <Link href="/dashboard/students/admissions">
+                <Link href={hasTertiary && !hasSecondary ? "/dashboard/tertiary/admissions" : "/dashboard/students/admissions"}>
                     <Button variant="outline" className="w-full h-14 sm:h-16 flex flex-col items-center justify-center gap-1 border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors rounded-xl">
                         <PlusCircle className="h-4 w-4 sm:h-5 sm:w-5" />
-                        <span className="font-semibold text-[11px] sm:text-xs">Admit Student</span>
+                        <span className="font-semibold text-[11px] sm:text-xs">
+                            {hasTertiary && !hasSecondary ? "Post-UTME Admissions" : "Admit Student"}
+                        </span>
                     </Button>
                 </Link>
-                <Link href="/dashboard/users">
+                <Link href={hasHr ? "/dashboard/hr" : "/dashboard/users"}>
                     <Button variant="outline" className="w-full h-14 sm:h-16 flex flex-col items-center justify-center gap-1 border-indigo-500/20 hover:bg-indigo-500/5 hover:text-indigo-600 transition-colors rounded-xl">
                         <Users className="h-4 w-4 sm:h-5 sm:w-5" />
-                        <span className="font-semibold text-[11px] sm:text-xs">Manage Staff</span>
+                        <span className="font-semibold text-[11px] sm:text-xs">
+                            {hasHr ? "HR & Personnel" : "Staff Directory"}
+                        </span>
                     </Button>
                 </Link>
-                <Link href="/dashboard/finance/invoices">
-                    <Button variant="outline" className="w-full h-14 sm:h-16 flex flex-col items-center justify-center gap-1 border-emerald-500/20 hover:bg-emerald-500/5 hover:text-emerald-600 transition-colors rounded-xl">
-                        <Wallet className="h-4 w-4 sm:h-5 sm:w-5" />
-                        <span className="font-semibold text-[11px] sm:text-xs">Collect Fees</span>
-                    </Button>
-                </Link>
-                <Link href="/dashboard/system">
+                {hasFinance ? (
+                    <Link href="/dashboard/finance/invoices">
+                        <Button variant="outline" className="w-full h-14 sm:h-16 flex flex-col items-center justify-center gap-1 border-emerald-500/20 hover:bg-emerald-500/5 hover:text-emerald-600 transition-colors rounded-xl">
+                            <Wallet className="h-4 w-4 sm:h-5 sm:w-5" />
+                            <span className="font-semibold text-[11px] sm:text-xs">Collect Fees</span>
+                        </Button>
+                    </Link>
+                ) : hasTertiary ? (
+                    <Link href="/dashboard/tertiary/programs">
+                        <Button variant="outline" className="w-full h-14 sm:h-16 flex flex-col items-center justify-center gap-1 border-emerald-500/20 hover:bg-emerald-500/5 hover:text-emerald-600 transition-colors rounded-xl">
+                            <School className="h-4 w-4 sm:h-5 sm:w-5" />
+                            <span className="font-semibold text-[11px] sm:text-xs">Degree Programs</span>
+                        </Button>
+                    </Link>
+                ) : (
+                    <Link href="/dashboard/academic">
+                        <Button variant="outline" className="w-full h-14 sm:h-16 flex flex-col items-center justify-center gap-1 border-emerald-500/20 hover:bg-emerald-500/5 hover:text-emerald-600 transition-colors rounded-xl">
+                            <School className="h-4 w-4 sm:h-5 sm:w-5" />
+                            <span className="font-semibold text-[11px] sm:text-xs">Academic Setup</span>
+                        </Button>
+                    </Link>
+                )}
+                <Link href="/dashboard/system/modules">
                     <Button variant="outline" className="w-full h-14 sm:h-16 flex flex-col items-center justify-center gap-1 border-slate-500/20 hover:bg-muted/50 hover:text-slate-600 transition-colors rounded-xl">
                         <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
-                        <span className="font-semibold text-[11px] sm:text-xs">Settings</span>
+                        <span className="font-semibold text-[11px] sm:text-xs">System Modules</span>
                     </Button>
                 </Link>
             </div>
 
             {/* Charts Section */}
             <div className="grid gap-6 md:grid-cols-7">
-                {/* Revenue Overview */}
-                <Card className="col-span-7 md:col-span-4 standard-card border-none">
-                    <CardHeader className="pb-0">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle className="text-lg font-bold flex items-center gap-2">
-                                    <BarChart3 className="w-5 h-5 text-primary" />
-                                    Revenue Growth
-                                </CardTitle>
-                                <CardDescription>Financial performance over the last 6 months</CardDescription>
+                {/* Revenue Overview - Only rendered when FINANCE module is active */}
+                {hasFinance && (
+                    <Card className="col-span-7 md:col-span-4 standard-card border-none">
+                        <CardHeader className="pb-0">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle className="text-lg font-bold flex items-center gap-2">
+                                        <BarChart3 className="w-5 h-5 text-primary" />
+                                        Revenue Growth
+                                    </CardTitle>
+                                    <CardDescription>Financial performance over the last 6 months</CardDescription>
+                                </div>
+                                <div className="text-sm font-semibold text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1 rounded-full flex items-center gap-1">
+                                    <ArrowUpRight className="w-4 h-4" /> +15.2%
+                                </div>
                             </div>
-                            <div className="text-sm font-semibold text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1 rounded-full flex items-center gap-1">
-                                <ArrowUpRight className="w-4 h-4" /> +15.2%
+                        </CardHeader>
+                        <CardContent className="pt-6">
+                            <div className="h-[300px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={stats.revenueData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                        <defs>
+                                            <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
+                                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(value) => `₦${(value / 1000000).toFixed(1)}M`} />
+                                        <Tooltip
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                            formatter={(value: number) => [`₦${value.toLocaleString()}`, 'Revenue']}
+                                        />
+                                        <Area type="monotone" dataKey="total" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
+                                    </AreaChart>
+                                </ResponsiveContainer>
                             </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="pt-6">
-                        <div className="h-[300px] w-full">                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={stats.revenueData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <defs>
-                                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(value) => `₦${(value / 1000000).toFixed(1)}M`} />
-                                <Tooltip
-                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                    formatter={(value: number) => [`₦${value.toLocaleString()}`, 'Revenue']}
-                                />
-                                <Area type="monotone" dataKey="total" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </div>
-                </CardContent>
-            </Card>
+                        </CardContent>
+                    </Card>
+                )}
 
-            {/* Attendance Chart & Activity */}
-            <div className="col-span-7 md:col-span-3 space-y-6">
-                <Card className="shadow-sm border-border lg:col-span-3">
+                {/* Attendance Chart - Expands to 4 cols if finance disabled, otherwise 3 cols */}
+                <Card className={`standard-card border-none ${hasFinance ? 'col-span-7 md:col-span-3' : 'col-span-7 md:col-span-4'}`}>
                     <CardHeader>
-                        <CardTitle>Attendance Trends</CardTitle>
-                        <CardDescription>Daily staff and student attendance</CardDescription>
+                        <CardTitle className="text-lg font-bold">Attendance Trends</CardTitle>
+                        <CardDescription>Daily staff and student attendance records</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="h-[300px] w-full">
@@ -309,43 +387,43 @@ export function NewAdminDashboard() {
                     </CardContent>
                 </Card>
 
-                    <Card className="standard-card border-none">
-                        <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                            <div>
-                                <CardTitle className="text-lg font-bold flex items-center gap-2">
-                                    <Clock className="w-5 h-5 text-indigo-500" />
-                                    Recent Activity
-                                </CardTitle>
-                            </div>
-                            <Button variant="ghost" size="sm" className="text-primary h-8">View All</Button>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                {stats.recentActivities.length > 0 ? stats.recentActivities.map((activity, i) => (
-                                    <motion.div 
-                                        key={i} 
-                                        initial={{ opacity: 0, x: -10 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: i * 0.1 }}
-                                        className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors"
-                                    >
-                                        <div className="p-2 rounded-full bg-indigo-100 dark:bg-indigo-900/50 shrink-0">
-                                            <Activity className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium truncate">{activity.title}</p>
-                                            <p className="text-xs text-muted-foreground mt-0.5">{activity.time}</p>
-                                        </div>
-                                    </motion.div>
-                                )) : (
-                                    <div className="text-center py-6 text-muted-foreground text-sm">
-                                        No recent activities logged today.
+                {/* Recent Activity - Full-width or col-span-3 depending on finance */}
+                <Card className={`standard-card border-none ${hasFinance ? 'col-span-7' : 'col-span-7 md:col-span-3'}`}>
+                    <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                        <div>
+                            <CardTitle className="text-lg font-bold flex items-center gap-2">
+                                <Clock className="w-5 h-5 text-indigo-500" />
+                                Recent Activity
+                            </CardTitle>
+                        </div>
+                        <Button variant="ghost" size="sm" className="text-primary h-8">View All</Button>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-4">
+                            {stats.recentActivities.length > 0 ? stats.recentActivities.map((activity, i) => (
+                                <motion.div 
+                                    key={i} 
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: i * 0.1 }}
+                                    className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                                >
+                                    <div className="p-2 rounded-full bg-indigo-100 dark:bg-indigo-900/50 shrink-0">
+                                        <Activity className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                                     </div>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium truncate">{activity.title}</p>
+                                        <p className="text-xs text-muted-foreground mt-0.5">{activity.time}</p>
+                                    </div>
+                                </motion.div>
+                            )) : (
+                                <div className="text-center py-6 text-muted-foreground text-sm">
+                                    No recent activities logged today.
+                                </div>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
         </div>
     );

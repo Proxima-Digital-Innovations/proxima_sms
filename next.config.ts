@@ -14,7 +14,16 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '20mb',
     },
   },
-  serverExternalPackages: ['argon2'],
+  serverExternalPackages: [
+    'argon2',
+    'google-auth-library',
+    'jws',
+    'jwa',
+    'buffer-equal-constant-time',
+    '@genkit-ai/google-genai',
+    '@genkit-ai/core',
+    'genkit',
+  ],
   images: {
     unoptimized: true,
     remotePatterns: [

@@ -27,18 +27,24 @@ export function ForcePasswordChangeModal() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    if (user && requiresPasswordChange) {
-      const dismissed = sessionStorage.getItem('password-modal-dismissed');
-      if (!dismissed) {
+    if (user && requiresPasswordChange && !dismissed) {
+      const isDismissed = sessionStorage.getItem(`pwd-modal-dismissed-${user.id}`) === 'true' ||
+                          localStorage.getItem(`pwd-changed-${user.id}`) === 'true';
+      if (!isDismissed) {
         setOpen(true);
+      } else {
+        setOpen(false);
       }
+    } else {
+      setOpen(false);
     }
-  }, [user, requiresPasswordChange]);
+  }, [user, requiresPasswordChange, dismissed]);
 
-  // If not logged in, or doesn't require change, return null
-  if (!user || !requiresPasswordChange) {
+  // If not logged in, or doesn't require change, or dismissed in state, return null
+  if (!user || !requiresPasswordChange || dismissed) {
     return null;
   }
 
@@ -58,8 +64,16 @@ export function ForcePasswordChangeModal() {
     
     if (res.success) {
       toast({ title: 'Success', description: 'Password updated successfully!' });
+      // Instantly dismiss locally so it never blocks the user
+      setDismissed(true);
+      setOpen(false);
+      sessionStorage.setItem(`pwd-modal-dismissed-${user.id}`, 'true');
+      localStorage.setItem(`pwd-changed-${user.id}`, 'true');
+      
+      // Update NextAuth JWT token and session
       await update({ requiresPasswordChange: false });
-      window.location.reload(); 
+      setLoading(false);
+      router.refresh();
     } else {
       toast({ title: 'Error', description: res.error || 'Failed to update password', variant: 'destructive' });
       setLoading(false);
@@ -67,8 +81,11 @@ export function ForcePasswordChangeModal() {
   };
 
   const handleDismiss = () => {
-    sessionStorage.setItem('password-modal-dismissed', 'true');
+    setDismissed(true);
     setOpen(false);
+    if (user?.id) {
+      sessionStorage.setItem(`pwd-modal-dismissed-${user.id}`, 'true');
+    }
   };
 
   return (
@@ -78,13 +95,13 @@ export function ForcePasswordChangeModal() {
     }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-xl text-destructive">Security Alert: Default Password</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-xl text-destructive font-bold">Security Alert: Default Password</DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
             You are currently using a default or reset password. For security reasons, please change your password. You can dismiss this reminder, but it will appear again next time you log in.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="space-y-2">
+        <form onSubmit={handleSubmit} className="space-y-4 py-2">
+          <div className="space-y-1.5">
             <Label htmlFor="new-password">New Password</Label>
             <Input 
               id="new-password"
@@ -95,7 +112,7 @@ export function ForcePasswordChangeModal() {
               required
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="confirm-password">Confirm Password</Label>
             <Input 
               id="confirm-password"
@@ -106,12 +123,12 @@ export function ForcePasswordChangeModal() {
               required
             />
           </div>
-          <div className="flex gap-2 justify-end mt-4">
+          <div className="flex gap-2 justify-end pt-3 border-t border-border/60">
             <Button type="button" variant="outline" onClick={handleDismiss}>
-                Remind Me Later
+              Remind Me Later
             </Button>
-            <Button type="submit" disabled={loading}>
-                {loading ? 'Updating...' : 'Update Password'}
+            <Button type="submit" disabled={loading} className="bg-indigo-600 hover:bg-indigo-500 font-bold">
+              {loading ? 'Updating...' : 'Update Password'}
             </Button>
           </div>
         </form>

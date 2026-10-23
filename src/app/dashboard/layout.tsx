@@ -9,9 +9,9 @@ import DashboardSidebar from '@/components/dashboard/sidebar';
 import { SidebarProvider, useSidebar } from '@/components/ui/sidebar';
 import { useRole } from '@/context/role-context';
 import { cn } from '@/lib/utils';
-import { Loader2, ShieldAlert } from 'lucide-react';
+import { Loader2, ShieldAlert, Layers } from 'lucide-react';
 import { MaintenanceBanner } from '@/components/maintenance-banner';
-import { isPathAuthorized, navConfig } from '@/lib/auth-guard';
+import { isPathAuthorized, navConfig, ROUTE_MODULE_MAP } from '@/lib/auth-guard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SupportBot } from '@/components/dashboard/support-bot/SupportBot';
@@ -19,6 +19,40 @@ import { ForcePasswordChangeModal } from '@/components/auth/force-password-chang
 import { DynamicPageTitle } from '@/components/dashboard/dynamic-title';
 import { checkLicenseStatus } from '@/actions/license-actions';
 import { LicenseProvider } from '@/components/license/license-provider';
+
+function ModuleDisabledNotice({ moduleName }: { moduleName: string }) {
+    const router = useRouter();
+    return (
+        <div className="flex flex-1 items-center justify-center h-full p-4">
+            <Card className="w-full max-w-md text-center border-amber-500/30 bg-card shadow-xl">
+                <CardHeader>
+                    <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 mx-auto mb-2">
+                        <Layers className="h-7 w-7 text-amber-600" />
+                    </div>
+                    <CardTitle className="text-xl font-bold text-foreground">
+                        Module Deactivated
+                    </CardTitle>
+                    <CardDescription className="text-sm mt-1">
+                        The <span className="font-semibold text-foreground">{moduleName}</span> module is currently disabled by institution administrators.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                        Workflows and navigation links for this module are cleanly hidden to prevent system bloating. You can re-enable this domain at any time in Module Settings.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2 justify-center pt-2">
+                        <Button onClick={() => router.push('/dashboard')} variant="default" className="text-xs">
+                            Return to Dashboard
+                        </Button>
+                        <Button onClick={() => router.push('/dashboard/system/modules')} variant="outline" className="text-xs border-amber-500/30">
+                            Module Settings
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    );
+}
 
 function AccessDenied() {
     const router = useRouter();
@@ -56,7 +90,17 @@ const AuthLoader = () => (
     </div>
 );
 
-function MainLayout({ children, isCheckingAuth, isAuthorized }: { children: React.ReactNode, isCheckingAuth: boolean, isAuthorized: boolean }) {
+function MainLayout({ 
+  children, 
+  isCheckingAuth, 
+  isAuthorized,
+  disabledModuleName
+}: { 
+  children: React.ReactNode; 
+  isCheckingAuth: boolean; 
+  isAuthorized: boolean;
+  disabledModuleName: string | null;
+}) {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
 
@@ -76,7 +120,15 @@ function MainLayout({ children, isCheckingAuth, isAuthorized }: { children: Reac
             <DashboardHeader />
           </div>
           <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 flex flex-col max-w-7xl mx-auto w-full print:p-0 print:m-0 print:block min-w-0 overflow-x-hidden">
-            {isCheckingAuth ? <AuthLoader /> : (isAuthorized ? children : <AccessDenied />)}
+            {isCheckingAuth ? (
+              <AuthLoader />
+            ) : disabledModuleName ? (
+              <ModuleDisabledNotice moduleName={disabledModuleName} />
+            ) : isAuthorized ? (
+              children
+            ) : (
+              <AccessDenied />
+            )}
           </main>
       </div>
     </div>
@@ -89,10 +141,11 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { role, rbacPermissions, isLoading: isRoleLoading } = useRole();
+  const { role, rbacPermissions, activeModules, isLoading: isRoleLoading } = useRole();
   const router = useRouter();
   const pathname = usePathname();
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [disabledModuleName, setDisabledModuleName] = useState<string | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
@@ -103,11 +156,21 @@ export default function DashboardLayout({
       return;
     }
 
-    const authorized = isPathAuthorized(pathname, role, rbacPermissions);
+    // Check if the route is blocked because its required module is inactive
+    const matchingModule = ROUTE_MODULE_MAP.find(m => pathname === m.prefix || pathname.startsWith(m.prefix + '/'));
+    if (matchingModule && activeModules && activeModules.length > 0 && !activeModules.includes(matchingModule.module) && pathname !== '/dashboard/system/modules') {
+      setIsAuthorized(false);
+      setDisabledModuleName(matchingModule.label);
+      setIsCheckingAuth(false);
+      return;
+    }
+
+    setDisabledModuleName(null);
+    const authorized = isPathAuthorized(pathname, role, rbacPermissions, activeModules);
     setIsAuthorized(authorized);
     setIsCheckingAuth(false);
     
-  }, [role, rbacPermissions, isRoleLoading, router, pathname]);
+  }, [role, rbacPermissions, activeModules, isRoleLoading, router, pathname]);
 
   const [licenseStatus, setLicenseStatus] = useState<any>('ACTIVE');
   const [licenseMessage, setLicenseMessage] = useState<string>('');
@@ -157,7 +220,7 @@ export default function DashboardLayout({
         `}</style>
          <DynamicPageTitle />
          
-         <MainLayout isCheckingAuth={isCheckingAuth} isAuthorized={isAuthorized}>
+         <MainLayout isCheckingAuth={isCheckingAuth} isAuthorized={isAuthorized} disabledModuleName={disabledModuleName}>
            {children}
          </MainLayout>
         <div className="print-hidden">

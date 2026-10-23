@@ -19,6 +19,7 @@ import Link from 'next/link';
 import { NotificationBell } from './notifications/notification-bell';
 import { Input } from '@/components/ui/input';
 import { GlobalSearch } from './global-search';
+import { DemoRoleSwitcher } from './demo-role-switcher';
 
 const PAGE_TITLES: { [key: string]: string } = {
     '/dashboard': 'Dashboard Overview',
@@ -49,7 +50,9 @@ const PAGE_TITLES: { [key: string]: string } = {
     '/dashboard/bas/reports': 'Attendance Reports',
     '/dashboard/bas/holidays': 'Holidays',
     '/dashboard/transport': 'Transport',
-    '/dashboard/hostels': 'Hostels',
+    '/dashboard/hostels': 'Hostels & Accommodation',
+    '/dashboard/hostels/allocations': 'Bedspace Allocations',
+    '/dashboard/hostels/booking': 'Student Bed Booking',
     '/dashboard/results': 'Results Management',
     '/dashboard/exam-questions': 'Exam Questions',
     '/dashboard/profile': 'My Profile',
@@ -124,6 +127,7 @@ export function DashboardHeader() {
         </div>
 
         <NotificationBell />
+        <DemoRoleSwitcher />
 
 
         <DropdownMenu>

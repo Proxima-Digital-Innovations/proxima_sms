@@ -13,6 +13,7 @@ type RoleContextType = {
   rbacPermissions: string[];
   requiresPasswordChange: boolean;
   setRole: (role: string) => void;
+  setActiveModules: (modules: string[]) => void;
   logout: () => void;
   isLoading: boolean;
 };
@@ -22,11 +23,32 @@ const RoleContext = createContext<RoleContextType | undefined>(undefined);
 export const RoleProvider = ({ children }: { children: React.ReactNode }) => {
   const { data: session, status } = useSession();
   const [role, setRoleState] = useState<string | null>(null);
+  const [activeModulesState, setActiveModulesState] = useState<string[]>([]);
   const router = useRouter();
   const { toast } = useToast();
 
   const isLoading = status === 'loading';
   const currentRole = (session?.user as any)?.role || role;
+
+  // Sync live institutional modules on mount
+  useEffect(() => {
+    async function loadLiveModules() {
+      try {
+        const { getInstitutionalModulesAction } = await import('@/actions/module-actions');
+        const res = await getInstitutionalModulesAction();
+        if (res.success && res.activeModules) {
+          setActiveModulesState(res.activeModules);
+        }
+      } catch (e) {
+        console.warn('Could not sync institutional modules:', e);
+      }
+    }
+    loadLiveModules();
+  }, []);
+
+  const setActiveModules = useCallback((modules: string[]) => {
+    setActiveModulesState(modules);
+  }, []);
 
   const logout = useCallback(async (options?: { silent?: boolean }) => {
     try {
@@ -78,15 +100,20 @@ export const RoleProvider = ({ children }: { children: React.ReactNode }) => {
     return ["CORE"];
   };
 
+  const effectiveActiveModules = activeModulesState.length > 0 
+    ? activeModulesState 
+    : ((session?.user as any)?.activeModules || []);
+
   return (
     <RoleContext.Provider
       value={{
         user: session?.user || null,
         role: currentRole,
-        activeModules: (session?.user as any)?.activeModules || [],
+        activeModules: effectiveActiveModules,
         rbacPermissions: (session?.user as any)?.rbacPermissions || [],
         requiresPasswordChange: (session?.user as any)?.requiresPasswordChange || false,
         setRole,
+        setActiveModules,
         logout,
         isLoading,
       }}

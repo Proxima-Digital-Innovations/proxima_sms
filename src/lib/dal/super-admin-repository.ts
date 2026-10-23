@@ -4,10 +4,7 @@ export class SuperAdminRepository {
   async getSchoolBySubdomainOrSlug(name: string) {
     return await prisma.systemProfile.findFirst({
       where: {
-        OR: [
-          { name: name },
-          { name: name }
-        ]
+        name: name
       }
     });
   }

@@ -53,9 +53,14 @@ const ExamOfficerDashboard = dynamic(
   () => import('@/components/dashboard/exam-officer/exam-officer-dashboard').then(mod => mod.ExamOfficerDashboard),
   { loading: () => <DashboardSkeleton />, ssr: false }
 );
+const TertiaryStudentDashboard = dynamic(
+  () => import('@/app/dashboard/tertiary/student-hub/page'),
+  { loading: () => <DashboardSkeleton />, ssr: false }
+);
 
 export default function DashboardPage() {
-  const { role, isLoading } = useRole();
+  const { role, activeModules, isLoading } = useRole();
+  const isTertiary = activeModules?.includes('TERTIARY_INSTITUTION');
 
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -76,7 +81,11 @@ export default function DashboardPage() {
     case 'TEACHER':
       return <TeacherDashboard />;
     case 'PARENT':
-    case 'STUDENT': // Standardized roles; students map to the parent dashboard for now
+      return <ParentDashboard />;
+    case 'STUDENT':
+      if (isTertiary) {
+        return <TertiaryStudentDashboard />;
+      }
       return <ParentDashboard />;
     default:
       return <div>Invalid role or dashboard not yet implemented. Please log out and try again.</div>;

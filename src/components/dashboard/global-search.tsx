@@ -14,11 +14,13 @@ import {
   CommandShortcut,
 } from "@/components/ui/command"
 
-import { allNavLinks, navConfig, iconMap } from "@/lib/auth-guard"
+import { allNavLinks, navConfig, iconMap, getFilteredNavConfig } from "@/lib/auth-guard"
+import { useRole } from "@/context/role-context"
 
 export function GlobalSearch({ compact = false }: { compact?: boolean }) {
   const [open, setOpen] = React.useState(false)
   const router = useRouter()
+  const { role, activeModules } = useRole()
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -36,8 +38,20 @@ export function GlobalSearch({ compact = false }: { compact?: boolean }) {
     command()
   }, [])
 
-  // Flat list of all links
-  const links = Object.values(allNavLinks);
+  // Filter navigation links by role and enabled institutional modules
+  const allowedNav = React.useMemo(() => getFilteredNavConfig(role as string, activeModules || []), [role, activeModules]);
+  const allowedKeySet = React.useMemo(() => new Set(allowedNav.flatMap(g => g.links)), [allowedNav]);
+
+  const links = React.useMemo(() => {
+    return Object.entries(allNavLinks)
+      .filter(([key, link]) => {
+        if (link.requiredModule && !activeModules?.includes(link.requiredModule)) {
+          return false;
+        }
+        return allowedKeySet.has(key);
+      })
+      .map(([_, link]) => link);
+  }, [activeModules, allowedKeySet]);
 
   return (
     <>

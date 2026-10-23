@@ -1,19 +1,24 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import bcrypt from 'bcryptjs';
+import argon2 from 'argon2';
 
 export async function setupSuperAdmin(data: any) {
     try {
         const existingAdmin = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: {
+                OR: [
+                    { isSuperAdmin: true },
+                    { role: 'SUPER_ADMIN' }
+                ]
+            }
         });
         
         if (existingAdmin) {
             return { success: false, error: 'Super Admin already exists.' };
         }
         
-        const hashedPassword = await bcrypt.hash(data.password, 10);
+        const hashedPassword = await argon2.hash(data.password);
         
         const admin = await prisma.user.create({
             data: {
@@ -21,9 +26,10 @@ export async function setupSuperAdmin(data: any) {
                 lastName: data.lastName,
                 email: data.email,
                 passwordHash: hashedPassword,
-                role: 'SUPER_ADMIN',
+                role: 'ADMIN',
                 isSuperAdmin: true,
-                status: 'ACTIVE'
+                status: 'active',
+                requiresPasswordChange: false,
             }
         });
         
@@ -36,7 +42,13 @@ export async function setupSuperAdmin(data: any) {
 export async function checkSuperAdminExists() {
     try {
         const existingAdmin = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: {
+                OR: [
+                    { isSuperAdmin: true },
+                    { role: 'SUPER_ADMIN' },
+                    { role: 'ADMIN' }
+                ]
+            }
         });
         return { success: true, data: !!existingAdmin };
     } catch (error: any) {

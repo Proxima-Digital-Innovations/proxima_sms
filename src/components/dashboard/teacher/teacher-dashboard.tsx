@@ -1,6 +1,14 @@
 
 'use client';
-import { Book, CheckCircle, Clock, FileQuestion, Upload, XCircle, LineChart as LineChartIcon, PieChart as PieChartIcon, Calendar, ClipboardCheck } from 'lucide-react';
+import { Book, CheckCircle, Clock, FileQuestion, Upload, XCircle, LineChart as LineChartIcon, PieChart as PieChartIcon, Calendar, ClipboardCheck, Edit3, ChevronDown, Presentation, ArrowRight, Award, BookOpen } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Card,
   CardContent,
@@ -51,7 +59,8 @@ const chartConfig = {
 }
 
 export function TeacherDashboard() {
-  const { user } = useRole();
+  const { user, activeModules } = useRole();
+  const isTertiary = activeModules?.includes('TERTIARY_INSTITUTION');
   const { toast } = useToast();
   const [stats, setStats] = useState({
     pendingPlans: 0,
@@ -244,35 +253,141 @@ export function TeacherDashboard() {
                 <CardContent className="flex flex-col gap-3">
                      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                         <DialogTrigger asChild>
-                           <Button size="lg">
-                             <Upload className="mr-2"/> Upload Document
+                           <Button size="lg" className="w-full justify-start font-medium">
+                             <Upload className="mr-2 h-4 w-4"/> Upload Document
                            </Button>
                         </DialogTrigger>
-                        <DialogContent>
+                        <DialogContent className={isTertiary ? "max-w-xl" : "max-w-md"}>
                             <DialogHeader>
-                                <DialogTitle>Upload Document</DialogTitle>
+                                <DialogTitle>Upload Document / Learning Materials</DialogTitle>
                                 <DialogDescription>
-                                Select the class, subject, document type, and upload your file. It will be routed to the correct reviewer.
+                                {isTertiary
+                                  ? "Choose whether to upload tertiary lecture notes and audio to your courses, or submit a secondary school lesson plan."
+                                  : "Select the class, subject, document type, and upload your file. It will be routed to the correct reviewer."}
                                 </DialogDescription>
                             </DialogHeader>
-                            <DocumentSubmissionForm onNoteAdded={handleSubmissionAdded} />
+                            {isTertiary && (
+                              <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 my-2 flex items-center justify-between">
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <Presentation className="h-4 w-4 text-primary" />
+                                    <h4 className="text-sm font-bold text-foreground">Lecturer Teaching Studio</h4>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">
+                                    Upload lecture notes (PDF/Word), audio recordings, and assignments for your registered university students.
+                                  </p>
+                                </div>
+                                <Button asChild size="sm" className="shrink-0 ml-4">
+                                  <Link href="/dashboard/tertiary/lecturer-studio" onClick={() => setIsModalOpen(false)}>
+                                    Open Studio <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                                  </Link>
+                                </Button>
+                              </div>
+                            )}
+                            <div className={isTertiary ? "border-t border-border pt-4 mt-2" : ""}>
+                              {isTertiary && <p className="text-xs font-semibold text-muted-foreground mb-3">Or submit secondary school lesson plan / exam questions:</p>}
+                              <DocumentSubmissionForm onNoteAdded={handleSubmissionAdded} />
+                            </div>
                         </DialogContent>
                     </Dialog>
-                    <Button asChild variant="outline" size="lg">
-                        <Link href="/dashboard/scores">
-                            Enter Student Scores
+
+                    {isTertiary ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="lg" className="w-full justify-between font-medium">
+                            <span className="flex items-center">
+                              <Edit3 className="mr-2 h-4 w-4 text-primary" /> Enter / Grade Scores
+                            </span>
+                            <ChevronDown className="h-4 w-4 opacity-50" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-64">
+                          <DropdownMenuLabel>Grading & Assessment</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem asChild>
+                            <Link href="/dashboard/tertiary/lecturer-studio" className="cursor-pointer flex items-center p-2">
+                              <Presentation className="mr-2.5 h-4 w-4 text-emerald-600" />
+                              <div>
+                                <p className="font-semibold text-xs">Continuous Assessment (CA)</p>
+                                <p className="text-[11px] text-muted-foreground">Assignments & coursework grading</p>
+                              </div>
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href="/dashboard/tertiary/exams" className="cursor-pointer flex items-center p-2">
+                              <Award className="mr-2.5 h-4 w-4 text-violet-600" />
+                              <div>
+                                <p className="font-semibold text-xs">Exam Grading (Blind Token)</p>
+                                <p className="text-[11px] text-muted-foreground">Anonymous tertiary semester exams</p>
+                              </div>
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem asChild>
+                            <Link href="/dashboard/scores/enter" className="cursor-pointer flex items-center p-2">
+                              <BookOpen className="mr-2.5 h-4 w-4 text-blue-600" />
+                              <div>
+                                <p className="font-semibold text-xs">Secondary School Scores</p>
+                                <p className="text-[11px] text-muted-foreground">Termly class scoresheet</p>
+                              </div>
+                            </Link>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) : (
+                      <Button asChild variant="outline" size="lg" className="w-full justify-start font-medium">
+                        <Link href="/dashboard/scores/enter">
+                          <Edit3 className="mr-2 h-4 w-4 text-primary" /> Enter Student Scores
                         </Link>
-                    </Button>
-                    <Button asChild variant="outline" size="lg">
+                      </Button>
+                    )}
+
+                    <Button asChild variant="outline" size="lg" className="w-full justify-start font-medium">
                         <Link href="/dashboard/teacher/attendance">
-                            <ClipboardCheck className="mr-2 h-4 w-4" /> Take Attendance
+                            <ClipboardCheck className="mr-2 h-4 w-4 text-emerald-600" /> Take Attendance
                         </Link>
                     </Button>
-                    <Button asChild variant="outline" size="lg">
+
+                    {isTertiary ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="lg" className="w-full justify-between font-medium">
+                            <span className="flex items-center">
+                              <Calendar className="mr-2 h-4 w-4 text-violet-600" /> View Timetable
+                            </span>
+                            <ChevronDown className="h-4 w-4 opacity-50" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-64">
+                          <DropdownMenuLabel>Schedules & Timetables</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem asChild>
+                            <Link href="/dashboard/tertiary/timetable" className="cursor-pointer flex items-center p-2">
+                              <Calendar className="mr-2.5 h-4 w-4 text-violet-600" />
+                              <div>
+                                <p className="font-semibold text-xs">Lecture Timetable</p>
+                                <p className="text-[11px] text-muted-foreground">Weekly course lecture schedule</p>
+                              </div>
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href="/dashboard/timetable" className="cursor-pointer flex items-center p-2">
+                              <BookOpen className="mr-2.5 h-4 w-4 text-blue-600" />
+                              <div>
+                                <p className="font-semibold text-xs">Examination Timetable</p>
+                                <p className="text-[11px] text-muted-foreground">General institutional exam schedule</p>
+                              </div>
+                            </Link>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) : (
+                      <Button asChild variant="outline" size="lg" className="w-full justify-start font-medium">
                         <Link href="/dashboard/timetable">
-                            <Calendar className="mr-2 h-4 w-4" /> View Timetable
+                            <Calendar className="mr-2 h-4 w-4 text-violet-600" /> View Timetable
                         </Link>
-                    </Button>
+                      </Button>
+                    )}
                 </CardContent>
             </Card>
              <Card>

@@ -1,5 +1,5 @@
 import { SuperAdminRepository } from '../dal/super-admin-repository';
-import bcrypt from "bcryptjs";
+import argon2 from "argon2";
 
 export class SuperAdminService {
   private repo = new SuperAdminRepository();
@@ -15,14 +15,10 @@ export class SuperAdminService {
 
     const school = await this.repo.createSchool({
       name: validatedData.name,
-      subdomain: validatedData.subdomain,
-      slug: validatedData.subdomain,
       primaryColor: validatedData.primaryColor,
       secondaryColor: validatedData.secondaryColor,
-      licenseStatus: 'TRIAL',
+      licenseStatus: 'ACTIVE',
       expiresAt: expiresAt,
-      maxUsers: 50,
-      maxStudents: 500
     });
 
     const session = await this.repo.createAcademicSession({
@@ -40,14 +36,16 @@ export class SuperAdminService {
       endDate: new Date(new Date().setMonth(new Date().getMonth() + 3)),
     });
 
-    const passwordHash = await bcrypt.hash('password123', 10);
+    const passwordHash = await argon2.hash('password123');
     await this.repo.createUser({
       firstName: "Admin",
       lastName: "User",
       email: `admin@${validatedData.subdomain}.proximahub.com`,
       passwordHash: passwordHash,
       role: "ADMIN",
+      isSuperAdmin: true,
       status: "active",
+      requiresPasswordChange: false,
     });
 
     return { success: true, school };
@@ -57,7 +55,6 @@ export class SuperAdminService {
     await this.repo.updateSchoolLicense({
       licenseStatus: data.licenseStatus,
       expiresAt: new Date(data.expiresAt),
-      activeModules: JSON.stringify(data.activeModules)
     });
     return { success: true };
   }

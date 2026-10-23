@@ -2,6 +2,8 @@
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import * as argon2 from 'argon2';
+import { auth } from '@/auth';
 
 export async function getStaffUsers() {
     try {
@@ -146,8 +148,6 @@ export async function deleteDepartment(id: string) {
     }
 }
 
-import * as argon2 from 'argon2';
-
 export async function adminResetUserPassword(userId: string) {
     try {
         // Find user first
@@ -161,7 +161,7 @@ export async function adminResetUserPassword(userId: string) {
             where: { id: userId },
             data: { 
                 passwordHash,
-                requiresPasswordChange: true 
+                requiresPasswordChange: false 
             }
         });
 
@@ -174,18 +174,33 @@ export async function adminResetUserPassword(userId: string) {
     }
 }
 
-export async function changeOwnPassword(userId: string, newPassword: string) {
+export async function changeOwnPassword(userId?: string, newPassword?: string) {
     try {
+        if (!newPassword || newPassword.length < 6) {
+            return { success: false, error: 'Password must be at least 6 characters long' };
+        }
+
+        let targetId = userId;
+        if (!targetId) {
+            const session = await auth();
+            targetId = session?.user?.id as string;
+        }
+
+        if (!targetId) {
+            return { success: false, error: 'Unauthorized: User session not found' };
+        }
+
         const passwordHash = await argon2.hash(newPassword);
 
         await prisma.user.update({
-            where: { id: userId },
+            where: { id: targetId },
             data: { 
                 passwordHash,
                 requiresPasswordChange: false 
             }
         });
 
+        revalidatePath('/dashboard');
         return { success: true };
     } catch (error: any) {
         console.error('Error changing password:', error);

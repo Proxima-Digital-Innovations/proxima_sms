@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useRole } from '@/context/role-context';
-import { Menu, ChevronDown, Rocket, Lock, X } from 'lucide-react';
+import { Menu, ChevronDown, Rocket, Lock, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,6 +19,12 @@ export default function Sidebar() {
     const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
     const [schoolName, setSchoolName] = useState<string>('Proxima SMS');
     const [schoolLogo, setSchoolLogo] = useState<string | null>(null);
+    const [pendingPath, setPendingPath] = useState<string | null>(null);
+
+    // Reset pending path on route completion
+    useEffect(() => {
+        setPendingPath(null);
+    }, [pathname]);
     const { openMobile, setOpenMobile, state, setOpen } = useSidebar();
     
     const collapsed = state === "collapsed";
@@ -223,7 +229,7 @@ export default function Sidebar() {
                                                                      exit={{ height: 0, opacity: 0 }}
                                                                      className="ml-6 space-y-1 overflow-hidden"
                                                                  >
-                                                                     {link.subLinks.map(subLink => {
+                                                                     {link.subLinks.filter(subLink => !subLink.requiredModule || activeModules?.includes(subLink.requiredModule)).map(subLink => {
                                                                          const isChildActive = pathname === subLink.path;
                                                                          return (
                                                                              <Link 
