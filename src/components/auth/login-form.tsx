@@ -44,6 +44,7 @@ const formSchema = z.object({
 // Quick preset credentials for enterprise evaluation
 const DEMO_PERSONAS = [
   { label: 'Admin', role: 'Super Admin', id: 'admin@proximahub.com', pass: 'password123' },
+  { label: 'Parent', role: 'Guardian Portal', id: 'parent@proximahub.com', pass: 'Password123!' },
   { label: 'Lecturer', role: 'Academic Faculty', id: 'aliyu.sani@proxima.edu.ng', pass: 'password123' },
   { label: 'Student', role: 'Computer Science', id: 'U2025/CSC/001', pass: 'password123' },
   { label: 'Finance', role: 'Bursar Officer', id: 'finance@proximahub.com', pass: 'password123' },
