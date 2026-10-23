@@ -71,7 +71,7 @@ export function DemoRoleSwitcher() {
               <DropdownMenuItem
                 key={p.role}
                 onClick={() => {
-                  router.push(`/login?email=${encodeURIComponent(p.email)}`);
+                  router.push(`/login?email=${encodeURIComponent(p.email)}&callbackUrl=/dashboard`);
                 }}
                 className={`p-2 rounded-lg cursor-pointer flex flex-col items-start gap-1 ${
                   isCurrent ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted'

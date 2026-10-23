@@ -95,7 +95,13 @@ export function LoginForm({ schoolSlug }: { schoolSlug?: string }) {
         description: 'Establishing cryptographic session token...',
       });
 
-      router.push(callbackUrl);
+      let destination = callbackUrl;
+      const isAdminRoute = ['/dashboard/system', '/dashboard/finance', '/dashboard/users', '/dashboard/db', '/dashboard/logs'].some(prefix => callbackUrl.startsWith(prefix));
+      if (isAdminRoute && (values.identifier.includes('/') || values.identifier.toLowerCase().includes('parent') || values.identifier.toLowerCase().includes('student'))) {
+        destination = '/dashboard';
+      }
+
+      router.push(destination);
       router.refresh();
     } catch (err: any) {
       setError('An unexpected authentication error occurred.');
