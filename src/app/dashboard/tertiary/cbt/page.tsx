@@ -17,6 +17,7 @@ import {
   createCbtExam,
   addCbtQuestionAction,
   bulkAddCbtQuestionsAction,
+  bulkImportMultiCourseQuestionBankAction,
   deleteCbtQuestionAction,
   submitCbtExamAction,
 } from '@/actions/cbt-actions';
@@ -39,9 +40,15 @@ import {
   UploadCloud,
   Download,
   FileSpreadsheet,
+  Building2,
+  Filter,
 } from 'lucide-react';
 
 interface ParsedBulkQuestion {
+  faculty?: string;
+  department?: string;
+  courseCode?: string;
+  category?: 'CA' | 'EXAM';
   questionText: string;
   options: { id: string; text: string }[];
   correctOption: 'A' | 'B' | 'C' | 'D';
@@ -50,9 +57,13 @@ interface ParsedBulkQuestion {
 
 /**
  * Universal Question Bank Parser:
- * Automatically parses CSV (Excel), TSV (Tab-separated), JSON, or Aiken Format (Word/Text).
+ * Supports:
+ * 1) 11-Column Multi-Faculty/Department CSV: Faculty,Department,CourseCode,Category,Question,OptionA,OptionB,OptionC,OptionD,CorrectOption,Points
+ * 2) 7-Column Single-Course CSV: Question,OptionA,OptionB,OptionC,OptionD,CorrectOption,Points
+ * 3) Aiken Format (with optional COURSE:, DEPARTMENT:, FACULTY: tags)
+ * 4) JSON Format
  */
-function parseBulkQuestionText(rawInput: string): ParsedBulkQuestion[] {
+function parseBulkQuestionText(rawInput: string, defaultCourseCode?: string): ParsedBulkQuestion[] {
   const trimmed = rawInput.trim();
   if (!trimmed) return [];
 
@@ -77,6 +88,10 @@ function parseBulkQuestionText(rawInput: string): ParsedBulkQuestion[] {
             .toUpperCase()
             .charAt(0) as 'A' | 'B' | 'C' | 'D';
           return {
+            faculty: item.faculty || 'Faculty of Computing',
+            department: item.department || 'Computer Science',
+            courseCode: (item.courseCode || item.course || defaultCourseCode || 'CSC301').toUpperCase(),
+            category: String(item.category || 'CA').toUpperCase() === 'EXAM' ? 'EXAM' : 'CA',
             questionText: qText,
             options: opts,
             correctOption: ['A', 'B', 'C', 'D'].includes(corr) ? corr : 'A',
@@ -101,17 +116,33 @@ function parseBulkQuestionText(rawInput: string): ParsedBulkQuestion[] {
         .filter(Boolean);
       if (lines.length < 3) continue;
 
+      let faculty = 'Faculty of Computing';
+      let department = 'Computer Science';
+      let courseCode = defaultCourseCode || 'CSC301';
+      let category: 'CA' | 'EXAM' = 'CA';
       let questionText = '';
       const optMap: Record<string, string> = { A: '', B: '', C: '', D: '' };
       let correctOption: 'A' | 'B' | 'C' | 'D' = 'A';
       let points = 10;
 
       for (const line of lines) {
+        const facMatch = line.match(/^FACULTY\s*:\s*(.+)$/i);
+        const deptMatch = line.match(/^DEPARTMENT\s*:\s*(.+)$/i);
+        const courseMatch = line.match(/^COURSE(?:\s*CODE)?\s*:\s*(.+)$/i);
+        const catMatch = line.match(/^CATEGORY\s*:\s*(CA|EXAM)/i);
         const optMatch = line.match(/^([A-D])[.)]\s*(.+)$/i);
         const ansMatch = line.match(/^ANSWER\s*:\s*([A-D])/i);
         const ptsMatch = line.match(/^POINTS?\s*:\s*(\d+(\.\d+)?)/i);
 
-        if (ansMatch) {
+        if (facMatch) {
+          faculty = facMatch[1].trim();
+        } else if (deptMatch) {
+          department = deptMatch[1].trim();
+        } else if (courseMatch) {
+          courseCode = courseMatch[1].trim().toUpperCase();
+        } else if (catMatch) {
+          category = catMatch[1].toUpperCase() as 'CA' | 'EXAM';
+        } else if (ansMatch) {
           correctOption = ansMatch[1].toUpperCase() as 'A' | 'B' | 'C' | 'D';
         } else if (ptsMatch) {
           points = Number(ptsMatch[1]) || 10;
@@ -127,6 +158,10 @@ function parseBulkQuestionText(rawInput: string): ParsedBulkQuestion[] {
 
       if (questionText && (optMap.A || optMap.B)) {
         results.push({
+          faculty,
+          department,
+          courseCode,
+          category,
           questionText,
           options: [
             { id: 'A', text: optMap.A || 'Option A' },
@@ -142,7 +177,7 @@ function parseBulkQuestionText(rawInput: string): ParsedBulkQuestion[] {
     if (results.length > 0) return results;
   }
 
-  // 3. Parse CSV / TSV rows: Question, OptionA, OptionB, OptionC, OptionD, CorrectOption, Points
+  // 3. Parse CSV / TSV rows
   const lines = trimmed.split(/\r?\n/).filter((l) => l.trim().length > 0);
   const results: ParsedBulkQuestion[] = [];
 
@@ -173,40 +208,94 @@ function parseBulkQuestionText(rawInput: string): ParsedBulkQuestion[] {
     return cols;
   };
 
+  let isMultiFacultyFormat = false;
+  if (lines.length > 0) {
+    const headerCols = splitCsvRow(lines[0]).map((c) => c.toLowerCase());
+    if (
+      headerCols.includes('faculty') ||
+      headerCols.includes('department') ||
+      headerCols.includes('coursecode') ||
+      headerCols.includes('course')
+    ) {
+      isMultiFacultyFormat = true;
+    }
+  }
+
   for (let i = 0; i < lines.length; i++) {
     const cols = splitCsvRow(lines[i]);
     if (cols.length < 3) continue;
 
-    // Skip header row if present
     const firstColLower = cols[0].toLowerCase();
     if (
       i === 0 &&
-      (firstColLower === 'question' || firstColLower === 'questiontext' || firstColLower.includes('question stem'))
+      (firstColLower === 'faculty' ||
+        firstColLower === 'department' ||
+        firstColLower === 'coursecode' ||
+        firstColLower === 'question' ||
+        firstColLower === 'questiontext' ||
+        firstColLower.includes('question stem'))
     ) {
       continue;
     }
 
-    const qText = cols[0];
-    const optA = cols[1] || 'Option A';
-    const optB = cols[2] || 'Option B';
-    const optC = cols[3] || 'None of the above';
-    const optD = cols[4] || 'All of the above';
-    const rawCorrect = (cols[5] || 'A').trim().toUpperCase().charAt(0);
-    const correctOption = (['A', 'B', 'C', 'D'].includes(rawCorrect) ? rawCorrect : 'A') as 'A' | 'B' | 'C' | 'D';
-    const points = Number(cols[6]) || 10;
+    // Detect if this row has 10-11 columns (Faculty, Department, CourseCode, Category, Question, OptionA, OptionB, OptionC, OptionD, CorrectOption, Points)
+    if (isMultiFacultyFormat || cols.length >= 10) {
+      const faculty = cols[0] || 'Faculty of Computing';
+      const department = cols[1] || 'Computer Science';
+      const courseCode = (cols[2] || defaultCourseCode || 'CSC301').toUpperCase();
+      const rawCat = (cols[3] || 'CA').toUpperCase();
+      const category: 'CA' | 'EXAM' = rawCat === 'EXAM' ? 'EXAM' : 'CA';
+      const qText = cols[4];
+      const optA = cols[5] || 'Option A';
+      const optB = cols[6] || 'Option B';
+      const optC = cols[7] || 'None of the above';
+      const optD = cols[8] || 'All of the above';
+      const rawCorrect = (cols[9] || 'A').trim().toUpperCase().charAt(0);
+      const correctOption = (['A', 'B', 'C', 'D'].includes(rawCorrect) ? rawCorrect : 'A') as 'A' | 'B' | 'C' | 'D';
+      const points = Number(cols[10]) || 10;
 
-    if (qText) {
-      results.push({
-        questionText: qText,
-        options: [
-          { id: 'A', text: optA },
-          { id: 'B', text: optB },
-          { id: 'C', text: optC },
-          { id: 'D', text: optD },
-        ],
-        correctOption,
-        points,
-      });
+      if (qText) {
+        results.push({
+          faculty,
+          department,
+          courseCode,
+          category,
+          questionText: qText,
+          options: [
+            { id: 'A', text: optA },
+            { id: 'B', text: optB },
+            { id: 'C', text: optC },
+            { id: 'D', text: optD },
+          ],
+          correctOption,
+          points,
+        });
+      }
+    } else {
+      // Simple 7-column format: Question, OptionA, OptionB, OptionC, OptionD, CorrectOption, Points
+      const qText = cols[0];
+      const optA = cols[1] || 'Option A';
+      const optB = cols[2] || 'Option B';
+      const optC = cols[3] || 'None of the above';
+      const optD = cols[4] || 'All of the above';
+      const rawCorrect = (cols[5] || 'A').trim().toUpperCase().charAt(0);
+      const correctOption = (['A', 'B', 'C', 'D'].includes(rawCorrect) ? rawCorrect : 'A') as 'A' | 'B' | 'C' | 'D';
+      const points = Number(cols[6]) || 10;
+
+      if (qText) {
+        results.push({
+          courseCode: defaultCourseCode || 'CSC301',
+          questionText: qText,
+          options: [
+            { id: 'A', text: optA },
+            { id: 'B', text: optB },
+            { id: 'C', text: optC },
+            { id: 'D', text: optD },
+          ],
+          correctOption,
+          points,
+        });
+      }
     }
   }
 
@@ -229,7 +318,13 @@ export default function TertiaryCbtPage() {
   const [examResult, setExamResult] = useState<any>(null);
   const [isPending, startTransition] = useTransition();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isMasterBulkOpen, setIsMasterBulkOpen] = useState(false);
   const { toast } = useToast();
+
+  // Faculty, Department & Course Filters
+  const [selectedFaculty, setSelectedFaculty] = useState<string>('ALL');
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('ALL');
+  const [selectedCourseCode, setSelectedCourseCode] = useState<string>('ALL');
 
   // Question Bank & Submissions Management Modal State (For Lecturers / Admins)
   const [managedExam, setManagedExam] = useState<any>(null);
@@ -245,7 +340,7 @@ export default function TertiaryCbtPage() {
   const [qCorrect, setQCorrect] = useState<'A' | 'B' | 'C' | 'D'>('A');
   const [qPoints, setQPoints] = useState(10);
 
-  // Bulk Upload State (Used in Manage Modal & Create Modal)
+  // Bulk Upload State (Used in Master Upload, Manage Modal & Create Modal)
   const [bulkRawText, setBulkRawText] = useState('');
   const [bulkPreview, setBulkPreview] = useState<ParsedBulkQuestion[]>([]);
   const [showCreateBulkBox, setShowCreateBulkBox] = useState(false);
@@ -373,11 +468,12 @@ export default function TertiaryCbtPage() {
 
   const handleDownloadCsvTemplate = () => {
     const sampleCsv = [
-      'Question,OptionA,OptionB,OptionC,OptionD,CorrectOption,Points',
-      '"Which data structure operates on a First-In, First-Out (FIFO) basis?",Stack,Queue,Binary Search Tree,Priority Heap,B,10',
-      '"What is the time complexity of searching in a balanced Binary Search Tree (AVL)?",O(1),O(n),O(log n),O(n log n),C,10',
-      '"Which sorting algorithm is guaranteed O(n log n) in the worst case?",QuickSort,Insertion Sort,MergeSort,Bubble Sort,C,10',
-      '"In Object-Oriented Programming, binding a method call at runtime is known as:",Static Binding,Dynamic Dispatch,Encapsulation,Inlining,B,10',
+      'Faculty,Department,CourseCode,Category,Question,OptionA,OptionB,OptionC,OptionD,CorrectOption,Points',
+      '"Faculty of Computing","Computer Science",CSC301,CA,"Which data structure operates on a First-In, First-Out (FIFO) basis?",Stack,Queue,Binary Search Tree,Priority Heap,B,10',
+      '"Faculty of Computing","Computer Science",CSC301,CA,"What is the time complexity of searching in a balanced Binary Search Tree (AVL)?",O(1),O(n),O(log n),O(n log n),C,10',
+      '"Faculty of Computing","Computer Science",CSC201,CA,"In Object-Oriented Programming, binding a method call at runtime is known as:",Static Binding,Dynamic Dispatch,Encapsulation,Inlining,B,10',
+      '"Faculty of Science","Mathematics",MTH101,CA,"What is the first derivative of sin(x) with respect to x?",cos(x),-cos(x),tan(x),-sin(x),A,10',
+      '"Directorate of General Studies","General Studies",GST101,EXAM,"Which reading technique involves looking for specific information quickly?",Skimming,Scanning,Intensive Reading,Sub-vocalization,B,10',
     ].join('\n');
 
     const blob = new Blob([sampleCsv], { type: 'text/csv;charset=utf-8;' });
@@ -391,7 +487,7 @@ export default function TertiaryCbtPage() {
 
   const handleBulkTextChange = (text: string) => {
     setBulkRawText(text);
-    const parsed = parseBulkQuestionText(text);
+    const parsed = parseBulkQuestionText(text, managedExam?.courseCode);
     setBulkPreview(parsed);
   };
 
@@ -401,7 +497,7 @@ export default function TertiaryCbtPage() {
     try {
       const content = await file.text();
       setBulkRawText(content);
-      const parsed = parseBulkQuestionText(content);
+      const parsed = parseBulkQuestionText(content, managedExam?.courseCode);
       setBulkPreview(parsed);
       toast({
         title: 'File Parsed Successfully',
@@ -415,16 +511,23 @@ export default function TertiaryCbtPage() {
   const handleCommitBulkToExistingExam = () => {
     if (!managedExam || bulkPreview.length === 0) return;
 
+    // Filter to questions matching this exam's courseCode if courseCode was specified in multi-course CSV
+    const targetCode = (managedExam.courseCode || '').toUpperCase();
+    const matchingQuestions = bulkPreview.filter(
+      (q) => !q.courseCode || !targetCode || targetCode === 'GENERAL' || q.courseCode.toUpperCase() === targetCode
+    );
+    const questionsToImport = matchingQuestions.length > 0 ? matchingQuestions : bulkPreview;
+
     startTransition(async () => {
       const res = await bulkAddCbtQuestionsAction({
         examId: managedExam.id,
-        questions: bulkPreview,
+        questions: questionsToImport,
       });
 
       if (res.success) {
         toast({
           title: 'Bulk Question Bank Imported!',
-          description: res.message || `Imported ${bulkPreview.length} questions into ${managedExam.title}.`,
+          description: res.message || `Imported ${questionsToImport.length} questions into ${managedExam.title}.`,
         });
         setBulkRawText('');
         setBulkPreview([]);
@@ -432,6 +535,29 @@ export default function TertiaryCbtPage() {
         loadExams();
       } else {
         toast({ variant: 'destructive', title: 'Bulk Import Failed', description: res.error });
+      }
+    });
+  };
+
+  const handleCommitMasterMultiCourseImport = () => {
+    if (bulkPreview.length === 0) return;
+
+    startTransition(async () => {
+      const res = await bulkImportMultiCourseQuestionBankAction({
+        questions: bulkPreview,
+      });
+
+      if (res.success) {
+        toast({
+          title: 'Master Question Bank Routed by Faculty & Department!',
+          description: res.message,
+        });
+        setBulkRawText('');
+        setBulkPreview([]);
+        setIsMasterBulkOpen(false);
+        loadExams();
+      } else {
+        toast({ variant: 'destructive', title: 'Import Failed', description: res.error });
       }
     });
   };
@@ -622,6 +748,36 @@ export default function TertiaryCbtPage() {
     const s = secs % 60;
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
+
+  // Distinct Faculties, Departments, and Course Codes for Filtering
+  const distinctFaculties = Array.from(new Set(exams.map((e) => e.facultyName).filter(Boolean)));
+  const distinctDepartments = Array.from(
+    new Set(
+      exams
+        .filter((e) => selectedFaculty === 'ALL' || e.facultyName === selectedFaculty)
+        .map((e) => e.departmentName)
+        .filter(Boolean)
+    )
+  );
+  const distinctCourses = Array.from(
+    new Set(
+      exams
+        .filter(
+          (e) =>
+            (selectedFaculty === 'ALL' || e.facultyName === selectedFaculty) &&
+            (selectedDepartment === 'ALL' || e.departmentName === selectedDepartment)
+        )
+        .map((e) => e.courseCode)
+        .filter(Boolean)
+    )
+  );
+
+  const filteredExams = exams.filter((e) => {
+    if (selectedFaculty !== 'ALL' && e.facultyName !== selectedFaculty) return false;
+    if (selectedDepartment !== 'ALL' && e.departmentName !== selectedDepartment) return false;
+    if (selectedCourseCode !== 'ALL' && e.courseCode !== selectedCourseCode) return false;
+    return true;
+  });
 
   // --- VIEW 1: ACTIVE EXAM IN PROGRESS ---
   if (activeExam && !isExamCompleted) {
@@ -824,249 +980,409 @@ export default function TertiaryCbtPage() {
   // --- VIEW 3: CBT PORTAL DASHBOARD (EXAM LIST & LECTURER QUESTION MANAGER) ---
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Computer-Based Testing (CBT) Engine</h1>
           <p className="text-muted-foreground text-sm mt-1">
             {isFacultyOrAdmin
-              ? 'Author CBT exams, bulk upload question banks (CSV / Excel / Aiken / JSON), and automatically pipe student CBT scores into CA / Exam gradebooks.'
-              : 'Proctored continuous assessment and examination tests with live timers and instant grading.'}
+              ? 'Author CBT exams, bulk upload multi-faculty/department question banks, and automatically pipe student CBT scores into CA / Exam gradebooks.'
+              : 'Proctored continuous assessment and examination tests for your registered courses.'}
           </p>
         </div>
 
         {isFacultyOrAdmin && (
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
-                <Plus className="h-4 w-4" /> Create CBT Assessment
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-3xl max-h-[88vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Create CBT Assessment &amp; Question Bank</DialogTitle>
-                <DialogDescription>
-                  Link this CBT test to a Course Offering so student scores automatically pipe into their Continuous Assessment (CA) or Final Exam gradebook.
-                </DialogDescription>
-              </DialogHeader>
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Master Multi-Faculty / Multi-Department Bulk Question Bank Upload */}
+            <Dialog open={isMasterBulkOpen} onOpenChange={setIsMasterBulkOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50">
+                  <UploadCloud className="h-4 w-4 text-indigo-600" />
+                  Master Bulk Question Bank (Multi-Dept)
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl max-h-[88vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <FileSpreadsheet className="h-5 w-5 text-indigo-600" />
+                    Master Institution Question Bank Bulk Upload
+                  </DialogTitle>
+                  <DialogDescription>
+                    Upload a single Excel/CSV sheet containing questions across multiple <strong>Faculties</strong>, <strong>Departments</strong>, and <strong>Course Codes</strong> (e.g. `CSC301`, `CSC201`, `MTH101`, `GST101`). Each row is automatically routed to its exact Department &amp; Course CBT Exam!
+                  </DialogDescription>
+                </DialogHeader>
 
-              <div className="space-y-4 py-2">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Course Offering (Auto-Syncs Gradebook)</Label>
-                    <select
-                      value={newCourseOfferingId}
-                      onChange={(e) => setNewCourseOfferingId(e.target.value)}
-                      className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm mt-1"
-                    >
-                      <option value="none">General Institutional CBT</option>
-                      {offerings.map((off: any) => (
-                        <option key={off.id} value={off.id}>
-                          {off.code} — {off.title} ({off.session})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <Label>Assessment Target Category</Label>
-                    <select
-                      value={newTargetCategory}
-                      onChange={(e) => {
-                        const cat = e.target.value as 'CA' | 'EXAM';
-                        setNewTargetCategory(cat);
-                        setNewTotalMarks(cat === 'CA' ? 40 : 60);
-                      }}
-                      className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm mt-1"
-                    >
-                      <option value="CA">Continuous Assessment (CA — 40 Marks)</option>
-                      <option value="EXAM">Semester Examination (EXAM — 60 Marks)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <Label>Assessment Title</Label>
-                  <Input
-                    placeholder="e.g. CSC201 Continuous Assessment Test I"
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <Label>Instructions / Description</Label>
-                  <Input
-                    placeholder="Answer all questions within the allotted time. Tab switching is strictly monitored."
-                    value={newDescription}
-                    onChange={(e) => setNewDescription(e.target.value)}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Duration (Minutes)</Label>
-                    <Input
-                      type="number"
-                      value={newDuration}
-                      onChange={(e) => setNewDuration(Number(e.target.value))}
-                    />
-                  </div>
-                  <div>
-                    <Label>Total Weight (Marks)</Label>
-                    <Input
-                      type="number"
-                      value={newTotalMarks}
-                      onChange={(e) => setNewTotalMarks(Number(e.target.value))}
-                    />
-                  </div>
-                </div>
-
-                {/* Question Builder Section */}
-                <div className="border-t pt-4 space-y-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <h4 className="text-sm font-bold">Exam Questions ({newQuestions.length})</h4>
-                      <p className="text-xs text-muted-foreground">
-                        Add questions manually or bulk upload via CSV / Excel / Aiken text.
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => setShowCreateBulkBox(!showCreateBulkBox)}
-                      >
-                        <UploadCloud className="h-3.5 w-3.5 mr-1 text-indigo-600" />
-                        Bulk Upload Questions
-                      </Button>
-                      <Button type="button" size="sm" variant="outline" onClick={handleAddDraftQuestion}>
-                        <Plus className="h-3.5 w-3.5 mr-1" /> Add Question
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Collapsible Bulk Importer inside Create Exam Modal */}
-                  {showCreateBulkBox && (
-                    <div className="p-4 rounded-xl border border-indigo-200 bg-indigo-50/40 dark:bg-indigo-950/20 space-y-3">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5">
-                          <FileSpreadsheet className="h-4 w-4" /> Bulk Import Questions (CSV, Excel, Aiken, or JSON)
-                        </span>
-                        <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={handleDownloadCsvTemplate}>
-                          <Download className="h-3 w-3 mr-1" /> Download CSV Template
-                        </Button>
+                <div className="space-y-4 py-2">
+                  <div className="p-4 rounded-xl border border-indigo-200 bg-indigo-50/40 dark:bg-indigo-950/20 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="text-xs text-muted-foreground">
+                        Template Columns: <code className="font-mono font-bold text-indigo-700">Faculty, Department, CourseCode, Category, Question, OptionA..D, CorrectOption, Points</code>
                       </div>
+                      <Button type="button" variant="outline" size="sm" onClick={handleDownloadCsvTemplate} className="shrink-0">
+                        <Download className="h-3.5 w-3.5 mr-1.5 text-indigo-600" />
+                        Download Multi-Dept CSV Template
+                      </Button>
+                    </div>
 
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold">Upload Excel CSV / Aiken / JSON File</Label>
                       <Input
                         type="file"
                         accept=".csv,.txt,.json"
                         onChange={handleBulkFileUpload}
-                        className="text-xs bg-background cursor-pointer"
+                        className="bg-background text-xs cursor-pointer"
                       />
+                    </div>
 
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold">Or Paste Rows Directly from Excel / Word</Label>
                       <textarea
-                        rows={4}
+                        rows={5}
                         value={bulkRawText}
                         onChange={(e) => handleBulkTextChange(e.target.value)}
-                        placeholder={`Paste CSV rows: Question,OptionA,OptionB,OptionC,OptionD,CorrectOption,Points\nOR Aiken format:\nWhat is 2 + 2?\nA. 3\nB. 4\nC. 5\nD. 6\nANSWER: B`}
-                        className="w-full rounded-lg border border-input bg-background p-2.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder={`Faculty,Department,CourseCode,Category,Question,OptionA,OptionB,OptionC,OptionD,CorrectOption,Points\n"Faculty of Computing","Computer Science",CSC301,CA,"Which data structure is FIFO?",Stack,Queue,Tree,Graph,B,10\n"Faculty of Science","Mathematics",MTH101,CA,"Derivative of sin(x)?",cos(x),-cos(x),tan(x),sec(x),A,10`}
+                        className="w-full rounded-xl border border-input bg-background p-3 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       />
+                    </div>
+                  </div>
 
+                  {bulkPreview.length > 0 && (
+                    <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-muted-foreground">
-                          Parsed Valid Questions: <strong className="text-indigo-600">{bulkPreview.length}</strong>
+                        <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">
+                          Parsed {bulkPreview.length} Questions Across Faculties &amp; Departments
                         </span>
                         <Button
-                          type="button"
-                          size="sm"
-                          disabled={bulkPreview.length === 0}
-                          onClick={handleAppendBulkToDraftExam}
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs"
+                          onClick={handleCommitMasterMultiCourseImport}
+                          disabled={isPending}
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold"
                         >
-                          Append {bulkPreview.length} Questions to Exam
+                          {isPending ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                          ) : (
+                            <UploadCloud className="h-3.5 w-3.5 mr-1.5" />
+                          )}
+                          Route &amp; Import All {bulkPreview.length} Questions
                         </Button>
+                      </div>
+
+                      <div className="max-h-60 overflow-y-auto border rounded-xl divide-y">
+                        {bulkPreview.map((item, idx) => (
+                          <div key={idx} className="p-3 text-xs space-y-1.5 bg-card">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <Badge variant="secondary" className="text-[10px] font-mono font-bold">
+                                  {item.courseCode || 'CSC301'} ({item.category || 'CA'})
+                                </Badge>
+                                <Badge variant="outline" className="text-[10px]">
+                                  {item.faculty || 'Faculty of Computing'} &bull; {item.department || 'Computer Science'}
+                                </Badge>
+                              </div>
+                              <Badge variant="outline" className="text-[10px] font-mono text-emerald-700 border-emerald-300">
+                                Ans: {item.correctOption} ({item.points} pts)
+                              </Badge>
+                            </div>
+                            <div className="font-semibold text-foreground">
+                              {idx + 1}. {item.questionText}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
+                </div>
+              </DialogContent>
+            </Dialog>
 
-                  <div className="space-y-4 max-h-[340px] overflow-y-auto pr-1">
-                    {newQuestions.map((q, idx) => (
-                      <div key={idx} className="p-4 rounded-xl border bg-muted/20 space-y-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-bold uppercase text-primary">Question #{idx + 1}</span>
-                          {newQuestions.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveDraftQuestion(idx)}
-                              className="h-7 px-2 text-red-600 hover:text-red-700"
-                            >
-                              <Trash2 className="h-3.5 w-3.5 mr-1" /> Remove
-                            </Button>
-                          )}
+            {/* Create Single CBT Assessment Dialog */}
+            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+              <DialogTrigger asChild>
+                <Button className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" /> Create CBT Assessment
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl max-h-[88vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Create CBT Assessment &amp; Question Bank</DialogTitle>
+                  <DialogDescription>
+                    Link this CBT test to a Course Offering (Faculty &amp; Department) so student scores automatically pipe into their Continuous Assessment (CA) or Final Exam gradebook.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-4 py-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label>Course Offering (Faculty / Department)</Label>
+                      <select
+                        value={newCourseOfferingId}
+                        onChange={(e) => setNewCourseOfferingId(e.target.value)}
+                        className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm mt-1"
+                      >
+                        <option value="none">General Institutional CBT</option>
+                        {offerings.map((off: any) => (
+                          <option key={off.id} value={off.id}>
+                            [{off.departmentName}] {off.code} — {off.title}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <Label>Assessment Target Category</Label>
+                      <select
+                        value={newTargetCategory}
+                        onChange={(e) => {
+                          const cat = e.target.value as 'CA' | 'EXAM';
+                          setNewTargetCategory(cat);
+                          setNewTotalMarks(cat === 'CA' ? 40 : 60);
+                        }}
+                        className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm mt-1"
+                      >
+                        <option value="CA">Continuous Assessment (CA — 40 Marks)</option>
+                        <option value="EXAM">Semester Examination (EXAM — 60 Marks)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label>Assessment Title</Label>
+                    <Input
+                      placeholder="e.g. CSC201 Continuous Assessment Test I"
+                      value={newTitle}
+                      onChange={(e) => setNewTitle(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Instructions / Description</Label>
+                    <Input
+                      placeholder="Answer all questions within the allotted time. Tab switching is strictly monitored."
+                      value={newDescription}
+                      onChange={(e) => setNewDescription(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Duration (Minutes)</Label>
+                      <Input
+                        type="number"
+                        value={newDuration}
+                        onChange={(e) => setNewDuration(Number(e.target.value))}
+                      />
+                    </div>
+                    <div>
+                      <Label>Total Weight (Marks)</Label>
+                      <Input
+                        type="number"
+                        value={newTotalMarks}
+                        onChange={(e) => setNewTotalMarks(Number(e.target.value))}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Question Builder Section */}
+                  <div className="border-t pt-4 space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <h4 className="text-sm font-bold">Exam Questions ({newQuestions.length})</h4>
+                        <p className="text-xs text-muted-foreground">
+                          Add questions manually or bulk upload via CSV / Excel / Aiken text.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => setShowCreateBulkBox(!showCreateBulkBox)}
+                        >
+                          <UploadCloud className="h-3.5 w-3.5 mr-1 text-indigo-600" />
+                          Bulk Upload Questions
+                        </Button>
+                        <Button type="button" size="sm" variant="outline" onClick={handleAddDraftQuestion}>
+                          <Plus className="h-3.5 w-3.5 mr-1" /> Add Question
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Collapsible Bulk Importer inside Create Exam Modal */}
+                    {showCreateBulkBox && (
+                      <div className="p-4 rounded-xl border border-indigo-200 bg-indigo-50/40 dark:bg-indigo-950/20 space-y-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5">
+                            <FileSpreadsheet className="h-4 w-4" /> Bulk Import Questions (CSV, Excel, Aiken, or JSON)
+                          </span>
+                          <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={handleDownloadCsvTemplate}>
+                            <Download className="h-3 w-3 mr-1" /> Download CSV Template
+                          </Button>
                         </div>
 
                         <Input
-                          placeholder="Enter question text..."
-                          value={q.questionText}
-                          onChange={(e) => handleUpdateDraftQuestion(idx, 'questionText', e.target.value)}
+                          type="file"
+                          accept=".csv,.txt,.json"
+                          onChange={handleBulkFileUpload}
+                          className="text-xs bg-background cursor-pointer"
                         />
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {q.options.map((opt: any) => (
-                            <div key={opt.id} className="flex items-center gap-2">
-                              <span className="text-xs font-bold w-5">{opt.id}.</span>
-                              <Input
-                                placeholder={`Option ${opt.id}`}
-                                value={opt.text}
-                                onChange={(e) => handleUpdateDraftOption(idx, opt.id, e.target.value)}
-                                className="h-8 text-xs"
-                              />
-                            </div>
-                          ))}
-                        </div>
+                        <textarea
+                          rows={4}
+                          value={bulkRawText}
+                          onChange={(e) => handleBulkTextChange(e.target.value)}
+                          placeholder={`Paste CSV rows: Faculty,Department,CourseCode,Category,Question,OptionA,OptionB,OptionC,OptionD,CorrectOption,Points`}
+                          className="w-full rounded-lg border border-input bg-background p-2.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
 
-                        <div className="grid grid-cols-2 gap-3 pt-1">
-                          <div>
-                            <Label className="text-xs">Correct Answer</Label>
-                            <select
-                              value={q.correctOption}
-                              onChange={(e) => handleUpdateDraftQuestion(idx, 'correctOption', e.target.value)}
-                              className="w-full h-8 px-2 rounded-md border border-input bg-background text-xs mt-1"
-                            >
-                              <option value="A">Option A</option>
-                              <option value="B">Option B</option>
-                              <option value="C">Option C</option>
-                              <option value="D">Option D</option>
-                            </select>
-                          </div>
-                          <div>
-                            <Label className="text-xs">Points</Label>
-                            <Input
-                              type="number"
-                              value={q.points}
-                              onChange={(e) => handleUpdateDraftQuestion(idx, 'points', Number(e.target.value))}
-                              className="h-8 text-xs mt-1"
-                            />
-                          </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-muted-foreground">
+                            Parsed Valid Questions: <strong className="text-indigo-600">{bulkPreview.length}</strong>
+                          </span>
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={bulkPreview.length === 0}
+                            onClick={handleAppendBulkToDraftExam}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs"
+                          >
+                            Append {bulkPreview.length} Questions to Exam
+                          </Button>
                         </div>
                       </div>
-                    ))}
+                    )}
+
+                    <div className="space-y-4 max-h-[340px] overflow-y-auto pr-1">
+                      {newQuestions.map((q, idx) => (
+                        <div key={idx} className="p-4 rounded-xl border bg-muted/20 space-y-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs font-bold uppercase text-primary">Question #{idx + 1}</span>
+                            {newQuestions.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveDraftQuestion(idx)}
+                                className="h-7 px-2 text-red-600 hover:text-red-700"
+                              >
+                                <Trash2 className="h-3.5 w-3.5 mr-1" /> Remove
+                              </Button>
+                            )}
+                          </div>
+
+                          <Input
+                            placeholder="Enter question text..."
+                            value={q.questionText}
+                            onChange={(e) => handleUpdateDraftQuestion(idx, 'questionText', e.target.value)}
+                          />
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {q.options.map((opt: any) => (
+                              <div key={opt.id} className="flex items-center gap-2">
+                                <span className="text-xs font-bold w-5">{opt.id}.</span>
+                                <Input
+                                  placeholder={`Option ${opt.id}`}
+                                  value={opt.text}
+                                  onChange={(e) => handleUpdateDraftOption(idx, opt.id, e.target.value)}
+                                  className="h-8 text-xs"
+                                />
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3 pt-1">
+                            <div>
+                              <Label className="text-xs">Correct Answer</Label>
+                              <select
+                                value={q.correctOption}
+                                onChange={(e) => handleUpdateDraftQuestion(idx, 'correctOption', e.target.value)}
+                                className="w-full h-8 px-2 rounded-md border border-input bg-background text-xs mt-1"
+                              >
+                                <option value="A">Option A</option>
+                                <option value="B">Option B</option>
+                                <option value="C">Option C</option>
+                                <option value="D">Option D</option>
+                              </select>
+                            </div>
+                            <div>
+                              <Label className="text-xs">Points</Label>
+                              <Input
+                                type="number"
+                                value={q.points}
+                                onChange={(e) => handleUpdateDraftQuestion(idx, 'points', Number(e.target.value))}
+                                className="h-8 text-xs mt-1"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-                <Button onClick={handleCreateExam} disabled={isPending}>
-                  {isPending && <Loader2 className="h-4 w-4 animate-spin mr-1" />} Publish CBT Exam
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+                  <Button onClick={handleCreateExam} disabled={isPending}>
+                    {isPending && <Loader2 className="h-4 w-4 animate-spin mr-1" />} Publish CBT Exam
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         )}
+      </div>
+
+      {/* FACULTY, DEPARTMENT & COURSE FILTER BAR */}
+      <div className="p-4 rounded-2xl border bg-card shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-wider shrink-0">
+          <Filter className="h-4 w-4 text-primary" />
+          <span>Filter by Hierarchy:</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1">
+          <select
+            value={selectedFaculty}
+            onChange={(e) => {
+              setSelectedFaculty(e.target.value);
+              setSelectedDepartment('ALL');
+              setSelectedCourseCode('ALL');
+            }}
+            className="h-9 px-3 rounded-xl border border-input bg-background text-xs font-medium"
+          >
+            <option value="ALL">All Faculties ({distinctFaculties.length})</option>
+            {distinctFaculties.map((f) => (
+              <option key={f} value={f}>
+                {f}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={selectedDepartment}
+            onChange={(e) => {
+              setSelectedDepartment(e.target.value);
+              setSelectedCourseCode('ALL');
+            }}
+            className="h-9 px-3 rounded-xl border border-input bg-background text-xs font-medium"
+          >
+            <option value="ALL">All Departments ({distinctDepartments.length})</option>
+            {distinctDepartments.map((d) => (
+              <option key={d} value={d}>
+                Dept. of {d}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={selectedCourseCode}
+            onChange={(e) => setSelectedCourseCode(e.target.value)}
+            className="h-9 px-3 rounded-xl border border-input bg-background text-xs font-medium"
+          >
+            <option value="ALL">All Course Codes ({distinctCourses.length})</option>
+            {distinctCourses.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Available Exams Grid */}
@@ -1074,28 +1390,40 @@ export default function TertiaryCbtPage() {
         <div className="flex justify-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      ) : exams.length === 0 ? (
+      ) : filteredExams.length === 0 ? (
         <Card className="p-12 text-center">
           <FileQuestion className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-          <h3 className="text-base font-semibold">No CBT Tests Currently Active</h3>
+          <h3 className="text-base font-semibold">No Matching CBT Assessments Found</h3>
           <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
-            Lecturers can author continuous assessment quizzes or objective mid-term exams above.
+            Try clearing your Faculty / Department filter or use the Master Bulk Question Bank Upload above.
           </p>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {exams.map((exam) => (
+          {filteredExams.map((exam) => (
             <Card key={exam.id} className="border shadow-sm flex flex-col justify-between hover:border-primary/50 transition-all">
               <CardHeader>
                 <div className="flex justify-between items-start gap-2">
-                  <Badge variant="secondary" className="font-mono text-xs">
-                    {exam.courseOffering?.course?.code || 'TERTIARY TEST'}
+                  <Badge variant="secondary" className="font-mono text-xs font-bold">
+                    {exam.courseCode || 'TERTIARY TEST'}
                   </Badge>
                   <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs">
                     {exam.targetCategory} ({exam.totalMarks} Marks)
                   </Badge>
                 </div>
-                <CardTitle className="text-base font-semibold pt-2">{exam.title}</CardTitle>
+
+                {/* Faculty & Department Pill */}
+                <div className="flex flex-wrap items-center gap-1.5 pt-2">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200/60">
+                    <Building2 className="h-3 w-3" />
+                    {exam.facultyName}
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                    Dept: {exam.departmentName}
+                  </span>
+                </div>
+
+                <CardTitle className="text-base font-semibold pt-1.5">{exam.title}</CardTitle>
                 <CardDescription className="text-xs line-clamp-2">
                   {exam.description || 'Standard institutional continuous assessment test.'}
                 </CardDescription>
@@ -1166,7 +1494,7 @@ export default function TertiaryCbtPage() {
               {managedExam?.title} — CBT Management Console
             </DialogTitle>
             <DialogDescription>
-              Course: <span className="font-semibold text-foreground">{managedExam?.courseOffering?.course?.code || 'General'}</span> • Weight: <span className="font-semibold text-foreground">{managedExam?.totalMarks} Marks ({managedExam?.targetCategory})</span>
+              Faculty: <span className="font-semibold text-foreground">{managedExam?.facultyName}</span> • Department: <span className="font-semibold text-foreground">{managedExam?.departmentName}</span> • Course: <span className="font-semibold text-foreground">{managedExam?.courseCode}</span> • Weight: <span className="font-semibold text-foreground">{managedExam?.totalMarks} Marks ({managedExam?.targetCategory})</span>
             </DialogDescription>
           </DialogHeader>
 
@@ -1212,7 +1540,7 @@ export default function TertiaryCbtPage() {
               <div className="p-4 rounded-xl border bg-muted/20 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
-                    <Plus className="h-4 w-4" /> Add New Question to This CBT
+                    <Plus className="h-4 w-4" /> Add New Question to {managedExam?.courseCode} ({managedExam?.departmentName})
                   </h4>
                   <Button
                     type="button"
@@ -1334,10 +1662,10 @@ export default function TertiaryCbtPage() {
                   <div>
                     <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
                       <FileSpreadsheet className="h-4 w-4 text-indigo-600" />
-                      Bulk Question Bank Importer
+                      Bulk Question Bank Importer ({managedExam?.facultyName} &bull; {managedExam?.departmentName} &bull; {managedExam?.courseCode})
                     </h4>
                     <p className="text-xs text-muted-foreground">
-                      Upload a `.csv` spreadsheet, `.txt` Aiken file, or `.json` file — or paste rows directly from Excel / Word.
+                      Supports both the 11-column Multi-Department CSV (`Faculty,Department,CourseCode,Category,Question...`) and the 7-column Course CSV (`Question,OptionA..D,CorrectOption,Points`).
                     </p>
                   </div>
                   <Button type="button" variant="outline" size="sm" onClick={handleDownloadCsvTemplate} className="shrink-0">
@@ -1366,7 +1694,7 @@ export default function TertiaryCbtPage() {
                     rows={6}
                     value={bulkRawText}
                     onChange={(e) => handleBulkTextChange(e.target.value)}
-                    placeholder={`CSV Format:\nQuestion,OptionA,OptionB,OptionC,OptionD,CorrectOption,Points\n"Which data structure is LIFO?",Queue,Stack,Tree,Graph,B,10\n\nOR Aiken Format:\nWhich data structure is LIFO?\nA. Queue\nB. Stack\nC. Tree\nD. Graph\nANSWER: B\nPOINTS: 10`}
+                    placeholder={`Faculty,Department,CourseCode,Category,Question,OptionA,OptionB,OptionC,OptionD,CorrectOption,Points\n"Faculty of Computing","Computer Science",CSC301,CA,"Which data structure is LIFO?",Queue,Stack,Tree,Graph,B,10\n\nOR Aiken Format:\nCOURSE: CSC301\nDEPARTMENT: Computer Science\nWhich data structure is LIFO?\nA. Queue\nB. Stack\nC. Tree\nD. Graph\nANSWER: B`}
                     className="w-full rounded-xl border border-input bg-background p-3 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
@@ -1375,34 +1703,57 @@ export default function TertiaryCbtPage() {
               {/* Live Parsed Preview */}
               {bulkPreview.length > 0 && (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">
                       Ready to Import: {bulkPreview.length} Valid Questions Detected
                     </span>
-                    <Button
-                      onClick={handleCommitBulkToExistingExam}
-                      disabled={isPending}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold"
-                    >
-                      {isPending ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
-                      ) : (
-                        <UploadCloud className="h-3.5 w-3.5 mr-1.5" />
-                      )}
-                      Import All {bulkPreview.length} Questions to Question Bank
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCommitMasterMultiCourseImport}
+                        disabled={isPending}
+                        className="text-xs"
+                      >
+                        Route by CourseCode (Multi-Dept)
+                      </Button>
+                      <Button
+                        onClick={handleCommitBulkToExistingExam}
+                        disabled={isPending}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold"
+                      >
+                        {isPending ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                        ) : (
+                          <UploadCloud className="h-3.5 w-3.5 mr-1.5" />
+                        )}
+                        Import into {managedExam?.courseCode}
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="max-h-60 overflow-y-auto border rounded-xl divide-y">
                     {bulkPreview.map((item, idx) => (
                       <div key={idx} className="p-3 text-xs space-y-1 bg-card">
-                        <div className="flex items-center justify-between font-semibold">
+                        <div className="flex flex-wrap items-center justify-between gap-2 font-semibold">
                           <span>
                             {idx + 1}. {item.questionText}
                           </span>
-                          <Badge variant="outline" className="text-[10px] font-mono">
-                            Ans: {item.correctOption} ({item.points} pts)
-                          </Badge>
+                          <div className="flex items-center gap-1.5">
+                            {item.courseCode && (
+                              <Badge variant="secondary" className="text-[10px] font-mono">
+                                {item.courseCode}
+                              </Badge>
+                            )}
+                            {item.department && (
+                              <Badge variant="outline" className="text-[10px]">
+                                {item.department}
+                              </Badge>
+                            )}
+                            <Badge variant="outline" className="text-[10px] font-mono text-emerald-700">
+                              Ans: {item.correctOption} ({item.points} pts)
+                            </Badge>
+                          </div>
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 text-[11px] text-muted-foreground">
                           {item.options.map((o) => (

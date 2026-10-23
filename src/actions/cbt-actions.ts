@@ -5,6 +5,24 @@ import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
 import crypto from 'crypto';
 
+const OFFERING_HIERARCHY_INCLUDE = {
+  course: {
+    include: {
+      program: {
+        include: {
+          department: true,
+          faculty: true,
+        },
+      },
+    },
+  },
+  lecturers: {
+    include: {
+      staff: { include: { user: true } },
+    },
+  },
+};
+
 export async function getCbtExams(courseOfferingId?: string) {
   try {
     const session = await auth();
@@ -34,28 +52,44 @@ export async function getCbtExams(courseOfferingId?: string) {
         where,
         include: {
           courseOffering: {
-            include: { course: true },
+            include: OFFERING_HIERARCHY_INCLUDE,
           },
           _count: { select: { questions: true, submissions: true } },
         },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.courseOffering.findMany({
-        include: { course: true },
+        include: OFFERING_HIERARCHY_INCLUDE,
         orderBy: { createdAt: 'desc' },
       }),
     ]);
 
     return {
       success: true,
-      data: exams,
-      offerings: offerings.map((o) => ({
-        id: o.id,
-        code: o.course.code,
-        title: o.course.title,
-        session: o.academicSession,
-        semester: o.semester,
-      })),
+      data: exams.map((e) => {
+        const course = e.courseOffering?.course;
+        const program = course?.program;
+        return {
+          ...e,
+          courseCode: course?.code || 'GENERAL',
+          courseTitle: course?.title || 'Institutional CBT Assessment',
+          departmentName: program?.department?.name || (course?.code?.startsWith('MTH') ? 'Mathematics' : course?.code?.startsWith('GST') ? 'General Studies' : 'Computer Science'),
+          facultyName: program?.faculty?.name || (course?.code?.startsWith('GST') ? 'Directorate of General Studies' : 'Faculty of Computing & Sciences'),
+          programName: program?.name || 'B.Sc. Degree Program',
+        };
+      }),
+      offerings: offerings.map((o) => {
+        const program = o.course?.program;
+        return {
+          id: o.id,
+          code: o.course.code,
+          title: o.course.title,
+          session: o.academicSession,
+          semester: o.semester,
+          departmentName: program?.department?.name || (o.course.code.startsWith('MTH') ? 'Mathematics' : o.course.code.startsWith('GST') ? 'General Studies' : 'Computer Science'),
+          facultyName: program?.faculty?.name || (o.course.code.startsWith('GST') ? 'Directorate of General Studies' : 'Faculty of Computing & Sciences'),
+        };
+      }),
     };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -67,7 +101,7 @@ export async function getCbtExamDetails(examId: string, studentProfileId?: strin
     const exam = await prisma.cbtExam.findUnique({
       where: { id: examId },
       include: {
-        courseOffering: { include: { course: true } },
+        courseOffering: { include: OFFERING_HIERARCHY_INCLUDE },
         questions: {
           orderBy: { orderIndex: 'asc' },
           select: {
@@ -112,7 +146,7 @@ export async function getCbtExamForManagement(examId: string) {
     const exam = await prisma.cbtExam.findUnique({
       where: { id: examId },
       include: {
-        courseOffering: { include: { course: true } },
+        courseOffering: { include: OFFERING_HIERARCHY_INCLUDE },
         questions: {
           orderBy: { orderIndex: 'asc' },
         },
@@ -129,10 +163,16 @@ export async function getCbtExamForManagement(examId: string) {
 
     if (!exam) throw new Error('Exam not found.');
 
+    const course = exam.courseOffering?.course;
+    const program = course?.program;
+
     return {
       success: true,
       data: {
         ...exam,
+        courseCode: course?.code || 'GENERAL',
+        departmentName: program?.department?.name || 'Computer Science',
+        facultyName: program?.faculty?.name || 'Faculty of Computing & Sciences',
         submissions: exam.submissions.map((s) => ({
           id: s.id,
           studentId: s.studentProfileId,
@@ -152,6 +192,10 @@ export async function getCbtExamForManagement(examId: string) {
   } catch (error: any) {
     return { success: false, error: error.message };
   }
+}
+
+function qOptionsFallback(options: { id: string; text: string }[]) {
+  return options.map((o) => ({ id: o.id.toUpperCase(), text: o.text.trim() }));
 }
 
 export async function addCbtQuestionAction(data: {
@@ -179,10 +223,6 @@ export async function addCbtQuestionAction(data: {
   } catch (error: any) {
     return { success: false, error: error.message };
   }
-}
-
-function qOptionsFallback(options: { id: string; text: string }[]) {
-  return options.map((o) => ({ id: o.id.toUpperCase(), text: o.text.trim() }));
 }
 
 export async function bulkAddCbtQuestionsAction(data: {
@@ -222,6 +262,177 @@ export async function bulkAddCbtQuestionsAction(data: {
       success: true,
       importedCount: created.length,
       message: `Successfully imported ${created.length} questions into the CBT Question Bank.`,
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Master Multi-Faculty / Multi-Department / Multi-Course Question Bank Bulk Importer:
+ * Routes questions from a single CSV/Excel upload to their respective Faculty -> Department -> Course -> CBT Exam!
+ */
+export async function bulkImportMultiCourseQuestionBankAction(data: {
+  questions: {
+    faculty?: string;
+    department?: string;
+    courseCode?: string;
+    category?: 'CA' | 'EXAM';
+    questionText: string;
+    options: { id: string; text: string }[];
+    correctOption: string;
+    points: number;
+  }[];
+}) {
+  try {
+    if (!Array.isArray(data.questions) || data.questions.length === 0) {
+      return { success: false, error: 'No valid questions found to import.' };
+    }
+
+    // Group questions by CourseCode + Category (e.g., "CSC301::CA", "MTH101::EXAM")
+    const groups = new Map<
+      string,
+      {
+        faculty: string;
+        department: string;
+        courseCode: string;
+        category: 'CA' | 'EXAM';
+        items: typeof data.questions;
+      }
+    >();
+
+    for (const q of data.questions) {
+      const code = (q.courseCode || 'CSC201').trim().toUpperCase().replace(/\s+/g, '');
+      const cat = (q.category || 'CA').toUpperCase() === 'EXAM' ? 'EXAM' : 'CA';
+      const key = `${code}::${cat}`;
+      if (!groups.has(key)) {
+        groups.set(key, {
+          faculty: (q.faculty || 'Faculty of Computing').trim(),
+          department: (q.department || 'Computer Science').trim(),
+          courseCode: code,
+          category: cat,
+          items: [],
+        });
+      }
+      groups.get(key)!.items.push(q);
+    }
+
+    let totalImported = 0;
+    const summary: string[] = [];
+
+    for (const [, grp] of groups) {
+      // 1. Find or create Course & CourseOffering
+      let course = await prisma.course.findUnique({
+        where: { code: grp.courseCode },
+      });
+
+      if (!course) {
+        // Resolve or create Department & Program for this course
+        let dept = await prisma.department.findFirst({
+          where: { name: { contains: grp.department } },
+        });
+        if (!dept) {
+          dept = await prisma.department.create({
+            data: { name: grp.department },
+          });
+        }
+
+        let program = await prisma.academicProgram.findFirst({
+          where: { departmentId: dept.id },
+        });
+        if (!program) {
+          const progCode = `BSC-${grp.courseCode.slice(0, 3)}`;
+          program = await prisma.academicProgram.upsert({
+            where: { code: progCode },
+            update: {},
+            create: {
+              code: progCode,
+              name: `B.Sc. ${grp.department}`,
+              departmentId: dept.id,
+            },
+          });
+        }
+
+        const parsedLevel = parseInt(grp.courseCode.replace(/[^0-9]/g, '').charAt(0) + '00') || 100;
+        course = await prisma.course.create({
+          data: {
+            code: grp.courseCode,
+            title: `${grp.department} (${grp.courseCode})`,
+            creditUnits: 3,
+            level: parsedLevel,
+            semester: 1,
+            programId: program.id,
+          },
+        });
+      }
+
+      let offering = await prisma.courseOffering.findFirst({
+        where: { courseId: course.id },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (!offering) {
+        offering = await prisma.courseOffering.create({
+          data: {
+            courseId: course.id,
+            academicSession: '2025/2026',
+            semester: 1,
+            isRegistrationOpen: true,
+          },
+        });
+      }
+
+      // 2. Find or create CBT Exam for this CourseOffering + Category
+      let exam = await prisma.cbtExam.findFirst({
+        where: {
+          courseOfferingId: offering.id,
+          targetCategory: grp.category,
+        },
+      });
+
+      if (!exam) {
+        exam = await prisma.cbtExam.create({
+          data: {
+            courseOfferingId: offering.id,
+            title: `${grp.courseCode} ${grp.category === 'EXAM' ? 'Semester Examination' : 'Continuous Assessment Test'} (${grp.department})`,
+            description: `${grp.faculty} • Department of ${grp.department} — Proctored CBT ${grp.category} Assessment.`,
+            durationMinutes: grp.category === 'EXAM' ? 60 : 30,
+            totalMarks: grp.category === 'EXAM' ? 60 : 40,
+            targetCategory: grp.category,
+            antiCheatLevel: 'STRICT',
+            maxTabSwitches: 3,
+            isPublished: true,
+          },
+        });
+      }
+
+      const existingQCount = await prisma.cbtQuestion.count({ where: { examId: exam.id } });
+
+      await prisma.$transaction(
+        grp.items.map((q, idx) =>
+          prisma.cbtQuestion.create({
+            data: {
+              examId: exam!.id,
+              questionText: q.questionText.trim(),
+              questionType: 'MULTIPLE_CHOICE',
+              optionsJson: JSON.stringify(qOptionsFallback(q.options)),
+              correctOption: (q.correctOption || 'A').trim().toUpperCase(),
+              points: Number(q.points) || 10,
+              orderIndex: existingQCount + idx + 1,
+            },
+          })
+        )
+      );
+
+      totalImported += grp.items.length;
+      summary.push(`${grp.courseCode} (${grp.department} - ${grp.category}): ${grp.items.length} Qs`);
+    }
+
+    revalidatePath('/dashboard/tertiary/cbt');
+    return {
+      success: true,
+      importedCount: totalImported,
+      message: `Routed ${totalImported} questions across ${groups.size} course(s): ${summary.join(' | ')}`,
     };
   } catch (error: any) {
     return { success: false, error: error.message };
