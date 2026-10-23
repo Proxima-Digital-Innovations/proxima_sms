@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useRole } from '@/context/role-context';
 import { useLanguage } from '@/context/language-context';
-import { Menu, ChevronDown, Rocket, Lock, X, Loader2 } from 'lucide-react';
+import { Menu, ChevronDown, Rocket, X, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -21,12 +21,7 @@ export default function Sidebar() {
     const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
     const [schoolName, setSchoolName] = useState<string>('Proxima SMS');
     const [schoolLogo, setSchoolLogo] = useState<string | null>(null);
-    const [pendingPath, setPendingPath] = useState<string | null>(null);
 
-    // Reset pending path on route completion
-    useEffect(() => {
-        setPendingPath(null);
-    }, [pathname]);
     const { openMobile, setOpenMobile, state, setOpen } = useSidebar();
     
     // Never render collapsed icon-only view inside the mobile slide-over drawer
@@ -96,14 +91,14 @@ export default function Sidebar() {
             {/* Mobile Backdrop */}
             {openMobile && (
                 <div 
-                    className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs lg:hidden" 
+                    className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-xs lg:hidden" 
                     onClick={() => setOpenMobile(false)} 
                 />
             )}
             <aside 
                 className={cn(
                     "fixed top-0 z-50 h-[100dvh] transition-transform duration-300 ease-in-out flex flex-col",
-                    "bg-muted text-foreground shadow-xl border-border",
+                    "bg-[#0F172A] text-slate-200 shadow-2xl border-slate-800/90",
                     isRtl ? "right-0 border-l" : "left-0 border-r",
                     collapsed ? "lg:w-[80px] w-[270px] max-w-[85vw]" : "w-[270px] max-w-[85vw]",
                     openMobile
@@ -114,33 +109,33 @@ export default function Sidebar() {
                     "lg:translate-x-0"
                 )}
             >
-                {/* Proxima SMS Branding */}
-                <div className={cn("flex items-center h-16 px-4 border-b border-border shrink-0", collapsed ? "justify-center" : "justify-between")}>
+                {/* Corporate Institutional Branding Header */}
+                <div className={cn("flex items-center h-16 px-4 border-b border-slate-800/90 bg-slate-950/40 shrink-0", collapsed ? "justify-center" : "justify-between")}>
                     <Link 
                         href="/dashboard" 
                         onClick={() => setOpenMobile(false)}
                         className="flex items-center gap-3 overflow-hidden"
                     >
-                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-card border border-border/80 p-0.5 shrink-0 overflow-hidden">
+                        <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-slate-900 border border-slate-700/80 p-0.5 shrink-0 overflow-hidden shadow-inner">
                             {schoolLogo ? (
                                 <Image
                                     src={schoolLogo}
                                     alt={schoolName}
-                                    width={32}
-                                    height={32}
+                                    width={36}
+                                    height={36}
                                     className="w-full h-full object-contain"
                                     unoptimized
                                 />
                             ) : (
-                                <div className="flex items-center justify-center w-full h-full bg-primary rounded-md text-primary-foreground">
+                                <div className="flex items-center justify-center w-full h-full bg-gradient-to-br from-indigo-500 to-blue-600 rounded-md text-white shadow-sm">
                                     <Rocket className="w-4 h-4" />
                                 </div>
                             )}
                         </div>
                         {!collapsed && (
-                            <div className="flex flex-col">
-                                <span className="text-sm font-bold tracking-tight text-foreground line-clamp-1">{schoolName}</span>
-                                <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Education Portal</span>
+                            <div className="flex flex-col min-w-0">
+                                <span className="text-sm font-bold tracking-tight text-white line-clamp-1">{schoolName}</span>
+                                <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-widest">Enterprise ERP</span>
                             </div>
                         )}
                     </Link>
@@ -148,7 +143,7 @@ export default function Sidebar() {
                     <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="shrink-0 hidden lg:flex hover:bg-primary/10 hover:text-primary"
+                        className="shrink-0 hidden lg:flex h-8 w-8 text-slate-400 hover:bg-slate-800 hover:text-white"
                         onClick={() => setOpen(collapsed)}
                     >
                         <Menu className="w-4 h-4" />
@@ -157,7 +152,7 @@ export default function Sidebar() {
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="shrink-0 lg:hidden h-10 w-10 hover:bg-muted text-muted-foreground hover:text-foreground"
+                        className="shrink-0 lg:hidden h-9 w-9 text-slate-400 hover:bg-slate-800 hover:text-white"
                         onClick={() => setOpenMobile(false)}
                         aria-label="Close navigation"
                     >
@@ -165,22 +160,23 @@ export default function Sidebar() {
                     </Button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto py-4 px-3 space-y-3 no-scrollbar">
+                {/* Navigation Groups */}
+                <div className="flex-1 overflow-y-auto py-4 px-3 space-y-4 no-scrollbar">
                     {currentNavConfig.map((group) => {
                         const isExpanded = expandedGroups.includes(group.group);
                         
                         return (
-                            <div key={group.group} className="mb-2">
+                            <div key={group.group} className="space-y-1">
                                 {!collapsed && (
                                     <button
                                         onClick={() => toggleGroup(group.group)}
-                                        className="w-full flex items-center justify-between px-2 py-1.5 mb-1 group-btn rounded-md hover:bg-accent/50 transition-colors"
+                                        className="w-full flex items-center justify-between px-2.5 py-1.5 group-btn rounded-md hover:bg-slate-800/50 transition-colors cursor-pointer"
                                     >
-                                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                        <span className="text-[10px] font-bold text-slate-400/90 uppercase tracking-[0.12em]">
                                             {group.group}
                                         </span>
                                         <ChevronDown className={cn(
-                                            "w-4 h-4 text-muted-foreground transition-transform duration-200",
+                                            "w-3.5 h-3.5 text-slate-500 transition-transform duration-200",
                                             isExpanded ? "rotate-180" : ""
                                         )} />
                                     </button>
@@ -192,36 +188,43 @@ export default function Sidebar() {
                                             initial={!collapsed ? { height: 0, opacity: 0 } : undefined}
                                             animate={!collapsed ? { height: "auto", opacity: 1 } : undefined}
                                             exit={!collapsed ? { height: 0, opacity: 0 } : undefined}
-                                            className="space-y-1 overflow-hidden"
+                                            className="space-y-0.5 overflow-hidden"
                                         >
                                             {group.links.map((linkKey) => {
                                                 const link = allNavLinks[linkKey as string];
                                                 if (!link) return null;
                                                 const IconComponent = iconMap[link.icon];
                                                 
-                                                // Handle sublinks
+                                                // Handle parent links with subLinks
                                                 if (link.subLinks && link.subLinks.length > 0) {
                                                     const hasActiveChild = link.subLinks.some(child => pathname === child.path);
                                                     const isItemExpanded = expandedGroups.includes(link.label) || hasActiveChild;
                                                     
                                                     return (
-                                                        <div key={linkKey} className="space-y-1">
+                                                        <div key={linkKey} className="space-y-0.5">
                                                             <button
                                                                 onClick={() => toggleGroup(link.label)}
                                                                 className={cn(
-                                                                    "w-full flex items-center gap-3 p-2.5 min-h-[42px] rounded-lg transition-colors group mb-1",
-                                                                    hasActiveChild ? "bg-accent text-accent-foreground font-semibold" : "text-foreground hover:bg-accent hover:text-accent-foreground",
-                                                                    collapsed && "justify-center"
+                                                                    "w-full flex items-center gap-3 px-3 py-2 min-h-[40px] rounded-lg transition-all group cursor-pointer",
+                                                                    hasActiveChild
+                                                                        ? "bg-slate-800/90 text-white font-semibold"
+                                                                        : "text-slate-300 hover:bg-slate-800/60 hover:text-white",
+                                                                    collapsed && "justify-center px-2"
                                                                 )}
                                                                 title={collapsed ? link.label : undefined}
                                                             >
-                                                                {IconComponent && <IconComponent className={cn("w-5 h-5 shrink-0", hasActiveChild ? "text-primary" : "text-muted-foreground group-hover:text-primary")} />}
+                                                                {IconComponent && (
+                                                                    <IconComponent className={cn(
+                                                                        "w-4 h-4 shrink-0 transition-colors",
+                                                                        hasActiveChild ? "text-indigo-400" : "text-slate-400 group-hover:text-slate-200"
+                                                                    )} />
+                                                                )}
                                                                 {!collapsed && (
                                                                     <>
-                                                                        <span className="text-sm font-medium flex-1 text-left rtl:text-right">{link.label}</span>
+                                                                        <span className="text-[13px] font-medium flex-1 text-left rtl:text-right truncate">{link.label}</span>
                                                                         <ChevronDown className={cn(
-                                                                            "w-4 h-4 transition-transform duration-200",
-                                                                            isItemExpanded ? "rotate-180" : ""
+                                                                            "w-3.5 h-3.5 text-slate-400 transition-transform duration-200",
+                                                                            isItemExpanded ? "rotate-180 text-slate-200" : ""
                                                                         )} />
                                                                     </>
                                                                 )}
@@ -233,7 +236,7 @@ export default function Sidebar() {
                                                                         initial={{ height: 0, opacity: 0 }}
                                                                         animate={{ height: "auto", opacity: 1 }}
                                                                         exit={{ height: 0, opacity: 0 }}
-                                                                        className="ms-6 space-y-1 overflow-hidden"
+                                                                        className="ms-4 ps-3 border-s border-slate-800 space-y-0.5 my-1 overflow-hidden"
                                                                     >
                                                                         {link.subLinks.filter(subLink => !subLink.requiredModule || activeModules?.includes(subLink.requiredModule)).map(subLink => {
                                                                             const isChildActive = pathname === subLink.path;
@@ -243,13 +246,17 @@ export default function Sidebar() {
                                                                                     href={subLink.path}
                                                                                     onClick={() => setOpenMobile(false)}
                                                                                     className={cn(
-                                                                                        "flex items-center p-2 min-h-[38px] rounded-md transition-all text-sm",
+                                                                                        "flex items-center gap-2 px-2.5 py-1.5 min-h-[34px] rounded-md transition-all text-[12.5px]",
                                                                                         isChildActive 
-                                                                                            ? "text-primary font-semibold bg-primary/10" 
-                                                                                            : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                                                            ? "text-white font-semibold bg-indigo-600/20 border border-indigo-500/30" 
+                                                                                            : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/50"
                                                                                     )}
                                                                                 >
-                                                                                    {subLink.label}
+                                                                                    <span className={cn(
+                                                                                        "w-1.5 h-1.5 rounded-full shrink-0",
+                                                                                        isChildActive ? "bg-indigo-400" : "bg-slate-600"
+                                                                                    )} />
+                                                                                    <span className="truncate">{subLink.label}</span>
                                                                                 </Link>
                                                                             );
                                                                         })}
@@ -260,7 +267,7 @@ export default function Sidebar() {
                                                     );
                                                 }
      
-                                                // Normal link
+                                                // Standard single link
                                                 const isActiveExact = pathname === link.path;
                                                 return (
                                                     <Link 
@@ -268,14 +275,21 @@ export default function Sidebar() {
                                                         href={link.path}
                                                         onClick={() => setOpenMobile(false)}
                                                         className={cn(
-                                                            "flex items-center gap-3 p-2.5 min-h-[42px] rounded-lg transition-colors group mb-1",
-                                                            isActiveExact ? "bg-primary text-primary-foreground font-semibold shadow-sm" : "text-foreground hover:bg-accent hover:text-accent-foreground",
-                                                            collapsed && "justify-center"
+                                                            "flex items-center gap-3 px-3 py-2 min-h-[40px] rounded-lg transition-all group relative",
+                                                            isActiveExact
+                                                                ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-semibold shadow-sm shadow-indigo-950/50"
+                                                                : "text-slate-300 hover:bg-slate-800/60 hover:text-white",
+                                                            collapsed && "justify-center px-2"
                                                         )}
                                                         title={collapsed ? link.label : undefined}
                                                     >
-                                                        {IconComponent && <IconComponent className={cn("w-5 h-5 shrink-0", isActiveExact ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary")} />}
-                                                        {!collapsed && <span className="text-sm font-medium">{link.label}</span>}
+                                                        {IconComponent && (
+                                                            <IconComponent className={cn(
+                                                                "w-4 h-4 shrink-0 transition-colors",
+                                                                isActiveExact ? "text-white" : "text-slate-400 group-hover:text-slate-200"
+                                                            )} />
+                                                        )}
+                                                        {!collapsed && <span className="text-[13px] font-medium truncate">{link.label}</span>}
                                                     </Link>
                                                 );
                                             })}
@@ -287,16 +301,20 @@ export default function Sidebar() {
                     })}
                 </div>
                 
-                {/* Powered By Footer in Sidebar */}
-                <div className={cn("p-4 border-t border-border shrink-0", collapsed ? "p-2" : "p-4")}>
+                {/* Corporate Footer in Sidebar */}
+                <div className={cn("border-t border-slate-800/90 bg-slate-950/40 shrink-0", collapsed ? "p-2.5" : "px-4 py-3")}>
                     {collapsed ? (
-                        <div className="flex items-center justify-center w-full">
-                            <span className="text-[10px] font-bold text-muted-foreground">PD</span>
+                        <div className="flex items-center justify-center w-full" title="Powered by Proxima Digital">
+                            <ShieldCheck className="w-4 h-4 text-emerald-400" />
                         </div>
                     ) : (
-                        <p className="text-xs text-muted-foreground text-center">
-                            Powered by <span className="font-semibold text-foreground">Proxima Digital</span>
-                        </p>
+                        <div className="flex items-center justify-between text-[11px] text-slate-400">
+                            <span className="flex items-center gap-1.5">
+                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                <span>Powered by <strong className="text-slate-200 font-semibold">Proxima</strong></span>
+                            </span>
+                            <span className="text-[10px] font-mono text-slate-500 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">v2.5</span>
+                        </div>
                     )}
                 </div>
 

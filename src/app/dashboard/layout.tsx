@@ -127,7 +127,7 @@ function MainLayout({
       </div>
       <div 
         className={cn(
-          "flex flex-1 flex-col overflow-y-auto overflow-x-hidden relative transition-all duration-300 ease-in-out min-w-0 print:ml-0 print:mr-0 print:w-full print:h-auto print:overflow-visible print:bg-white",
+          "flex flex-1 flex-col overflow-y-auto overflow-x-hidden relative transition-all duration-300 ease-in-out min-w-0 bg-slate-50/70 dark:bg-slate-950 print:ml-0 print:mr-0 print:w-full print:h-auto print:overflow-visible print:bg-white",
           marginClass
         )}
       >
