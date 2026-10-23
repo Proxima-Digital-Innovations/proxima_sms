@@ -16,6 +16,7 @@ import {
   getCbtExamForManagement,
   createCbtExam,
   addCbtQuestionAction,
+  bulkAddCbtQuestionsAction,
   deleteCbtQuestionAction,
   submitCbtExamAction,
 } from '@/actions/cbt-actions';
@@ -35,7 +36,182 @@ import {
   Trash2,
   Users,
   BookOpen,
+  UploadCloud,
+  Download,
+  FileSpreadsheet,
 } from 'lucide-react';
+
+interface ParsedBulkQuestion {
+  questionText: string;
+  options: { id: string; text: string }[];
+  correctOption: 'A' | 'B' | 'C' | 'D';
+  points: number;
+}
+
+/**
+ * Universal Question Bank Parser:
+ * Automatically parses CSV (Excel), TSV (Tab-separated), JSON, or Aiken Format (Word/Text).
+ */
+function parseBulkQuestionText(rawInput: string): ParsedBulkQuestion[] {
+  const trimmed = rawInput.trim();
+  if (!trimmed) return [];
+
+  // 1. Try JSON format first
+  if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      const arr = Array.isArray(parsed) ? parsed : parsed.questions || [];
+      return arr
+        .map((item: any) => {
+          const qText = (item.questionText || item.question || '').trim();
+          const opts = Array.isArray(item.options)
+            ? item.options
+            : [
+                { id: 'A', text: String(item.optionA || item.A || '') },
+                { id: 'B', text: String(item.optionB || item.B || '') },
+                { id: 'C', text: String(item.optionC || item.C || '') },
+                { id: 'D', text: String(item.optionD || item.D || '') },
+              ];
+          const corr = String(item.correctOption || item.answer || 'A')
+            .trim()
+            .toUpperCase()
+            .charAt(0) as 'A' | 'B' | 'C' | 'D';
+          return {
+            questionText: qText,
+            options: opts,
+            correctOption: ['A', 'B', 'C', 'D'].includes(corr) ? corr : 'A',
+            points: Number(item.points) || 10,
+          };
+        })
+        .filter((q: ParsedBulkQuestion) => q.questionText.length > 0);
+    } catch {
+      // Fall through to Aiken / CSV
+    }
+  }
+
+  // 2. Check if Aiken format (contains lines starting with A. / B. and ANSWER:)
+  if (/^ANSWER\s*:/im.test(trimmed)) {
+    const blocks = trimmed.split(/\n\s*\n/);
+    const results: ParsedBulkQuestion[] = [];
+
+    for (const block of blocks) {
+      const lines = block
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter(Boolean);
+      if (lines.length < 3) continue;
+
+      let questionText = '';
+      const optMap: Record<string, string> = { A: '', B: '', C: '', D: '' };
+      let correctOption: 'A' | 'B' | 'C' | 'D' = 'A';
+      let points = 10;
+
+      for (const line of lines) {
+        const optMatch = line.match(/^([A-D])[.)]\s*(.+)$/i);
+        const ansMatch = line.match(/^ANSWER\s*:\s*([A-D])/i);
+        const ptsMatch = line.match(/^POINTS?\s*:\s*(\d+(\.\d+)?)/i);
+
+        if (ansMatch) {
+          correctOption = ansMatch[1].toUpperCase() as 'A' | 'B' | 'C' | 'D';
+        } else if (ptsMatch) {
+          points = Number(ptsMatch[1]) || 10;
+        } else if (optMatch) {
+          const letter = optMatch[1].toUpperCase();
+          optMap[letter] = optMatch[2].trim();
+        } else if (!questionText) {
+          questionText = line.replace(/^\d+[.)]\s*/, '').trim();
+        } else {
+          questionText += ' ' + line;
+        }
+      }
+
+      if (questionText && (optMap.A || optMap.B)) {
+        results.push({
+          questionText,
+          options: [
+            { id: 'A', text: optMap.A || 'Option A' },
+            { id: 'B', text: optMap.B || 'Option B' },
+            { id: 'C', text: optMap.C || 'None of the above' },
+            { id: 'D', text: optMap.D || 'All of the above' },
+          ],
+          correctOption,
+          points,
+        });
+      }
+    }
+    if (results.length > 0) return results;
+  }
+
+  // 3. Parse CSV / TSV rows: Question, OptionA, OptionB, OptionC, OptionD, CorrectOption, Points
+  const lines = trimmed.split(/\r?\n/).filter((l) => l.trim().length > 0);
+  const results: ParsedBulkQuestion[] = [];
+
+  const splitCsvRow = (row: string): string[] => {
+    if (row.includes('\t')) {
+      return row.split('\t').map((c) => c.trim());
+    }
+    const cols: string[] = [];
+    let cur = '';
+    let inQuotes = false;
+    for (let i = 0; i < row.length; i++) {
+      const ch = row[i];
+      if (ch === '"') {
+        if (inQuotes && row[i + 1] === '"') {
+          cur += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (ch === ',' && !inQuotes) {
+        cols.push(cur.trim());
+        cur = '';
+      } else {
+        cur += ch;
+      }
+    }
+    cols.push(cur.trim());
+    return cols;
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const cols = splitCsvRow(lines[i]);
+    if (cols.length < 3) continue;
+
+    // Skip header row if present
+    const firstColLower = cols[0].toLowerCase();
+    if (
+      i === 0 &&
+      (firstColLower === 'question' || firstColLower === 'questiontext' || firstColLower.includes('question stem'))
+    ) {
+      continue;
+    }
+
+    const qText = cols[0];
+    const optA = cols[1] || 'Option A';
+    const optB = cols[2] || 'Option B';
+    const optC = cols[3] || 'None of the above';
+    const optD = cols[4] || 'All of the above';
+    const rawCorrect = (cols[5] || 'A').trim().toUpperCase().charAt(0);
+    const correctOption = (['A', 'B', 'C', 'D'].includes(rawCorrect) ? rawCorrect : 'A') as 'A' | 'B' | 'C' | 'D';
+    const points = Number(cols[6]) || 10;
+
+    if (qText) {
+      results.push({
+        questionText: qText,
+        options: [
+          { id: 'A', text: optA },
+          { id: 'B', text: optB },
+          { id: 'C', text: optC },
+          { id: 'D', text: optD },
+        ],
+        correctOption,
+        points,
+      });
+    }
+  }
+
+  return results;
+}
 
 export default function TertiaryCbtPage() {
   const { role } = useRole();
@@ -57,7 +233,7 @@ export default function TertiaryCbtPage() {
 
   // Question Bank & Submissions Management Modal State (For Lecturers / Admins)
   const [managedExam, setManagedExam] = useState<any>(null);
-  const [manageTab, setManageTab] = useState<'questions' | 'submissions'>('questions');
+  const [manageTab, setManageTab] = useState<'questions' | 'bulk' | 'submissions'>('questions');
   const [isManageLoading, setIsManageLoading] = useState(false);
 
   // Add Single Question inside "Manage Questions" Modal
@@ -68,6 +244,11 @@ export default function TertiaryCbtPage() {
   const [optD, setOptD] = useState('');
   const [qCorrect, setQCorrect] = useState<'A' | 'B' | 'C' | 'D'>('A');
   const [qPoints, setQPoints] = useState(10);
+
+  // Bulk Upload State (Used in Manage Modal & Create Modal)
+  const [bulkRawText, setBulkRawText] = useState('');
+  const [bulkPreview, setBulkPreview] = useState<ParsedBulkQuestion[]>([]);
+  const [showCreateBulkBox, setShowCreateBulkBox] = useState(false);
 
   // New Exam Creation Form State
   const [newTitle, setNewTitle] = useState('');
@@ -178,7 +359,7 @@ export default function TertiaryCbtPage() {
     setIsLoading(false);
   };
 
-  const handleOpenManageModal = async (examId: string, initialTab: 'questions' | 'submissions' = 'questions') => {
+  const handleOpenManageModal = async (examId: string, initialTab: 'questions' | 'bulk' | 'submissions' = 'questions') => {
     setManageTab(initialTab);
     setIsManageLoading(true);
     const res = await getCbtExamForManagement(examId);
@@ -188,6 +369,83 @@ export default function TertiaryCbtPage() {
       toast({ variant: 'destructive', title: 'Error', description: res.error || 'Could not load exam details.' });
     }
     setIsManageLoading(false);
+  };
+
+  const handleDownloadCsvTemplate = () => {
+    const sampleCsv = [
+      'Question,OptionA,OptionB,OptionC,OptionD,CorrectOption,Points',
+      '"Which data structure operates on a First-In, First-Out (FIFO) basis?",Stack,Queue,Binary Search Tree,Priority Heap,B,10',
+      '"What is the time complexity of searching in a balanced Binary Search Tree (AVL)?",O(1),O(n),O(log n),O(n log n),C,10',
+      '"Which sorting algorithm is guaranteed O(n log n) in the worst case?",QuickSort,Insertion Sort,MergeSort,Bubble Sort,C,10',
+      '"In Object-Oriented Programming, binding a method call at runtime is known as:",Static Binding,Dynamic Dispatch,Encapsulation,Inlining,B,10',
+    ].join('\n');
+
+    const blob = new Blob([sampleCsv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'proxima_cbt_question_bank_template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleBulkTextChange = (text: string) => {
+    setBulkRawText(text);
+    const parsed = parseBulkQuestionText(text);
+    setBulkPreview(parsed);
+  };
+
+  const handleBulkFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const content = await file.text();
+      setBulkRawText(content);
+      const parsed = parseBulkQuestionText(content);
+      setBulkPreview(parsed);
+      toast({
+        title: 'File Parsed Successfully',
+        description: `Detected ${parsed.length} valid multiple-choice questions from ${file.name}.`,
+      });
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: 'File Read Error', description: 'Could not read the selected file.' });
+    }
+  };
+
+  const handleCommitBulkToExistingExam = () => {
+    if (!managedExam || bulkPreview.length === 0) return;
+
+    startTransition(async () => {
+      const res = await bulkAddCbtQuestionsAction({
+        examId: managedExam.id,
+        questions: bulkPreview,
+      });
+
+      if (res.success) {
+        toast({
+          title: 'Bulk Question Bank Imported!',
+          description: res.message || `Imported ${bulkPreview.length} questions into ${managedExam.title}.`,
+        });
+        setBulkRawText('');
+        setBulkPreview([]);
+        await handleOpenManageModal(managedExam.id, 'questions');
+        loadExams();
+      } else {
+        toast({ variant: 'destructive', title: 'Bulk Import Failed', description: res.error });
+      }
+    });
+  };
+
+  const handleAppendBulkToDraftExam = () => {
+    if (bulkPreview.length === 0) return;
+    setNewQuestions((prev) => [...prev, ...bulkPreview]);
+    toast({
+      title: 'Questions Appended to Draft',
+      description: `Added ${bulkPreview.length} bulk questions to the exam draft.`,
+    });
+    setBulkRawText('');
+    setBulkPreview([]);
+    setShowCreateBulkBox(false);
   };
 
   const handleAddQuestionToExistingExam = () => {
@@ -571,7 +829,7 @@ export default function TertiaryCbtPage() {
           <h1 className="text-2xl font-bold tracking-tight">Computer-Based Testing (CBT) Engine</h1>
           <p className="text-muted-foreground text-sm mt-1">
             {isFacultyOrAdmin
-              ? 'Author CBT exams, manage course question banks, and automatically pipe student CBT scores into CA / Exam gradebooks.'
+              ? 'Author CBT exams, bulk upload question banks (CSV / Excel / Aiken / JSON), and automatically pipe student CBT scores into CA / Exam gradebooks.'
               : 'Proctored continuous assessment and examination tests with live timers and instant grading.'}
           </p>
         </div>
@@ -665,17 +923,72 @@ export default function TertiaryCbtPage() {
 
                 {/* Question Builder Section */}
                 <div className="border-t pt-4 space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <h4 className="text-sm font-bold">Exam Questions ({newQuestions.length})</h4>
                       <p className="text-xs text-muted-foreground">
-                        Add multiple-choice questions, set options A–D, and mark the correct option.
+                        Add questions manually or bulk upload via CSV / Excel / Aiken text.
                       </p>
                     </div>
-                    <Button type="button" size="sm" variant="outline" onClick={handleAddDraftQuestion}>
-                      <Plus className="h-3.5 w-3.5 mr-1" /> Add Question
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setShowCreateBulkBox(!showCreateBulkBox)}
+                      >
+                        <UploadCloud className="h-3.5 w-3.5 mr-1 text-indigo-600" />
+                        Bulk Upload Questions
+                      </Button>
+                      <Button type="button" size="sm" variant="outline" onClick={handleAddDraftQuestion}>
+                        <Plus className="h-3.5 w-3.5 mr-1" /> Add Question
+                      </Button>
+                    </div>
                   </div>
+
+                  {/* Collapsible Bulk Importer inside Create Exam Modal */}
+                  {showCreateBulkBox && (
+                    <div className="p-4 rounded-xl border border-indigo-200 bg-indigo-50/40 dark:bg-indigo-950/20 space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5">
+                          <FileSpreadsheet className="h-4 w-4" /> Bulk Import Questions (CSV, Excel, Aiken, or JSON)
+                        </span>
+                        <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={handleDownloadCsvTemplate}>
+                          <Download className="h-3 w-3 mr-1" /> Download CSV Template
+                        </Button>
+                      </div>
+
+                      <Input
+                        type="file"
+                        accept=".csv,.txt,.json"
+                        onChange={handleBulkFileUpload}
+                        className="text-xs bg-background cursor-pointer"
+                      />
+
+                      <textarea
+                        rows={4}
+                        value={bulkRawText}
+                        onChange={(e) => handleBulkTextChange(e.target.value)}
+                        placeholder={`Paste CSV rows: Question,OptionA,OptionB,OptionC,OptionD,CorrectOption,Points\nOR Aiken format:\nWhat is 2 + 2?\nA. 3\nB. 4\nC. 5\nD. 6\nANSWER: B`}
+                        className="w-full rounded-lg border border-input bg-background p-2.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-muted-foreground">
+                          Parsed Valid Questions: <strong className="text-indigo-600">{bulkPreview.length}</strong>
+                        </span>
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={bulkPreview.length === 0}
+                          onClick={handleAppendBulkToDraftExam}
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs"
+                        >
+                          Append {bulkPreview.length} Questions to Exam
+                        </Button>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="space-y-4 max-h-[340px] overflow-y-auto pr-1">
                     {newQuestions.map((q, idx) => (
@@ -844,7 +1157,7 @@ export default function TertiaryCbtPage() {
         </div>
       )}
 
-      {/* LECTURER QUESTION BANK & SUBMISSIONS MANAGEMENT MODAL */}
+      {/* LECTURER QUESTION BANK, BULK UPLOAD & SUBMISSIONS MANAGEMENT MODAL */}
       <Dialog open={!!managedExam} onOpenChange={(open) => !open && setManagedExam(null)}>
         <DialogContent className="max-w-3xl max-h-[88vh] overflow-y-auto">
           <DialogHeader>
@@ -858,11 +1171,11 @@ export default function TertiaryCbtPage() {
           </DialogHeader>
 
           {/* Modal Tabs */}
-          <div className="flex border-b gap-2">
+          <div className="flex border-b gap-2 overflow-x-auto">
             <button
               type="button"
               onClick={() => setManageTab('questions')}
-              className={`pb-2.5 px-3 text-xs font-bold border-b-2 transition-colors ${
+              className={`pb-2.5 px-3 text-xs font-bold border-b-2 transition-colors whitespace-nowrap ${
                 manageTab === 'questions' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground'
               }`}
             >
@@ -870,8 +1183,18 @@ export default function TertiaryCbtPage() {
             </button>
             <button
               type="button"
+              onClick={() => setManageTab('bulk')}
+              className={`pb-2.5 px-3 text-xs font-bold border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+                manageTab === 'bulk' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground'
+              }`}
+            >
+              <UploadCloud className="h-3.5 w-3.5 text-indigo-600" />
+              Bulk Upload Question Bank
+            </button>
+            <button
+              type="button"
               onClick={() => setManageTab('submissions')}
-              className={`pb-2.5 px-3 text-xs font-bold border-b-2 transition-colors ${
+              className={`pb-2.5 px-3 text-xs font-bold border-b-2 transition-colors whitespace-nowrap ${
                 manageTab === 'submissions' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground'
               }`}
             >
@@ -885,11 +1208,22 @@ export default function TertiaryCbtPage() {
             </div>
           ) : manageTab === 'questions' ? (
             <div className="space-y-6 py-2">
-              {/* Add New Question Form */}
+              {/* Add New Question Form + Quick Bulk Upload Button */}
               <div className="p-4 rounded-xl border bg-muted/20 space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
-                  <Plus className="h-4 w-4" /> Add New Question to This CBT
-                </h4>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                    <Plus className="h-4 w-4" /> Add New Question to This CBT
+                  </h4>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setManageTab('bulk')}
+                    className="h-7 text-xs border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+                  >
+                    <UploadCloud className="h-3.5 w-3.5 mr-1" /> Bulk Upload CSV / Excel / Text
+                  </Button>
+                </div>
 
                 <Input
                   placeholder="Type the multiple-choice question stem..."
@@ -992,6 +1326,99 @@ export default function TertiaryCbtPage() {
                   );
                 })}
               </div>
+            </div>
+          ) : manageTab === 'bulk' ? (
+            <div className="space-y-5 py-2">
+              <div className="p-4 rounded-xl border border-indigo-200 bg-indigo-50/40 dark:bg-indigo-950/20 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                      <FileSpreadsheet className="h-4 w-4 text-indigo-600" />
+                      Bulk Question Bank Importer
+                    </h4>
+                    <p className="text-xs text-muted-foreground">
+                      Upload a `.csv` spreadsheet, `.txt` Aiken file, or `.json` file — or paste rows directly from Excel / Word.
+                    </p>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={handleDownloadCsvTemplate} className="shrink-0">
+                    <Download className="h-3.5 w-3.5 mr-1.5 text-indigo-600" />
+                    Download CSV Template
+                  </Button>
+                </div>
+
+                {/* File Input */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">Option 1: Upload Question Bank File (.csv, .txt, .json)</Label>
+                  <Input
+                    type="file"
+                    accept=".csv,.txt,.json"
+                    onChange={handleBulkFileUpload}
+                    className="bg-background text-xs cursor-pointer"
+                  />
+                </div>
+
+                {/* Direct Copy-Paste Box */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">
+                    Option 2: Paste Directly from Excel (CSV/TSV) or Word (Aiken Format)
+                  </Label>
+                  <textarea
+                    rows={6}
+                    value={bulkRawText}
+                    onChange={(e) => handleBulkTextChange(e.target.value)}
+                    placeholder={`CSV Format:\nQuestion,OptionA,OptionB,OptionC,OptionD,CorrectOption,Points\n"Which data structure is LIFO?",Queue,Stack,Tree,Graph,B,10\n\nOR Aiken Format:\nWhich data structure is LIFO?\nA. Queue\nB. Stack\nC. Tree\nD. Graph\nANSWER: B\nPOINTS: 10`}
+                    className="w-full rounded-xl border border-input bg-background p-3 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              {/* Live Parsed Preview */}
+              {bulkPreview.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">
+                      Ready to Import: {bulkPreview.length} Valid Questions Detected
+                    </span>
+                    <Button
+                      onClick={handleCommitBulkToExistingExam}
+                      disabled={isPending}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold"
+                    >
+                      {isPending ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                      ) : (
+                        <UploadCloud className="h-3.5 w-3.5 mr-1.5" />
+                      )}
+                      Import All {bulkPreview.length} Questions to Question Bank
+                    </Button>
+                  </div>
+
+                  <div className="max-h-60 overflow-y-auto border rounded-xl divide-y">
+                    {bulkPreview.map((item, idx) => (
+                      <div key={idx} className="p-3 text-xs space-y-1 bg-card">
+                        <div className="flex items-center justify-between font-semibold">
+                          <span>
+                            {idx + 1}. {item.questionText}
+                          </span>
+                          <Badge variant="outline" className="text-[10px] font-mono">
+                            Ans: {item.correctOption} ({item.points} pts)
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 text-[11px] text-muted-foreground">
+                          {item.options.map((o) => (
+                            <span
+                              key={o.id}
+                              className={o.id === item.correctOption ? 'text-emerald-700 font-bold' : ''}
+                            >
+                              {o.id}: {o.text}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="py-3">

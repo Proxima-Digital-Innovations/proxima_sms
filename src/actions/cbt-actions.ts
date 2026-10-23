@@ -168,7 +168,7 @@ export async function addCbtQuestionAction(data: {
         examId: data.examId,
         questionText: data.questionText.trim(),
         questionType: 'MULTIPLE_CHOICE',
-        optionsJson: JSON.stringify(data.options),
+        optionsJson: JSON.stringify(qOptionsFallback(data.options)),
         correctOption: data.correctOption.toUpperCase(),
         points: Number(data.points) || 5,
         orderIndex: count + 1,
@@ -176,6 +176,53 @@ export async function addCbtQuestionAction(data: {
     });
     revalidatePath('/dashboard/tertiary/cbt');
     return { success: true, data: question };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+function qOptionsFallback(options: { id: string; text: string }[]) {
+  return options.map((o) => ({ id: o.id.toUpperCase(), text: o.text.trim() }));
+}
+
+export async function bulkAddCbtQuestionsAction(data: {
+  examId: string;
+  questions: {
+    questionText: string;
+    options: { id: string; text: string }[];
+    correctOption: string;
+    points: number;
+  }[];
+}) {
+  try {
+    if (!data.examId || !Array.isArray(data.questions) || data.questions.length === 0) {
+      return { success: false, error: 'Exam ID and at least one valid question are required.' };
+    }
+
+    const existingCount = await prisma.cbtQuestion.count({ where: { examId: data.examId } });
+
+    const created = await prisma.$transaction(
+      data.questions.map((q, idx) =>
+        prisma.cbtQuestion.create({
+          data: {
+            examId: data.examId,
+            questionText: q.questionText.trim(),
+            questionType: 'MULTIPLE_CHOICE',
+            optionsJson: JSON.stringify(qOptionsFallback(q.options)),
+            correctOption: (q.correctOption || 'A').trim().toUpperCase(),
+            points: Number(q.points) || 10,
+            orderIndex: existingCount + idx + 1,
+          },
+        })
+      )
+    );
+
+    revalidatePath('/dashboard/tertiary/cbt');
+    return {
+      success: true,
+      importedCount: created.length,
+      message: `Successfully imported ${created.length} questions into the CBT Question Bank.`,
+    };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
