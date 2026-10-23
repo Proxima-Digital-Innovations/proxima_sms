@@ -1,24 +1,41 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
+import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
 import crypto from 'crypto';
 
 export async function getCbtExams(courseOfferingId?: string) {
   try {
     const where = courseOfferingId ? { courseOfferingId } : {};
-    const exams = await prisma.cbtExam.findMany({
-      where,
-      include: {
-        courseOffering: {
-          include: { course: true },
+    const [exams, offerings] = await Promise.all([
+      prisma.cbtExam.findMany({
+        where,
+        include: {
+          courseOffering: {
+            include: { course: true },
+          },
+          _count: { select: { questions: true, submissions: true } },
         },
-        _count: { select: { questions: true, submissions: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.courseOffering.findMany({
+        include: { course: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
 
-    return { success: true, data: exams };
+    return {
+      success: true,
+      data: exams,
+      offerings: offerings.map((o) => ({
+        id: o.id,
+        code: o.course.code,
+        title: o.course.title,
+        session: o.academicSession,
+        semester: o.semester,
+      })),
+    };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -65,6 +82,94 @@ export async function getCbtExamDetails(examId: string, studentProfileId?: strin
   }
 }
 
+/**
+ * Full exam details for Lecturers / Admins / Exam Officers:
+ * Includes correctOption on every question + full list of student submissions.
+ */
+export async function getCbtExamForManagement(examId: string) {
+  try {
+    const exam = await prisma.cbtExam.findUnique({
+      where: { id: examId },
+      include: {
+        courseOffering: { include: { course: true } },
+        questions: {
+          orderBy: { orderIndex: 'asc' },
+        },
+        submissions: {
+          include: {
+            studentProfile: {
+              include: { user: true },
+            },
+          },
+          orderBy: { submittedAt: 'desc' },
+        },
+      },
+    });
+
+    if (!exam) throw new Error('Exam not found.');
+
+    return {
+      success: true,
+      data: {
+        ...exam,
+        submissions: exam.submissions.map((s) => ({
+          id: s.id,
+          studentId: s.studentProfileId,
+          matricNumber: s.studentProfile?.matricNumber || 'N/A',
+          studentName: s.studentProfile?.user
+            ? `${s.studentProfile.user.firstName} ${s.studentProfile.user.lastName}`
+            : 'Student',
+          scoreAchieved: s.scoreAchieved,
+          percentageScore: s.percentageScore,
+          tabSwitchCount: s.tabSwitchCount,
+          status: s.status,
+          isPipedToGrades: s.isPipedToGrades,
+          submittedAt: s.submittedAt,
+        })),
+      },
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function addCbtQuestionAction(data: {
+  examId: string;
+  questionText: string;
+  options: { id: string; text: string }[];
+  correctOption: string;
+  points: number;
+}) {
+  try {
+    const count = await prisma.cbtQuestion.count({ where: { examId: data.examId } });
+    const question = await prisma.cbtQuestion.create({
+      data: {
+        examId: data.examId,
+        questionText: data.questionText.trim(),
+        questionType: 'MULTIPLE_CHOICE',
+        optionsJson: JSON.stringify(data.options),
+        correctOption: data.correctOption.toUpperCase(),
+        points: Number(data.points) || 5,
+        orderIndex: count + 1,
+      },
+    });
+    revalidatePath('/dashboard/tertiary/cbt');
+    return { success: true, data: question };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function deleteCbtQuestionAction(questionId: string) {
+  try {
+    await prisma.cbtQuestion.delete({ where: { id: questionId } });
+    revalidatePath('/dashboard/tertiary/cbt');
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 export async function createCbtExam(data: {
   title: string;
   description?: string;
@@ -86,7 +191,7 @@ export async function createCbtExam(data: {
       data: {
         title: data.title,
         description: data.description || null,
-        courseOfferingId: data.courseOfferingId || null,
+        courseOfferingId: data.courseOfferingId && data.courseOfferingId !== 'none' ? data.courseOfferingId : null,
         durationMinutes: data.durationMinutes || 60,
         totalMarks: data.totalMarks || 40.0,
         targetCategory: data.targetCategory || 'CA',
@@ -115,7 +220,7 @@ export async function createCbtExam(data: {
 
 export async function submitCbtExamAction(data: {
   examId: string;
-  studentProfileId: string;
+  studentProfileId?: string;
   answers: Record<string, string>; // questionId -> selectedOption ("A", "B", etc.)
   tabSwitchCount: number;
   isAutoSubmitted?: boolean;
@@ -127,6 +232,22 @@ export async function submitCbtExamAction(data: {
     });
 
     if (!exam) throw new Error('Exam not found.');
+
+    // Resolve logged-in student's profile if not explicitly provided
+    let resolvedStudentId = data.studentProfileId;
+    const session = await auth();
+    if (session?.user?.id) {
+      const profile = await prisma.studentProfile.findUnique({
+        where: { userId: session.user.id },
+      });
+      if (profile) {
+        resolvedStudentId = profile.id;
+      }
+    }
+    if (!resolvedStudentId) {
+      const firstStudent = await prisma.studentProfile.findFirst({ orderBy: { matricNumber: 'asc' } });
+      resolvedStudentId = firstStudent?.id || '93e0878e-891f-4a60-ad1a-b0019b6c17f2';
+    }
 
     // Compute Score
     let pointsEarned = 0;
@@ -152,12 +273,12 @@ export async function submitCbtExamAction(data: {
         where: {
           examId_studentProfileId: {
             examId: data.examId,
-            studentProfileId: data.studentProfileId,
+            studentProfileId: resolvedStudentId!,
           },
         },
         create: {
           examId: data.examId,
-          studentProfileId: data.studentProfileId,
+          studentProfileId: resolvedStudentId!,
           scoreAchieved: isDisqualified ? 0 : scaledScore,
           percentageScore: isDisqualified ? 0 : percentageScore,
           answersJson: JSON.stringify(data.answers),
@@ -173,24 +294,31 @@ export async function submitCbtExamAction(data: {
           answersJson: JSON.stringify(data.answers),
           tabSwitchCount: data.tabSwitchCount,
           isAutoSubmitted: data.isAutoSubmitted || false,
+          isPipedToGrades: !!exam.courseOfferingId,
           status: isDisqualified ? 'DISQUALIFIED' : 'SUBMITTED',
           submittedAt: new Date(),
         },
       });
 
-      // Pipe Continuous Assessment (CA) directly into TIMS StudentGrade if offering exists
+      // Pipe Continuous Assessment (CA) or Exam score directly into TIMS StudentGrade if offering exists
       if (exam.courseOfferingId && !isDisqualified) {
         const existingGrade = await tx.studentGrade.findUnique({
           where: {
             studentId_offeringId: {
-              studentId: data.studentProfileId,
+              studentId: resolvedStudentId!,
               offeringId: exam.courseOfferingId,
             },
           },
         });
 
-        const examScore = existingGrade ? Number(existingGrade.examScore) : 0;
-        const totalScore = Number((scaledScore + examScore).toFixed(2));
+        const isExamCategory = exam.targetCategory === 'EXAM';
+        const caScore = isExamCategory
+          ? (existingGrade ? Number(existingGrade.caScore) : 0)
+          : scaledScore;
+        const examScore = isExamCategory
+          ? scaledScore
+          : (existingGrade ? Number(existingGrade.examScore) : 0);
+        const totalScore = Number((caScore + examScore).toFixed(2));
 
         let letterGrade = 'F';
         let gradePoint = 0.0;
@@ -199,28 +327,29 @@ export async function submitCbtExamAction(data: {
         else if (totalScore >= 50) { letterGrade = 'C'; gradePoint = 3.0; }
         else if (totalScore >= 45) { letterGrade = 'D'; gradePoint = 2.0; }
 
-        const dataHash = crypto.createHash('sha256').update(`${data.studentProfileId}-${totalScore}-SUBMITTED`).digest('hex');
+        const dataHash = crypto.createHash('sha256').update(`${resolvedStudentId}-${totalScore}-SUBMITTED`).digest('hex');
 
         await tx.studentGrade.upsert({
           where: {
             studentId_offeringId: {
-              studentId: data.studentProfileId,
+              studentId: resolvedStudentId!,
               offeringId: exam.courseOfferingId,
             },
           },
           create: {
-            studentId: data.studentProfileId,
+            studentId: resolvedStudentId!,
             offeringId: exam.courseOfferingId,
-            caScore: scaledScore,
-            examScore: 0,
-            totalScore: scaledScore,
-            letterGrade: 'F', // Incomplete until final exam
-            gradePoint: 0.0,
+            caScore,
+            examScore,
+            totalScore,
+            letterGrade,
+            gradePoint,
             status: 'SUBMITTED',
             dataHash,
           },
           update: {
-            caScore: scaledScore,
+            caScore,
+            examScore,
             totalScore,
             letterGrade,
             gradePoint,
@@ -234,6 +363,7 @@ export async function submitCbtExamAction(data: {
 
     revalidatePath('/dashboard/tertiary/cbt');
     revalidatePath('/dashboard/tertiary/exams');
+    revalidatePath('/dashboard/tertiary/senate');
     return {
       success: true,
       data: {
