@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +14,7 @@ import {
   createFacultyAction,
   createLectureVenueAction,
 } from '@/actions/campus-faculty-actions';
-import { Building2, School, MapPin, Users, Plus, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Building2, School, MapPin, Plus, Loader2 } from 'lucide-react';
 
 export default function CampusFacultyPage() {
   const [data, setData] = useState<{ campuses: any[]; unassignedFaculties: any[] }>({
@@ -129,7 +129,7 @@ export default function CampusFacultyPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Multi-Campus & Faculty Governance</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Multi-Campus &amp; Faculty Governance</h1>
           <p className="text-muted-foreground text-sm mt-1">
             Organize institutional campuses, collegiate faculties, academic deaneries, and shared lecture theatres.
           </p>
@@ -264,7 +264,7 @@ export default function CampusFacultyPage() {
 
         <Card className="border-l-4 border-l-emerald-600 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Lecture & Exam Theatres</CardTitle>
+            <CardTitle className="text-sm font-medium">Lecture &amp; Exam Theatres</CardTitle>
             <MapPin className="h-4 w-4 text-emerald-600" />
           </CardHeader>
           <CardContent>
@@ -274,6 +274,34 @@ export default function CampusFacultyPage() {
         </Card>
       </div>
 
+      {/* Unassigned Faculties (when created without a campus) */}
+      {!isLoading && data.unassignedFaculties.length > 0 && (
+        <Card className="border shadow-sm">
+          <CardHeader className="bg-muted/20 border-b pb-3">
+            <CardTitle className="text-base font-bold flex items-center gap-2">
+              <School className="h-4 w-4 text-blue-600" />
+              Registered Collegiate Faculties ({data.unassignedFaculties.length})
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Academic faculties registered across the institution.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {data.unassignedFaculties.map((f: any) => (
+              <div key={f.id} className="p-3 rounded-xl border bg-card flex justify-between items-center text-xs">
+                <div>
+                  <span className="font-bold text-foreground mr-1.5">[{f.code}]</span>
+                  <span className="text-muted-foreground font-medium">{f.name}</span>
+                </div>
+                <Badge variant="secondary" className="text-[10px]">
+                  {f.departments?.length || 0} Depts
+                </Badge>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Campuses & Faculties Cards */}
       {isLoading ? (
         <div className="flex justify-center py-16">
@@ -282,9 +310,9 @@ export default function CampusFacultyPage() {
       ) : data.campuses.length === 0 ? (
         <Card className="p-12 text-center">
           <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-          <h3 className="text-base font-semibold">No Campuses Configured Yet</h3>
+          <h3 className="text-base font-semibold">No Physical Campuses Configured Yet</h3>
           <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
-            Click &apos;Add Campus&apos; above to register your institution&apos;s main and satellite campuses.
+            Click &apos;Add Campus&apos; above to register your institution&apos;s main and satellite campuses, or &apos;Add Faculty&apos; to register collegiate faculties.
           </p>
         </Card>
       ) : (
@@ -342,7 +370,7 @@ export default function CampusFacultyPage() {
                 {/* Venues List */}
                 <div>
                   <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                    Lecture Venues & Theatres ({campus.venues?.length || 0})
+                    Lecture Venues &amp; Theatres ({campus.venues?.length || 0})
                   </h4>
                   {campus.venues?.length === 0 ? (
                     <div className="text-xs text-muted-foreground/70 italic py-2">

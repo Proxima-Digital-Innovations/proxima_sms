@@ -100,17 +100,39 @@ export async function updateClassConfiguration(id: string, data: { teacherId: st
 
 export async function getDepartmentsData() {
     try {
-        const departments = await prisma.department.findMany({
-            orderBy: { name: 'asc' },
-            include: {
-                users: {
-                    select: { id: true }
-                },
-                subjects: {
-                    select: { id: true }
+        const [departments, faculties] = await Promise.all([
+            prisma.department.findMany({
+                orderBy: { name: 'asc' },
+                include: {
+                    faculty: {
+                        select: { id: true, code: true, name: true }
+                    },
+                    users: {
+                        select: { id: true }
+                    },
+                    subjects: {
+                        select: { id: true }
+                    },
+                    programs: {
+                        select: { id: true }
+                    }
                 }
-            }
-        });
+            }),
+            prisma.faculty.findMany({
+                orderBy: { name: 'asc' },
+                include: {
+                    campus: { select: { id: true, name: true, code: true } },
+                    dean: {
+                        include: {
+                            user: { select: { firstName: true, lastName: true, email: true } }
+                        }
+                    },
+                    _count: {
+                        select: { departments: true, programs: true }
+                    }
+                }
+            })
+        ]);
 
         const hodIds = departments.map(d => d.hodId).filter(Boolean) as string[];
         const hodUsers = hodIds.length > 0 ? await prisma.user.findMany({
@@ -126,8 +148,21 @@ export async function getDepartmentsData() {
                 name: d.name,
                 hodId: d.hodId,
                 hodName: d.hodId ? (hodMap.get(d.hodId) || 'Assigned') : undefined,
+                facultyId: d.facultyId,
+                facultyName: d.faculty?.name || undefined,
+                facultyCode: d.faculty?.code || undefined,
                 teacherCount: d.users.length,
                 studentCount: d.subjects.length,
+                programCount: d.programs.length,
+            })),
+            faculties: faculties.map(f => ({
+                id: f.id,
+                code: f.code,
+                name: f.name,
+                campusName: f.campus?.name || 'Main Campus',
+                deanName: f.dean?.user ? `${f.dean.user.firstName} ${f.dean.user.lastName}`.trim() : undefined,
+                departmentCount: f._count.departments,
+                programCount: f._count.programs,
             }))
         };
     } catch (error: any) {

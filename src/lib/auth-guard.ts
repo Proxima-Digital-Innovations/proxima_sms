@@ -37,7 +37,7 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
   },
   manageStaff: { icon: 'Users', label: 'Manage Staff', path: '/dashboard/users', requiredModule: 'HR' },
   manageStudents: { icon: 'UsersRound', label: 'Manage Students', path: '/dashboard/students' },
-  departments: { icon: 'Building', label: 'Departments', path: '/dashboard/departments' },
+  departments: { icon: 'Building', label: 'Faculties & Depts', path: '/dashboard/departments' },
   database: { icon: 'Server', label: 'Database', path: '/dashboard/db' },
   logs: { icon: 'Activity', label: 'Logs & Security', path: '/dashboard/logs' },
   lessonApprovals: { icon: 'Book', label: 'Lesson Approvals', path: '/dashboard/lesson-notes', requiredModule: 'LMS' },

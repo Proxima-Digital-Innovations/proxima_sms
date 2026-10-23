@@ -56,16 +56,17 @@ export async function updateUserRole(userId: string, newRole: string) {
     }
 }
 
-export async function addDepartment(data: { name: string, hodId?: string }) {
+export async function addDepartment(data: { name: string; hodId?: string; facultyId?: string | null }) {
     try {
         const department = await prisma.department.create({
             data: {
-                name: data.name,
-                hodId: data.hodId || null,
+                name: data.name.trim(),
+                hodId: data.hodId && data.hodId !== 'NONE' ? data.hodId : null,
+                facultyId: data.facultyId && data.facultyId !== 'NONE' ? data.facultyId : null,
             }
         });
 
-        if (data.hodId) {
+        if (data.hodId && data.hodId !== 'NONE') {
             await prisma.user.update({
                 where: { id: data.hodId },
                 data: {
@@ -76,6 +77,7 @@ export async function addDepartment(data: { name: string, hodId?: string }) {
         }
 
         revalidatePath('/dashboard/departments');
+        revalidatePath('/dashboard/tertiary/campuses');
         return { success: true, data: department };
     } catch (error: any) {
         console.error('Error adding department:', error);
@@ -83,7 +85,7 @@ export async function addDepartment(data: { name: string, hodId?: string }) {
     }
 }
 
-export async function updateDepartment(data: { id: string; name: string; hodId?: string | null }) {
+export async function updateDepartment(data: { id: string; name: string; hodId?: string | null; facultyId?: string | null }) {
     try {
         const existing = await prisma.department.findUnique({ where: { id: data.id } });
         if (!existing) {
@@ -93,12 +95,13 @@ export async function updateDepartment(data: { id: string; name: string; hodId?:
         const updated = await prisma.department.update({
             where: { id: data.id },
             data: {
-                name: data.name,
-                hodId: data.hodId || null,
+                name: data.name.trim(),
+                hodId: data.hodId && data.hodId !== 'NONE' ? data.hodId : null,
+                facultyId: data.facultyId === undefined ? existing.facultyId : (data.facultyId && data.facultyId !== 'NONE' ? data.facultyId : null),
             }
         });
 
-        if (data.hodId) {
+        if (data.hodId && data.hodId !== 'NONE') {
             await prisma.user.update({
                 where: { id: data.hodId },
                 data: {
@@ -109,6 +112,7 @@ export async function updateDepartment(data: { id: string; name: string; hodId?:
         }
 
         revalidatePath('/dashboard/departments');
+        revalidatePath('/dashboard/tertiary/campuses');
         return { success: true, data: updated };
     } catch (error: any) {
         console.error('Error updating department:', error);
@@ -141,9 +145,62 @@ export async function deleteDepartment(id: string) {
         });
 
         revalidatePath('/dashboard/departments');
+        revalidatePath('/dashboard/tertiary/campuses');
         return { success: true };
     } catch (error: any) {
         console.error('Error deleting department:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+export async function createFacultyQuick(data: { code: string; name: string }) {
+    try {
+        const cleanCode = data.code.trim().toUpperCase();
+        const cleanName = data.name.trim();
+        if (!cleanCode || !cleanName) {
+            return { success: false, error: 'Faculty Code and Faculty Name are required.' };
+        }
+
+        // Attach to main campus if one exists
+        const mainCampus = await prisma.campus.findFirst({ orderBy: { isMain: 'desc' } });
+
+        const faculty = await prisma.faculty.create({
+            data: {
+                code: cleanCode,
+                name: cleanName,
+                campusId: mainCampus?.id || null,
+            }
+        });
+
+        revalidatePath('/dashboard/departments');
+        revalidatePath('/dashboard/tertiary/campuses');
+        revalidatePath('/dashboard/tertiary/cbt');
+        return { success: true, data: faculty };
+    } catch (error: any) {
+        console.error('Error creating faculty:', error);
+        return { success: false, error: error.message || 'Could not create faculty (ensure code is unique).' };
+    }
+}
+
+export async function deleteFacultyQuick(id: string) {
+    try {
+        // Unlink departments and programs first
+        await prisma.department.updateMany({
+            where: { facultyId: id },
+            data: { facultyId: null }
+        });
+        await prisma.academicProgram.updateMany({
+            where: { facultyId: id },
+            data: { facultyId: null }
+        });
+        await prisma.faculty.delete({ where: { id } });
+
+        revalidatePath('/dashboard/departments');
+        revalidatePath('/dashboard/tertiary/campuses');
+        revalidatePath('/dashboard/tertiary/cbt');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error deleting faculty:', error);
         return { success: false, error: error.message };
     }
 }

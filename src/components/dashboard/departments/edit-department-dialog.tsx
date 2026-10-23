@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -35,6 +35,7 @@ import { useState, useEffect } from 'react';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Department name is required.'),
+  facultyId: z.string().optional(),
   hodId: z.string().optional(),
 });
 
@@ -43,10 +44,13 @@ type Department = {
   name: string;
   hodId?: string | null;
   hodName?: string;
+  facultyId?: string | null;
+  facultyName?: string;
 };
 
 interface EditDepartmentDialogProps {
   department: Department | null;
+  faculties?: { id: string; code: string; name: string }[];
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onDepartmentUpdated: () => void;
@@ -54,6 +58,7 @@ interface EditDepartmentDialogProps {
 
 export function EditDepartmentDialog({
   department,
+  faculties = [],
   isOpen,
   onOpenChange,
   onDepartmentUpdated,
@@ -66,8 +71,8 @@ export function EditDepartmentDialog({
     async function fetchTeachers() {
       const result = await getStaffUsers();
       if (result.success && result.data) {
-        const eligible = result.data.filter((u: any) => 
-          ['TEACHER', 'HOD', 'SLT', 'ADMIN', 'HEADOFDEPARTMENT'].includes(u.role?.toUpperCase())
+        const eligible = result.data.filter((u: any) =>
+          ['TEACHER', 'LECTURER', 'HOD', 'SLT', 'ADMIN', 'HEADOFDEPARTMENT'].includes(u.role?.toUpperCase())
         );
         setTeachers(eligible);
       }
@@ -81,7 +86,8 @@ export function EditDepartmentDialog({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
-      hodId: '',
+      facultyId: 'NONE',
+      hodId: 'NONE',
     },
   });
 
@@ -89,6 +95,7 @@ export function EditDepartmentDialog({
     if (department) {
       form.reset({
         name: department.name,
+        facultyId: department.facultyId || 'NONE',
         hodId: department.hodId || 'NONE',
       });
     }
@@ -101,6 +108,7 @@ export function EditDepartmentDialog({
       const result = await updateDepartment({
         id: department.id,
         name: values.name.trim(),
+        facultyId: values.facultyId === 'NONE' ? null : (values.facultyId || null),
         hodId: values.hodId === 'NONE' ? null : (values.hodId || null),
       });
 
@@ -132,7 +140,7 @@ export function EditDepartmentDialog({
         <DialogHeader>
           <DialogTitle className="text-foreground text-xl font-bold">Edit Department</DialogTitle>
           <DialogDescription className="text-muted-foreground text-xs sm:text-sm">
-            Modify the department title or reassign the Head of Department.
+            Modify the department title, assign its Faculty, or reassign the Head of Department.
           </DialogDescription>
         </DialogHeader>
 
@@ -145,12 +153,40 @@ export function EditDepartmentDialog({
                 <FormItem>
                   <FormLabel className="text-xs font-semibold text-foreground">Department Name</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="e.g. Science & Mathematics" 
+                    <Input
+                      placeholder="e.g. Computer Science"
                       className="bg-background border-border text-foreground rounded-xl"
-                      {...field} 
+                      {...field}
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="facultyId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs font-semibold text-foreground">Parent Faculty / College</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || 'NONE'}>
+                    <FormControl>
+                      <SelectTrigger className="bg-background border-border text-foreground rounded-xl">
+                        <SelectValue placeholder="Select Faculty / School" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="bg-background border-border text-foreground">
+                      <SelectItem value="NONE" className="text-muted-foreground italic">
+                        General / No Faculty Assigned
+                      </SelectItem>
+                      {faculties.map((f) => (
+                        <SelectItem key={f.id} value={f.id}>
+                          [{f.code}] {f.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -185,18 +221,18 @@ export function EditDepartmentDialog({
             />
 
             <DialogFooter className="pt-4 gap-2 sm:gap-0">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 className="rounded-xl border-border hover:bg-muted"
                 onClick={() => onOpenChange(false)}
                 disabled={isSubmitting}
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
-                className="bg-violet-600 hover:bg-violet-700 text-white shadow-md shadow-violet-500/20 rounded-xl" 
+              <Button
+                type="submit"
+                className="bg-violet-600 hover:bg-violet-700 text-white shadow-md shadow-violet-500/20 rounded-xl"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (

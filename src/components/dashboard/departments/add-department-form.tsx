@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -29,10 +28,17 @@ import type { MockUser } from '@/lib/schema';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Department name is required.'),
+  facultyId: z.string().optional(),
   hodId: z.string().optional(),
 });
 
-export function AddDepartmentForm({ onDepartmentAdded }: { onDepartmentAdded: () => void }) {
+export function AddDepartmentForm({
+  onDepartmentAdded,
+  faculties = [],
+}: {
+  onDepartmentAdded: () => void;
+  faculties?: { id: string; code: string; name: string }[];
+}) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [teachers, setTeachers] = useState<MockUser[]>([]);
@@ -41,9 +47,8 @@ export function AddDepartmentForm({ onDepartmentAdded }: { onDepartmentAdded: ()
     const fetchTeachers = async () => {
       const result = await getStaffUsers();
       if (result.success && result.data) {
-        // filter for teachers/hods/slt
-        const eligible = result.data.filter((u: any) => 
-          ['TEACHER', 'HOD', 'SLT', 'ADMIN', 'HEADOFDEPARTMENT'].includes(u.role?.toUpperCase())
+        const eligible = result.data.filter((u: any) =>
+          ['TEACHER', 'LECTURER', 'HOD', 'SLT', 'ADMIN', 'HEADOFDEPARTMENT'].includes(u.role?.toUpperCase())
         );
         setTeachers(eligible as any);
       }
@@ -55,7 +60,8 @@ export function AddDepartmentForm({ onDepartmentAdded }: { onDepartmentAdded: ()
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
-      hodId: '',
+      facultyId: 'NONE',
+      hodId: 'NONE',
     },
   });
 
@@ -64,7 +70,8 @@ export function AddDepartmentForm({ onDepartmentAdded }: { onDepartmentAdded: ()
     try {
       const result = await addDepartment({
         name: values.name,
-        hodId: values.hodId || undefined,
+        facultyId: values.facultyId && values.facultyId !== 'NONE' ? values.facultyId : null,
+        hodId: values.hodId && values.hodId !== 'NONE' ? values.hodId : undefined,
       });
 
       if (!result.success) {
@@ -82,7 +89,7 @@ export function AddDepartmentForm({ onDepartmentAdded }: { onDepartmentAdded: ()
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'There was a problem creating the department.',
+        description: e.message || 'There was a problem creating the department.',
       });
     } finally {
       setIsSubmitting(false);
@@ -99,8 +106,33 @@ export function AddDepartmentForm({ onDepartmentAdded }: { onDepartmentAdded: ()
             <FormItem>
               <FormLabel>Department Name</FormLabel>
               <FormControl>
-                <Input placeholder="e.g. Science Department" {...field} />
+                <Input placeholder="e.g. Computer Science" {...field} />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="facultyId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Parent Faculty / College (Optional)</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value || 'NONE'}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Faculty / School" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="NONE">General / No Faculty Assigned</SelectItem>
+                  {faculties.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>
+                      [{f.code}] {f.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
@@ -111,13 +143,14 @@ export function AddDepartmentForm({ onDepartmentAdded }: { onDepartmentAdded: ()
           render={({ field }) => (
             <FormItem>
               <FormLabel>Head of Department (Optional)</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} defaultValue={field.value || 'NONE'}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a teacher to be HOD" />
+                    <SelectValue placeholder="Select an educator to be HOD" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
+                  <SelectItem value="NONE">Unassigned (No HOD)</SelectItem>
                   {teachers.map((teacher: any) => (
                     <SelectItem key={teacher.id} value={teacher.id}>
                       {teacher.name || `${teacher.firstName || ''} ${teacher.lastName || ''}`.trim() || teacher.email} ({teacher.role})
