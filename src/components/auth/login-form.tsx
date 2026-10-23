@@ -93,12 +93,10 @@ export function LoginForm({ schoolSlug }: { schoolSlug?: string }) {
         description: 'Establishing cryptographic session token...',
       });
 
-      let destination = callbackUrl;
-      const isAdminRoute = ['/dashboard/system', '/dashboard/finance', '/dashboard/users', '/dashboard/db', '/dashboard/logs'].some(prefix => callbackUrl.startsWith(prefix));
+      const defaultDashboard = schoolSlug ? `/${schoolSlug}/dashboard` : '/dashboard';
       const idLower = values.identifier.toLowerCase();
-      if (isAdminRoute && (values.identifier.includes('/') || idLower.includes('parent') || idLower.includes('student') || idLower.includes('aliyu.sani'))) {
-        destination = '/dashboard';
-      }
+      const isSuperAdminLogin = idLower.startsWith('admin@');
+      const destination = isSuperAdminLogin ? callbackUrl : defaultDashboard;
 
       router.push(destination);
       router.refresh();

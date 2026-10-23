@@ -183,6 +183,10 @@ export default function DashboardLayout({
 
     setDisabledModuleName(null);
     const authorized = isPathAuthorized(pathname, role, rbacPermissions, activeModules);
+    if (!authorized && pathname !== '/dashboard') {
+      router.replace('/dashboard');
+      return;
+    }
     setIsAuthorized(authorized);
     setIsCheckingAuth(false);
     
