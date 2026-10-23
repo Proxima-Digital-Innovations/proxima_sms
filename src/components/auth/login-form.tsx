@@ -11,12 +11,8 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
-  UserCheck,
   Lock,
   Mail,
-  ShieldCheck,
-  CheckCircle2,
-  KeyRound,
   Fingerprint,
   Sparkles,
   ArrowRight
@@ -44,10 +40,11 @@ const formSchema = z.object({
 // Quick preset credentials for enterprise evaluation
 const DEMO_PERSONAS = [
   { label: 'Admin', role: 'Super Admin', id: 'admin@proximahub.com', pass: 'password123' },
-  { label: 'Parent', role: 'Guardian Portal', id: 'parent@proximahub.com', pass: 'Password123!' },
+  { label: 'Parent', role: 'Guardian Portal', id: 'parent@proximahub.com', pass: 'password123' },
   { label: 'Lecturer', role: 'Academic Faculty', id: 'aliyu.sani@proxima.edu.ng', pass: 'password123' },
   { label: 'Student', role: 'Computer Science', id: 'U2025/CSC/001', pass: 'password123' },
   { label: 'Finance', role: 'Bursar Officer', id: 'finance@proximahub.com', pass: 'password123' },
+  { label: 'HOD / Senate', role: 'Dept. & Senate', id: 'hod@proxima.com', pass: 'password123' },
 ];
 
 export function LoginForm({ schoolSlug }: { schoolSlug?: string }) {
@@ -69,6 +66,7 @@ export function LoginForm({ schoolSlug }: { schoolSlug?: string }) {
   });
 
   const applyPersona = (id: string, pass: string) => {
+    setError(null);
     form.setValue('identifier', id);
     form.setValue('password', pass);
   };
@@ -97,7 +95,8 @@ export function LoginForm({ schoolSlug }: { schoolSlug?: string }) {
 
       let destination = callbackUrl;
       const isAdminRoute = ['/dashboard/system', '/dashboard/finance', '/dashboard/users', '/dashboard/db', '/dashboard/logs'].some(prefix => callbackUrl.startsWith(prefix));
-      if (isAdminRoute && (values.identifier.includes('/') || values.identifier.toLowerCase().includes('parent') || values.identifier.toLowerCase().includes('student'))) {
+      const idLower = values.identifier.toLowerCase();
+      if (isAdminRoute && (values.identifier.includes('/') || idLower.includes('parent') || idLower.includes('student') || idLower.includes('aliyu.sani'))) {
         destination = '/dashboard';
       }
 
@@ -121,7 +120,7 @@ export function LoginForm({ schoolSlug }: { schoolSlug?: string }) {
           <span className="text-[10px] text-slate-500 font-mono">1-Click Fill</span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
           {DEMO_PERSONAS.map((p) => {
             const isCurrent = form.watch('identifier') === p.id;
             return (
@@ -129,7 +128,7 @@ export function LoginForm({ schoolSlug }: { schoolSlug?: string }) {
                 key={p.label}
                 type="button"
                 onClick={() => applyPersona(p.id, p.pass)}
-                className={`py-1.5 px-2 rounded-xl text-left border transition-all ${
+                className={`py-1.5 px-2.5 rounded-xl text-left border transition-all cursor-pointer ${
                   isCurrent
                     ? 'bg-indigo-600/25 border-indigo-500 text-indigo-200 font-bold shadow-sm'
                     : 'bg-slate-800/50 hover:bg-slate-800 border-slate-700/60 text-slate-300'
