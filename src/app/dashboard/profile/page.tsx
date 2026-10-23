@@ -339,8 +339,8 @@ export default function ProfilePage() {
               }`}
             >
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-xl font-bold shrink-0">
-                  🇺🇸
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold text-foreground shrink-0 border border-border">
+                  EN
                 </div>
                 <div>
                   <div className="font-semibold text-sm text-foreground flex items-center gap-2">
@@ -371,8 +371,8 @@ export default function ProfilePage() {
               }`}
             >
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-xl font-bold shrink-0">
-                  🇸🇦
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold text-foreground shrink-0 border border-border">
+                  AR
                 </div>
                 <div>
                   <div className="font-semibold text-sm text-foreground flex items-center gap-2">

@@ -133,7 +133,7 @@ export default function ParentWalletPage() {
       const res = await payInvoiceWithWallet(invoiceId);
       if (res.success) {
         toast({
-          title: 'Payment Successful! 🎉',
+          title: 'Payment Successful',
           description: `Invoice settled directly from your school wallet. Receipt reference: ${res.receipt?.reference}`,
         });
         await loadWallet();
