@@ -92,52 +92,8 @@ export async function getStudentPortalData(targetStudentId?: string) {
     }
 
     const activeReg = student.registrations[0] || null;
-    const regOfferings: any[] = activeReg?.courses.map((rc: any) => rc.offering) || [];
-
-    // Also include departmental course offerings that have published materials or assignments
-    // so students in the department always see assignments/notes published by their departmental lecturers
-    const deptOfferings = student.program?.departmentId
-      ? await prisma.courseOffering.findMany({
-          where: {
-            course: { departmentId: student.program.departmentId },
-            OR: [
-              { materials: { some: { isPublished: true } } },
-              { assignments: { some: { status: { in: ['PUBLISHED', 'CLOSED'] } } } }
-            ]
-          },
-          include: {
-            course: true,
-            schedules: { include: { venue: true } },
-            lecturers: { include: { staff: { include: { user: true } } } },
-            materials: {
-              where: { isPublished: true },
-              orderBy: { weekNumber: 'asc' },
-              include: { uploadedBy: { include: { user: true } } }
-            },
-            assignments: {
-              where: { status: { in: ['PUBLISHED', 'CLOSED'] } },
-              orderBy: { dueDate: 'asc' },
-              include: {
-                submissions: {
-                  include: { gradedBy: { include: { user: true } } }
-                }
-              }
-            }
-          }
-        })
-      : [];
-
-    // Deduplicate offerings by id
-    const offeringMap = new Map<string, any>();
-    for (const off of regOfferings) {
-      offeringMap.set(off.id, off);
-    }
-    for (const off of deptOfferings) {
-      if (!offeringMap.has(off.id)) {
-        offeringMap.set(off.id, off);
-      }
-    }
-    const registeredOfferings = Array.from(offeringMap.values());
+    // Strictly include ONLY courses the student has registered for
+    const registeredOfferings: any[] = activeReg?.courses.map((rc: any) => rc.offering) || [];
 
     // Aggregate materials across all registered courses
     const allMaterials = registeredOfferings.flatMap(offering =>

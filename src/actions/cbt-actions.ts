@@ -7,7 +7,28 @@ import crypto from 'crypto';
 
 export async function getCbtExams(courseOfferingId?: string) {
   try {
-    const where = courseOfferingId ? { courseOfferingId } : {};
+    const session = await auth();
+    let where: any = courseOfferingId ? { courseOfferingId } : {};
+
+    // If the user is a STUDENT, strictly filter CBT exams to ONLY the courses they registered for
+    if (session?.user?.id && (session.user as any).role === 'STUDENT' && !courseOfferingId) {
+      const student = await prisma.studentProfile.findUnique({
+        where: { userId: session.user.id },
+        include: {
+          registrations: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            include: { courses: true },
+          },
+        },
+      });
+
+      const registeredOfferingIds = student?.registrations?.[0]?.courses.map((c) => c.offeringId) || [];
+      where = {
+        courseOfferingId: { in: registeredOfferingIds },
+      };
+    }
+
     const [exams, offerings] = await Promise.all([
       prisma.cbtExam.findMany({
         where,
