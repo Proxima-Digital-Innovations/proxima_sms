@@ -104,8 +104,20 @@ export class CourseRegistrationService {
         }
       }
 
-      // 5. Concurrency Check & Row Lock for Seat Reservation
-      // We run SELECT ... FOR UPDATE on MySQL CourseOffering rows to prevent race conditions during rush hours
+      // 5. Check existing registration to adjust enrolledCount accurately
+      const existingReg = await tx.semesterRegistration.findUnique({
+        where: {
+          studentId_academicSession_semester: {
+            studentId: studentProfileId,
+            academicSession,
+            semester,
+          },
+        },
+        include: { courses: true },
+      });
+      const previouslyEnrolledSet = new Set(existingReg?.courses.map((c) => c.offeringId) || []);
+
+      // 6. Concurrency Check & Row Lock for Seat Reservation
       for (const off of offerings) {
         const rows: any[] = await tx.$queryRawUnsafe(
           'SELECT id, enrolledCount, maxCapacity, isRegistrationOpen FROM CourseOffering WHERE id = ? FOR UPDATE',
@@ -121,14 +133,14 @@ export class CourseRegistrationService {
           throw new Error(`Registration for ${off.course.code} is closed.`);
         }
 
-        if (currentOffering.enrolledCount >= currentOffering.maxCapacity) {
+        if (!previouslyEnrolledSet.has(off.id) && currentOffering.enrolledCount >= currentOffering.maxCapacity) {
           throw new Error(
             `Course capacity exhausted for ${off.course.code} (${currentOffering.enrolledCount}/${currentOffering.maxCapacity} seats taken).`
           );
         }
       }
 
-      // 6. Upsert SemesterRegistration Header
+      // 7. Upsert SemesterRegistration Header
       const registration = await tx.semesterRegistration.upsert({
         where: {
           studentId_academicSession_semester: {
@@ -153,21 +165,31 @@ export class CourseRegistrationService {
         },
       });
 
-      // 7. Remove previous registrations for this semester if any
+      // Decrement seat counts for previously registered courses before replacing
+      if (existingReg && existingReg.courses.length > 0) {
+        for (const prevCourse of existingReg.courses) {
+          await tx.courseOffering.update({
+            where: { id: prevCourse.offeringId },
+            data: { enrolledCount: { decrement: 1 } },
+          });
+        }
+      }
+
+      // 8. Remove previous registrations for this semester if any
       await tx.studentRegisteredCourse.deleteMany({
         where: { registrationId: registration.id },
       });
 
-      // 8. Create Registered Course Entries and Generate Anonymous Candidate Tokens
+      // 9. Create Registered Course Entries and Generate Anonymous Candidate Tokens
       for (const off of offerings) {
-        const barcode = `DKT-${academicSession.replace('/', '')}-S${semester}-${student.matricNumber.slice(-4)}-${off.course.code}`;
+        const barcode = `DKT-${academicSession.replace('/', '')}-S${semester}-${student.matricNumber.replace(/\//g, '').slice(-6)}-${off.course.code}`;
 
         await tx.studentRegisteredCourse.create({
           data: {
             registrationId: registration.id,
             offeringId: off.id,
             creditUnits: off.course.creditUnits,
-            isClearedForExam: false,
+            isClearedForExam: registration.isBursaryCleared,
             examDocketBarcode: barcode,
           },
         });
@@ -211,7 +233,7 @@ export class CourseRegistrationService {
   /**
    * Advisor Approval State Transition
    */
-  async approveRegistration(registrationId: string, advisorStaffProfileId: string) {
+  async approveRegistration(registrationId: string, advisorIdOrUserId?: string) {
     const reg = await prisma.semesterRegistration.findUnique({
       where: { id: registrationId },
     });
@@ -219,13 +241,31 @@ export class CourseRegistrationService {
     if (!reg) throw new Error('Registration record not found.');
     if (reg.status === 'LOCKED') throw new Error('Registration is locked and cannot be modified.');
 
-    return await prisma.semesterRegistration.update({
-      where: { id: registrationId },
-      data: {
-        status: 'ADVISOR_APPROVED',
-        advisorId: advisorStaffProfileId,
-        rejectionReason: null,
-      },
+    let resolvedAdvisorProfileId: string | null = null;
+    if (advisorIdOrUserId) {
+      const byProfile = await prisma.staffProfile.findUnique({ where: { id: advisorIdOrUserId } });
+      if (byProfile) {
+        resolvedAdvisorProfileId = byProfile.id;
+      } else {
+        const byUser = await prisma.staffProfile.findUnique({ where: { userId: advisorIdOrUserId } });
+        if (byUser) resolvedAdvisorProfileId = byUser.id;
+      }
+    }
+
+    return await prisma.$transaction(async (tx) => {
+      await tx.studentRegisteredCourse.updateMany({
+        where: { registrationId },
+        data: { isClearedForExam: true },
+      });
+
+      return await tx.semesterRegistration.update({
+        where: { id: registrationId },
+        data: {
+          status: 'ADVISOR_APPROVED',
+          advisorId: resolvedAdvisorProfileId,
+          rejectionReason: null,
+        },
+      });
     });
   }
 

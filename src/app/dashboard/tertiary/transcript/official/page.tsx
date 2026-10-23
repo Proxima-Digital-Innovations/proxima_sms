@@ -1,23 +1,35 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getStudentTranscriptAction } from '@/actions/tims-docket-actions';
-import { Award, Printer, ShieldCheck, ArrowLeft, Loader2, Sparkles } from 'lucide-react';
-import Image from 'next/image';
+import { getCurrentStudentContextAction } from '@/actions/tims-actions';
+import { Award, Printer, ShieldCheck, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function OfficialTranscriptPage() {
   const [data, setData] = useState<any>(null);
+  const [allStudents, setAllStudents] = useState<any[]>([]);
+  const [selectedStudentId, setSelectedStudentId] = useState<string>('');
+  const [isStudentRole, setIsStudentRole] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
-
-  const studentProfileId = '93e0878e-891f-4a60-ad1a-b0019b6c17f2'; // Aminu Katsina from seeding
 
   useEffect(() => {
     async function load() {
-      const res = await getStudentTranscriptAction(studentProfileId);
+      setIsLoading(true);
+      const ctxRes = await getCurrentStudentContextAction();
+      let targetId = '93e0878e-891f-4a60-ad1a-b0019b6c17f2';
+      if (ctxRes.success && ctxRes.data) {
+        setIsStudentRole(ctxRes.data.isStudentRole);
+        setAllStudents(ctxRes.data.allStudents || []);
+        if (ctxRes.data.student?.id) {
+          targetId = ctxRes.data.student.id;
+        }
+      }
+      setSelectedStudentId(targetId);
+
+      const res = await getStudentTranscriptAction(targetId);
       if (res.success && res.data) {
         setData(res.data);
       }
@@ -25,6 +37,16 @@ export default function OfficialTranscriptPage() {
     }
     load();
   }, []);
+
+  const handleSelectStudent = async (id: string) => {
+    setSelectedStudentId(id);
+    setIsLoading(true);
+    const res = await getStudentTranscriptAction(id);
+    if (res.success && res.data) {
+      setData(res.data);
+    }
+    setIsLoading(false);
+  };
 
   const handlePrint = () => {
     window.print();
@@ -51,7 +73,7 @@ export default function OfficialTranscriptPage() {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Top Bar (Hidden on Print) */}
-      <div className="flex justify-between items-center print:hidden bg-card p-4 rounded-xl border shadow-sm">
+      <div className="flex flex-wrap justify-between items-center gap-3 print:hidden bg-card p-4 rounded-xl border shadow-sm">
         <div className="flex items-center gap-2">
           <Link href="/dashboard/tertiary/transcript">
             <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -61,9 +83,25 @@ export default function OfficialTranscriptPage() {
           <span className="font-semibold text-sm">Official Archival Transcript</span>
         </div>
 
-        <Button onClick={handlePrint} className="bg-slate-900 text-white hover:bg-slate-800 flex items-center gap-2">
-          <Printer className="h-4 w-4" /> Print / Export Official PDF
-        </Button>
+        <div className="flex items-center gap-2">
+          {!isStudentRole && allStudents.length > 0 && (
+            <Select value={selectedStudentId} onValueChange={handleSelectStudent}>
+              <SelectTrigger className="w-60 h-9 rounded-xl text-xs">
+                <SelectValue placeholder="Switch student" />
+              </SelectTrigger>
+              <SelectContent>
+                {allStudents.map((st: any) => (
+                  <SelectItem key={st.id} value={st.id}>
+                    {st.matricNumber} — {st.user?.firstName} {st.user?.lastName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <Button onClick={handlePrint} className="bg-slate-900 text-white hover:bg-slate-800 flex items-center gap-2">
+            <Printer className="h-4 w-4" /> Print / Export Official PDF
+          </Button>
+        </div>
       </div>
 
       {/* Official Parchment Document */}
@@ -81,10 +119,10 @@ export default function OfficialTranscriptPage() {
             </div>
           </div>
           <h1 className="font-serif text-2xl sm:text-3xl font-extrabold uppercase tracking-widest text-slate-900">
-            Office of the Registrar & Senate
+            Office of the Registrar &amp; Senate
           </h1>
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-600">
-            Official Academic Record & Transcript of Academic Standing
+            Official Academic Record &amp; Transcript of Academic Standing
           </p>
         </div>
 
@@ -110,37 +148,39 @@ export default function OfficialTranscriptPage() {
 
         {/* Course Grades Breakdown */}
         <div className="py-6 space-y-6">
-          {academicHistory.map((term: any, tIdx: number) => (
+          {(academicHistory || data.semesters || []).map((term: any, tIdx: number) => (
             <div key={tIdx} className="space-y-2">
               <div className="flex justify-between items-center bg-slate-100 p-2 rounded text-xs font-bold uppercase text-slate-800">
-                <span>{term.academicSession} • Semester {term.semester} ({term.level}L)</span>
+                <span>{term.academicSession} • Semester {term.semester} {term.level ? `(${term.level}L)` : ''}</span>
                 <span className="font-mono">Semester GPA: {term.gpa}</span>
               </div>
 
-              <div className="w-full overflow-x-auto custom-scrollbar"><table className="w-full text-left text-xs">
-                <thead className="border-b text-[10px] uppercase text-slate-600">
-                  <tr>
-                    <th className="py-1">Course Code</th>
-                    <th className="py-1">Course Title</th>
-                    <th className="py-1 text-center">Units</th>
-                    <th className="py-1 text-center">Score</th>
-                    <th className="py-1 text-center">Grade</th>
-                    <th className="py-1 text-right">Points</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {term.courses.map((c: any, cIdx: number) => (
-                    <tr key={cIdx}>
-                      <td className="py-1.5 font-mono font-bold">{c.code}</td>
-                      <td className="py-1.5 text-slate-700">{c.title}</td>
-                      <td className="py-1.5 text-center font-mono">{c.creditUnits}</td>
-                      <td className="py-1.5 text-center font-mono">{c.totalScore}%</td>
-                      <td className="py-1.5 text-center font-bold">{c.letterGrade}</td>
-                      <td className="py-1.5 text-right font-mono font-semibold">{c.gradePoint}</td>
+              <div className="w-full overflow-x-auto custom-scrollbar">
+                <table className="w-full text-left text-xs">
+                  <thead className="border-b text-[10px] uppercase text-slate-600">
+                    <tr>
+                      <th className="py-1">Course Code</th>
+                      <th className="py-1">Course Title</th>
+                      <th className="py-1 text-center">Units</th>
+                      <th className="py-1 text-center">Score</th>
+                      <th className="py-1 text-center">Grade</th>
+                      <th className="py-1 text-right">Points</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table></div>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {term.courses.map((c: any, cIdx: number) => (
+                      <tr key={cIdx}>
+                        <td className="py-1.5 font-mono font-bold">{c.code}</td>
+                        <td className="py-1.5 text-slate-700">{c.title}</td>
+                        <td className="py-1.5 text-center font-mono">{c.creditUnits}</td>
+                        <td className="py-1.5 text-center font-mono">{c.totalScore}%</td>
+                        <td className="py-1.5 text-center font-bold">{c.letterGrade}</td>
+                        <td className="py-1.5 text-right font-mono font-semibold">{c.gradePoint}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           ))}
         </div>
@@ -149,19 +189,27 @@ export default function OfficialTranscriptPage() {
         <div className="border-2 border-slate-900 p-4 rounded-xl bg-slate-50 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center text-xs">
           <div>
             <span className="text-[10px] text-slate-500 uppercase font-semibold">Credits Registered</span>
-            <div className="text-xl font-bold font-mono text-slate-900">{summary.totalCreditsRegistered}</div>
+            <div className="text-xl font-bold font-mono text-slate-900">
+              {summary?.totalCreditsRegistered ?? data.cumulative?.totalCreditsAttempted ?? 0}
+            </div>
           </div>
           <div>
             <span className="text-[10px] text-slate-500 uppercase font-semibold">Credits Earned</span>
-            <div className="text-xl font-bold font-mono text-emerald-800">{summary.totalCreditsEarned}</div>
+            <div className="text-xl font-bold font-mono text-emerald-800">
+              {summary?.totalCreditsEarned ?? data.cumulative?.totalCreditsEarned ?? 0}
+            </div>
           </div>
           <div>
             <span className="text-[10px] text-slate-500 uppercase font-semibold">Cumulative CGPA</span>
-            <div className="text-2xl font-extrabold font-mono text-slate-900">{summary.cgpa}</div>
+            <div className="text-2xl font-extrabold font-mono text-slate-900">
+              {summary?.cgpa ?? data.cumulative?.cgpa ?? '0.00'}
+            </div>
           </div>
           <div>
             <span className="text-[10px] text-slate-500 uppercase font-semibold">Honours Classification</span>
-            <div className="text-xs font-bold text-emerald-900 mt-1">{summary.degreeClassification}</div>
+            <div className="text-xs font-bold text-emerald-900 mt-1">
+              {summary?.degreeClassification ?? data.cumulative?.degreeClassification ?? 'Good Standing'}
+            </div>
           </div>
         </div>
 
@@ -187,7 +235,7 @@ export default function OfficialTranscriptPage() {
             <div className="font-serif italic font-bold border-b border-slate-400 pb-1 mx-4">
               Dr. M. S. Bello, FNIM
             </div>
-            <div className="text-[10px] uppercase text-slate-500">Registrar & Secretary to Senate</div>
+            <div className="text-[10px] uppercase text-slate-500">Registrar &amp; Secretary to Senate</div>
           </div>
         </div>
       </div>

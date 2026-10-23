@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TrendingUp, Award, AlertTriangle, ShieldCheck, Sparkles, RefreshCw, ArrowRight } from 'lucide-react';
+import { getCurrentStudentContextAction } from '@/actions/tims-actions';
+import { TrendingUp, Sparkles } from 'lucide-react';
 
 interface ForecastCourse {
   code: string;
@@ -22,19 +23,53 @@ const GRADE_POINTS: Record<string, number> = {
   F: 0.0,
 };
 
-export default function CgpaForecasterPage() {
-  // Historical standing (e.g. Completed 100L & 200L)
-  const [priorCredits, setPriorCredits] = useState<number>(45);
-  const [priorQualityPoints, setPriorQualityPoints] = useState<number>(180); // 180 / 45 = 4.00 CGPA
+const DEFAULT_SAMPLE_COURSES: ForecastCourse[] = [
+  { code: 'CSC301', title: 'Data Structures & Algorithms', credits: 3, projectedGrade: 'A' },
+  { code: 'CSC305', title: 'Operating Systems & System Architecture', credits: 3, projectedGrade: 'A' },
+  { code: 'CSC309', title: 'Database Design & Management Systems', credits: 3, projectedGrade: 'B' },
+  { code: 'MTH101', title: 'Elementary Mathematics I', credits: 3, projectedGrade: 'B' },
+  { code: 'GST101', title: 'Use of English & Communication', credits: 2, projectedGrade: 'A' },
+  { code: 'CSC203', title: 'Discrete Structures for Computing', credits: 3, projectedGrade: 'B' },
+];
 
-  const [currentCourses, setCurrentCourses] = useState<ForecastCourse[]>([
-    { code: 'CSC301', title: 'Data Structures & Algorithms', credits: 3, projectedGrade: 'A' },
-    { code: 'CSC305', title: 'Operating Systems & System Architecture', credits: 3, projectedGrade: 'A' },
-    { code: 'CSC309', title: 'Database Design & Management Systems', credits: 3, projectedGrade: 'B' },
-    { code: 'MTH101', title: 'Elementary Mathematics I', credits: 3, projectedGrade: 'B' },
-    { code: 'GST101', title: 'Use of English & Communication', credits: 2, projectedGrade: 'A' },
-    { code: 'CSC203', title: 'Discrete Structures for Computing', credits: 3, projectedGrade: 'B' },
-  ]);
+export default function CgpaForecasterPage() {
+  const [priorCredits, setPriorCredits] = useState<number>(45);
+  const [priorQualityPoints, setPriorQualityPoints] = useState<number>(180);
+  const [currentCourses, setCurrentCourses] = useState<ForecastCourse[]>(DEFAULT_SAMPLE_COURSES);
+  const [studentName, setStudentName] = useState<string>('');
+
+  useEffect(() => {
+    async function loadLiveStudentCourses() {
+      const res = await getCurrentStudentContextAction('2025/2026', 1);
+      if (res.success && res.data?.activeStudent) {
+        const stu = res.data.activeStudent;
+        setStudentName(`${stu.user?.firstName || ''} ${stu.user?.lastName || ''} (${stu.matricNumber})`.trim());
+
+        // Populate prior credits and quality points from latest standing if available
+        const latestStanding = stu.academicStandings?.[0];
+        if (latestStanding && latestStanding.totalCreditsEarned > 0) {
+          const credits = Number(latestStanding.totalCreditsEarned);
+          const cgpa = Number(latestStanding.cgpa);
+          setPriorCredits(credits);
+          setPriorQualityPoints(Number((credits * cgpa).toFixed(2)));
+        }
+
+        // Populate current registered courses if student has registered
+        const regCourses = stu.registrations?.[0]?.courses || [];
+        if (regCourses.length > 0) {
+          setCurrentCourses(
+            regCourses.map((rc: any) => ({
+              code: rc.offering?.course?.code || 'CRS101',
+              title: rc.offering?.course?.title || 'Registered Course',
+              credits: rc.creditUnits || rc.offering?.course?.creditUnits || 3,
+              projectedGrade: 'A' as const,
+            }))
+          );
+        }
+      }
+    }
+    loadLiveStudentCourses();
+  }, []);
 
   const handleGradeChange = (index: number, newGrade: 'A' | 'B' | 'C' | 'D' | 'F') => {
     setCurrentCourses((prev) => {
@@ -85,10 +120,10 @@ export default function CgpaForecasterPage() {
         <div>
           <div className="flex items-center gap-2">
             <TrendingUp className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight">CGPA Forecaster & Academic Simulator</h1>
+            <h1 className="text-2xl font-bold tracking-tight">CGPA Forecaster &amp; Academic Simulator</h1>
           </div>
           <p className="text-muted-foreground text-sm mt-1">
-            Simulate hypothetical examination marks across enrolled courses to project semester GPA, cumulative honours classification, and target grade roadmaps.
+            Simulate hypothetical examination marks across your registered courses {studentName ? `for ${studentName}` : ''} to project semester GPA and degree honours.
           </p>
         </div>
 
@@ -107,7 +142,7 @@ export default function CgpaForecasterPage() {
         <Card className="border shadow-sm p-4 bg-muted/20">
           <span className="text-xs text-muted-foreground uppercase font-semibold">Prior Standing</span>
           <div className="text-2xl font-extrabold text-foreground mt-1">
-            {(priorQualityPoints / priorCredits).toFixed(2)}
+            {priorCredits > 0 ? (priorQualityPoints / priorCredits).toFixed(2) : '0.00'}
           </div>
           <p className="text-[11px] text-muted-foreground mt-0.5">{priorCredits} Units Completed</p>
         </Card>
@@ -120,99 +155,133 @@ export default function CgpaForecasterPage() {
           <p className="text-[11px] text-muted-foreground mt-0.5">{currentSemesterCredits} Units This Semester</p>
         </Card>
 
-        <Card className="border-2 border-primary/50 shadow-md p-4 bg-primary/5">
-          <span className="text-xs text-primary font-bold uppercase">Projected CGPA</span>
-          <div className="text-3xl font-extrabold text-primary mt-1 font-mono">
-            {projectedCgpa} / 5.00
+        <Card className="border-2 border-primary/30 shadow-md p-4 bg-primary/5">
+          <span className="text-xs text-primary uppercase font-bold">Projected Cumulative CGPA</span>
+          <div className="text-3xl font-black text-foreground mt-1 font-mono">
+            {projectedCgpa}
           </div>
-          <p className="text-[11px] text-muted-foreground mt-0.5">{totalCumulativeCredits} Total Degree Units</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">{totalCumulativeCredits} Total Cumulative Units</p>
         </Card>
 
         <Card className="border shadow-sm p-4 flex flex-col justify-between">
-          <span className="text-xs text-muted-foreground uppercase font-semibold">Projected Degree Class</span>
-          <Badge className={`w-fit text-xs font-semibold py-1 px-2.5 mt-2 ${badgeColor}`}>
-            {projectedClassification}
-          </Badge>
-          <p className="text-[10px] text-muted-foreground mt-1">NUC CCMAS 5.00 Scale</p>
+          <span className="text-xs text-muted-foreground uppercase font-semibold">Honours Trajectory</span>
+          <div className="mt-2">
+            <Badge className={`${badgeColor} text-xs px-2.5 py-1 font-bold`}>
+              {projectedClassification}
+            </Badge>
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-1">NUC 5.00 Honours Scale</p>
         </Card>
       </div>
 
-      {/* Target Analysis Banner */}
-      <Card className="border border-indigo-200 bg-indigo-50/50 p-4">
-        <div className="flex items-start gap-3">
-          <Sparkles className="h-5 w-5 text-indigo-600 shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <h4 className="font-bold text-sm text-indigo-950">Academic Advisory Target Roadmap</h4>
-            <p className="text-xs text-indigo-900 leading-relaxed">
-              To achieve <strong className="text-emerald-700">First Class Honours (CGPA $\ge$ 4.50)</strong> upon completing this semester,
-              you need an aggregate of <strong className="underline font-mono">{Math.max(0, Math.ceil(qpNeededForFirstClass))} Quality Points</strong>,
-              equivalent to an average Semester GPA of <strong className="font-mono">{sgpaNeededForFirstClass}</strong>.
-            </p>
-          </div>
-        </div>
-      </Card>
+      {/* Interactive Course Grade Matrix */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-2 border shadow-md">
+          <CardHeader className="border-b bg-muted/30 pb-3">
+            <CardTitle className="text-base font-bold">Registered Semester Courses</CardTitle>
+            <CardDescription className="text-xs">
+              Adjust target letter grades below to watch your real-time CGPA trajectory respond.
+            </CardDescription>
+          </CardHeader>
 
-      {/* Interactive Course Grade Simulator Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Enrolled Course Simulator (Semester 1)</CardTitle>
-          <CardDescription>
-            Change hypothetical grades below to watch your projected SGPA and CGPA recalculate live.
-          </CardDescription>
-        </CardHeader>
+          <CardContent className="p-4 space-y-3">
+            {currentCourses.map((course, idx) => (
+              <div
+                key={course.code}
+                className="p-3.5 rounded-xl border bg-card flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+              >
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-xs text-primary">{course.code}</span>
+                    <Badge variant="outline" className="text-[10px]">
+                      {course.credits} Credits
+                    </Badge>
+                  </div>
+                  <p className="font-semibold text-sm text-foreground mt-0.5">{course.title}</p>
+                </div>
 
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b bg-muted/40 text-xs font-semibold uppercase text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-3">Course Code</th>
-                  <th className="px-4 py-3">Course Title</th>
-                  <th className="px-4 py-3 text-center">Credit Units</th>
-                  <th className="px-4 py-3 text-center">Simulated Grade</th>
-                  <th className="px-4 py-3 text-center">Grade Points</th>
-                  <th className="px-4 py-3 text-right">Weighted Quality Points</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {currentCourses.map((c, idx) => {
-                  const qp = (c.credits * GRADE_POINTS[c.projectedGrade]).toFixed(1);
-                  return (
-                    <tr key={c.code} className="hover:bg-muted/20 transition-colors">
-                      <td className="px-4 py-3 font-bold font-mono text-foreground">{c.code}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{c.title}</td>
-                      <td className="px-4 py-3 text-center font-mono">{c.credits}</td>
-                      <td className="px-4 py-3 text-center">
-                        <Select
-                          value={c.projectedGrade}
-                          onValueChange={(val: any) => handleGradeChange(idx, val)}
-                        >
-                          <SelectTrigger className="w-20 mx-auto h-8 text-xs font-bold font-mono">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="A">A (5.0)</SelectItem>
-                            <SelectItem value="B">B (4.0)</SelectItem>
-                            <SelectItem value="C">C (3.0)</SelectItem>
-                            <SelectItem value="D">D (2.0)</SelectItem>
-                            <SelectItem value="F">F (0.0)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td className="px-4 py-3 text-center font-mono font-medium text-foreground">
-                        {GRADE_POINTS[c.projectedGrade].toFixed(1)}
-                      </td>
-                      <td className="px-4 py-3 text-right font-mono font-bold text-primary">
-                        {qp} QP
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+                <div className="flex items-center gap-3">
+                  <div className="text-right hidden sm:block">
+                    <span className="text-[10px] text-muted-foreground uppercase block">Quality Points</span>
+                    <span className="font-mono font-bold text-xs">
+                      {(course.credits * GRADE_POINTS[course.projectedGrade]).toFixed(1)} QP
+                    </span>
+                  </div>
+
+                  <Select
+                    value={course.projectedGrade}
+                    onValueChange={(val: any) => handleGradeChange(idx, val)}
+                  >
+                    <SelectTrigger className="w-28 font-bold">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="A">Grade A (5.0)</SelectItem>
+                      <SelectItem value="B">Grade B (4.0)</SelectItem>
+                      <SelectItem value="C">Grade C (3.0)</SelectItem>
+                      <SelectItem value="D">Grade D (2.0)</SelectItem>
+                      <SelectItem value="F">Grade F (0.0)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* AI Target Advisor Sidebar */}
+        <Card className="border shadow-md h-fit">
+          <CardHeader className="border-b bg-slate-900 text-white rounded-t-xl pb-4">
+            <CardTitle className="text-base font-bold flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-amber-400" /> Strategic Grade Roadmap
+            </CardTitle>
+            <CardDescription className="text-slate-300 text-xs">
+              Automated mathematical threshold analysis.
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="p-5 space-y-4 text-xs">
+            <div className="p-3.5 rounded-xl bg-muted/50 border space-y-1">
+              <span className="font-bold text-foreground block">First Class Honours Target (4.50+)</span>
+              {parseFloat(sgpaNeededForFirstClass) <= 5.0 ? (
+                <p className="text-muted-foreground">
+                  You need a minimum semester GPA of <strong className="text-emerald-700 font-mono">{sgpaNeededForFirstClass}</strong> this semester to cross into First Class Honours.
+                </p>
+              ) : (
+                <p className="text-muted-foreground">
+                  Requires <strong className="text-amber-700 font-mono">{sgpaNeededForFirstClass} SGPA</strong> (more than 1 semester of straight A&apos;s needed to reach 4.50).
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2 pt-2 border-t">
+              <h4 className="font-bold text-foreground uppercase tracking-wider text-[11px]">
+                NUC Classification Boundaries
+              </h4>
+              <div className="flex justify-between py-1 border-b border-dashed">
+                <span>First Class Honours</span>
+                <span className="font-mono font-bold">4.50 &ndash; 5.00</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-dashed">
+                <span>Second Class Upper (2:1)</span>
+                <span className="font-mono font-bold">3.50 &ndash; 4.49</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-dashed">
+                <span>Second Class Lower (2:2)</span>
+                <span className="font-mono font-bold">2.40 &ndash; 3.49</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-dashed">
+                <span>Third Class</span>
+                <span className="font-mono font-bold">1.50 &ndash; 2.39</span>
+              </div>
+              <div className="flex justify-between py-1 text-red-600 font-semibold">
+                <span>Academic Probation</span>
+                <span className="font-mono">&lt; 1.50</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

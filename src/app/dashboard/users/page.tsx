@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -19,7 +18,7 @@ import {
 import { AddUserForm } from '@/components/dashboard/users/add-user-form';
 import { AssignRolesDialog } from '@/components/dashboard/users/assign-roles-dialog';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trash2, Edit, Upload, Users, Briefcase, Shield, Search, Filter } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, Upload, Users, Briefcase, Shield, Search, AlertTriangle } from 'lucide-react';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { getStaffList, deleteStaff } from '@/actions/staff-actions';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -28,6 +27,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -39,7 +39,6 @@ import { BulkStaffUploadDialog } from '@/components/dashboard/users/bulk-staff-u
 import usePersistentState from '@/hooks/use-persistent-state';
 import { Input } from '@/components/ui/input';
 import { motion } from 'framer-motion';
-import { useParams } from 'next/navigation';
 import {
   Pagination,
   PaginationContent,
@@ -50,13 +49,13 @@ import {
 } from "@/components/ui/pagination";
 
 export default function UsersPage() {
-  const params = useParams();
-  
   const [users, setUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = usePersistentState('users-add-modal-open', false);
   const [isBulkModalOpen, setIsBulkModalOpen] = usePersistentState('users-bulk-modal-open', false);
   const [selectedUserForRoles, setSelectedUserForRoles] = useState<any | null>(null);
+  const [userToDelete, setUserToDelete] = useState<any | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
 
@@ -85,21 +84,18 @@ export default function UsersPage() {
     fetchUsers();
   }, [fetchUsers]);
 
-  const removeUser = async (userId: string) => {
-    if (
-      !confirm(
-        'Are you sure you want to delete this staff member? This action cannot be undone.'
-      )
-    )
-      return;
+  const confirmRemoveUser = async () => {
+    if (!userToDelete) return;
+    setIsDeleting(true);
     try {
-      const result = await deleteStaff(userId);
+      const result = await deleteStaff(userToDelete.id);
       if (result.error) throw new Error(result.error);
       toast({
         title: 'Staff Member Removed',
         description: 'The staff member has been successfully deleted.',
       });
-      fetchUsers(); // Refresh the list
+      setUserToDelete(null);
+      fetchUsers();
     } catch (error) {
       console.error('Error removing user:', error);
       toast({
@@ -107,6 +103,8 @@ export default function UsersPage() {
         title: 'Error',
         description: 'Could not remove the staff member.',
       });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -164,7 +162,7 @@ export default function UsersPage() {
         <div className="min-w-0">
           <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight truncate">Staff Directory</h1>
           <p className="text-muted-foreground text-xs sm:text-sm mt-1">
-            Manage your school's faculty, administration, and support staff.
+            Manage your institution&apos;s faculty, lecturers, teachers, administration, and support staff.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3 shrink-0">
@@ -195,7 +193,7 @@ export default function UsersPage() {
                     </div>
                     <DialogTitle className="text-foreground text-xl">Create New Staff Profile</DialogTitle>
                     <DialogDescription className="text-muted-foreground">
-                       Fill out role assignment, monthly base salary, and biometric attendance parameters to provision a new staff account.
+                       Fill out role assignment, monthly base salary, and biometric attendance parameters to provision a new staff account and TIMS academic profile.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="mt-4">
@@ -262,7 +260,7 @@ export default function UsersPage() {
                     <TableRow className="border-border hover:bg-transparent">
                         <TableHead className="font-bold text-muted-foreground py-3 sm:py-4 px-3 sm:px-6 min-w-[200px]">Staff</TableHead>
                         <TableHead className="font-bold text-muted-foreground py-3 sm:py-4 hidden md:table-cell">Contact</TableHead>
-                        <TableHead className="font-bold text-muted-foreground py-3 sm:py-4 hidden lg:table-cell">Role & Status</TableHead>
+                        <TableHead className="font-bold text-muted-foreground py-3 sm:py-4 hidden lg:table-cell">Role &amp; Status</TableHead>
                         <TableHead className="text-right font-bold text-muted-foreground py-4 px-6">Actions</TableHead>
                     </TableRow>
                     </TableHeader>
@@ -341,7 +339,7 @@ export default function UsersPage() {
                                     <div className="flex items-center gap-1.5 flex-wrap">
                                         <Badge variant="outline" className={`
                                             ${user.role === 'ADMIN' ? 'bg-violet-500/10 text-violet-400 border-violet-500/20' : ''}
-                                            ${user.role === 'TEACHER' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : ''}
+                                            ${user.role === 'TEACHER' || user.role === 'LECTURER' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : ''}
                                             ${user.role === 'SLT' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : ''}
                                             ${user.role === 'HOD' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : ''}
                                             ${user.role === 'ACCOUNTANT' ? 'bg-teal-500/10 text-teal-400 border-teal-500/20' : ''}
@@ -381,7 +379,7 @@ export default function UsersPage() {
                                         size="sm"
                                         className="h-8 px-2 bg-background border-border hover:bg-rose-900/50 hover:text-rose-400 hover:border-rose-500/50"
                                         title="Delete Staff"
-                                        onClick={() => removeUser(user.id)}
+                                        onClick={() => setUserToDelete(user)}
                                     >
                                         <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                     </Button>
@@ -434,6 +432,36 @@ export default function UsersPage() {
         onOpenChange={(open) => !open && setSelectedUserForRoles(null)}
         onSuccess={fetchUsers}
       />
+
+      {/* Styled Confirmation Modal for Deleting Staff (No Native Browser Alerts) */}
+      <Dialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
+        <DialogContent className="max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-rose-600">
+              <AlertTriangle className="h-5 w-5" /> Confirm Staff Removal
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to permanently remove{' '}
+              <strong className="text-foreground">
+                {userToDelete?.firstName} {userToDelete?.lastName}
+              </strong>{' '}
+              ({userToDelete?.staffId || userToDelete?.email}) from the institutional staff directory? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 pt-2">
+            <Button variant="outline" onClick={() => setUserToDelete(null)} disabled={isDeleting}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmRemoveUser}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Removing...' : 'Delete Staff Member'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

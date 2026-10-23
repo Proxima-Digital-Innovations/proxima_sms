@@ -1,6 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
+import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
 
 export async function getStudentAddDropRequests(studentProfileId: string, session: string, semester: number) {
@@ -14,6 +15,40 @@ export async function getStudentAddDropRequests(studentProfileId: string, sessio
         },
       },
       include: {
+        student: {
+          include: {
+            user: { select: { firstName: true, lastName: true, email: true } },
+            program: true,
+          },
+        },
+        offering: { include: { course: true } },
+        reviewedBy: { include: { user: { select: { firstName: true, lastName: true } } } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return { success: true, data: requests };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getAllAddDropRequestsAction(session: string, semester: number) {
+  try {
+    const requests = await prisma.courseAddDropRequest.findMany({
+      where: {
+        registration: {
+          academicSession: session,
+          semester,
+        },
+      },
+      include: {
+        student: {
+          include: {
+            user: { select: { firstName: true, lastName: true, email: true } },
+            program: true,
+          },
+        },
         offering: { include: { course: true } },
         reviewedBy: { include: { user: { select: { firstName: true, lastName: true } } } },
       },
@@ -28,20 +63,55 @@ export async function getStudentAddDropRequests(studentProfileId: string, sessio
 
 export async function submitAddDropRequestAction(data: {
   studentProfileId: string;
-  registrationId: string;
+  registrationId?: string;
+  academicSession?: string;
+  semester?: number;
   offeringId: string;
   requestType: 'ADD' | 'DROP';
   reason: string;
 }) {
   try {
-    const reg = await prisma.semesterRegistration.findUnique({
-      where: { id: data.registrationId },
-      include: {
-        courses: { include: { offering: { include: { course: true } } } },
-      },
-    });
+    const sessionStr = data.academicSession || '2025/2026';
+    const semNum = data.semester || 1;
 
-    if (!reg) throw new Error('Registration record not found.');
+    let reg = data.registrationId
+      ? await prisma.semesterRegistration.findUnique({
+          where: { id: data.registrationId },
+          include: {
+            courses: { include: { offering: { include: { course: true } } } },
+          },
+        })
+      : null;
+
+    if (!reg) {
+      reg = await prisma.semesterRegistration.findUnique({
+        where: {
+          studentId_academicSession_semester: {
+            studentId: data.studentProfileId,
+            academicSession: sessionStr,
+            semester: semNum,
+          },
+        },
+        include: {
+          courses: { include: { offering: { include: { course: true } } } },
+        },
+      });
+    }
+
+    if (!reg) {
+      reg = await prisma.semesterRegistration.create({
+        data: {
+          studentId: data.studentProfileId,
+          academicSession: sessionStr,
+          semester: semNum,
+          status: 'SUBMITTED',
+          totalCredits: 0,
+        },
+        include: {
+          courses: { include: { offering: { include: { course: true } } } },
+        },
+      });
+    }
 
     const offering = await prisma.courseOffering.findUnique({
       where: { id: data.offeringId },
@@ -57,7 +127,7 @@ export async function submitAddDropRequestAction(data: {
         throw new Error(`Adding ${offering.course.code} (${deltaCredits} credits) exceeds the 24-credit maximum limit.`);
       }
     } else {
-      if (currentCredits - deltaCredits < 15) {
+      if (reg.courses.length > 0 && currentCredits - deltaCredits < 15) {
         throw new Error(`Dropping ${offering.course.code} would drop total credits to ${currentCredits - deltaCredits}, below the statutory 15-credit minimum.`);
       }
     }
@@ -65,7 +135,7 @@ export async function submitAddDropRequestAction(data: {
     const request = await prisma.courseAddDropRequest.create({
       data: {
         studentId: data.studentProfileId,
-        registrationId: data.registrationId,
+        registrationId: reg.id,
         offeringId: data.offeringId,
         requestType: data.requestType,
         reason: data.reason,
@@ -86,9 +156,22 @@ export async function reviewAddDropRequestAction(data: {
   requestId: string;
   approved: boolean;
   rejectionNote?: string;
-  advisorStaffProfileId: string;
+  advisorStaffProfileId?: string;
 }) {
   try {
+    const session = await auth();
+    const userId = session?.user?.id as string | undefined;
+
+    let resolvedAdvisorProfileId: string | null = null;
+    if (data.advisorStaffProfileId) {
+      const byId = await prisma.staffProfile.findUnique({ where: { id: data.advisorStaffProfileId } });
+      if (byId) resolvedAdvisorProfileId = byId.id;
+    }
+    if (!resolvedAdvisorProfileId && userId) {
+      const byUser = await prisma.staffProfile.findUnique({ where: { userId } });
+      if (byUser) resolvedAdvisorProfileId = byUser.id;
+    }
+
     const request = await prisma.courseAddDropRequest.findUnique({
       where: { id: data.requestId },
       include: {
@@ -101,7 +184,7 @@ export async function reviewAddDropRequestAction(data: {
 
     if (!request) throw new Error('Add/Drop request not found.');
 
-    return await prisma.$transaction(async (tx) => {
+    const updated = await prisma.$transaction(async (tx) => {
       if (data.approved) {
         if (request.requestType === 'ADD') {
           await tx.studentRegisteredCourse.upsert({
@@ -144,7 +227,7 @@ export async function reviewAddDropRequestAction(data: {
         where: { id: data.requestId },
         data: {
           status: data.approved ? 'APPROVED' : 'REJECTED',
-          reviewedById: data.advisorStaffProfileId,
+          reviewedById: resolvedAdvisorProfileId,
           reviewedAt: new Date(),
           rejectionNote: data.rejectionNote || null,
         },
@@ -152,6 +235,12 @@ export async function reviewAddDropRequestAction(data: {
 
       return updatedReq;
     });
+
+    revalidatePath('/dashboard/tertiary/add-drop');
+    revalidatePath('/dashboard/tertiary/registration');
+    revalidatePath('/dashboard/tertiary/student-hub');
+    revalidatePath('/dashboard/tertiary/cbt');
+    return { success: true, data: updated };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

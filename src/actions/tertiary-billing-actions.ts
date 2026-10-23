@@ -3,10 +3,15 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
-export async function getStudentTertiaryInvoices(studentProfileId: string) {
+export async function getStudentTertiaryInvoices(studentProfileId?: string) {
   try {
+    const where: any = {};
+    if (studentProfileId && studentProfileId !== 'ALL') {
+      where.studentId = studentProfileId;
+    }
+
     const invoices = await prisma.tertiaryInvoice.findMany({
-      where: { studentId: studentProfileId },
+      where,
       include: {
         student: {
           include: {
@@ -19,6 +24,70 @@ export async function getStudentTertiaryInvoices(studentProfileId: string) {
     });
 
     return { success: true, data: invoices };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getTertiaryFeeStructuresAction() {
+  try {
+    const structures = await prisma.tertiaryFeeStructure.findMany({
+      include: {
+        program: true,
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+    return { success: true, data: structures };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function saveTertiaryFeeStructureAction(data: {
+  programId: string;
+  academicSession: string;
+  semester: number;
+  tuitionFee: number;
+  acceptanceFee: number;
+  labFee: number;
+  ictFee: number;
+}) {
+  try {
+    const totalAmount =
+      Number(data.tuitionFee || 0) +
+      Number(data.acceptanceFee || 0) +
+      Number(data.labFee || 0) +
+      Number(data.ictFee || 0);
+
+    const record = await prisma.tertiaryFeeStructure.upsert({
+      where: {
+        programId_academicSession_semester: {
+          programId: data.programId,
+          academicSession: data.academicSession,
+          semester: data.semester,
+        },
+      },
+      create: {
+        programId: data.programId,
+        academicSession: data.academicSession,
+        semester: data.semester,
+        tuitionFee: Number(data.tuitionFee || 0),
+        acceptanceFee: Number(data.acceptanceFee || 0),
+        labFee: Number(data.labFee || 0),
+        ictFee: Number(data.ictFee || 0),
+        totalAmount,
+      },
+      update: {
+        tuitionFee: Number(data.tuitionFee || 0),
+        acceptanceFee: Number(data.acceptanceFee || 0),
+        labFee: Number(data.labFee || 0),
+        ictFee: Number(data.ictFee || 0),
+        totalAmount,
+      },
+    });
+
+    revalidatePath('/dashboard/tertiary/payments');
+    return { success: true, data: record };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

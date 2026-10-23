@@ -24,12 +24,18 @@ export async function checkTimetableClashesAction(offeringIds: string[]): Promis
   error?: string;
 }> {
   try {
-    if (!offeringIds || offeringIds.length < 2) {
+    let targetOfferingIds = offeringIds;
+    if (!targetOfferingIds || targetOfferingIds.length === 0) {
+      const allOfferings = await prisma.courseOffering.findMany({ select: { id: true } });
+      targetOfferingIds = allOfferings.map((o) => o.id);
+    }
+
+    if (targetOfferingIds.length < 2) {
       return { success: true, hasClashes: false, clashes: [] };
     }
 
     const schedules = await prisma.courseSchedule.findMany({
-      where: { courseOfferingId: { in: offeringIds } },
+      where: { courseOfferingId: { in: targetOfferingIds } },
       include: {
         courseOffering: { include: { course: true } },
         venue: true,
@@ -113,23 +119,76 @@ export async function getStudentWeeklyTimetable(studentProfileId: string, sessio
       },
     });
 
-    if (!reg) return { success: true, data: [] };
+    if (reg && reg.courses.length > 0) {
+      const schedulesList = reg.courses.flatMap((c) =>
+        c.offering.schedules.map((s) => ({
+          id: s.id,
+          offeringId: c.offeringId,
+          courseCode: c.offering.course.code,
+          courseTitle: c.offering.course.title,
+          dayOfWeek: s.dayOfWeek,
+          startTime: s.startTime,
+          endTime: s.endTime,
+          scheduleType: s.scheduleType,
+          venueName: s.venue?.name || 'TBA',
+          venueCapacity: s.venue?.capacity,
+        }))
+      );
+      return {
+        success: true,
+        data: schedulesList,
+        registeredOfferingIds: reg.courses.map((c) => c.offeringId),
+      };
+    }
 
-    const schedulesList = reg.courses.flatMap((c) =>
-      c.offering.schedules.map((s) => ({
+    // Fallback: return all schedules for the session/semester if no specific student registration or if viewing as Admin/Staff
+    const allSchedules = await prisma.courseSchedule.findMany({
+      where: {
+        courseOffering: {
+          academicSession: session,
+          semester,
+        },
+      },
+      include: {
+        courseOffering: { include: { course: true } },
+        venue: true,
+      },
+    });
+
+    return {
+      success: true,
+      data: allSchedules.map((s) => ({
         id: s.id,
-        courseCode: c.offering.course.code,
-        courseTitle: c.offering.course.title,
+        offeringId: s.courseOfferingId,
+        courseCode: s.courseOffering.course.code,
+        courseTitle: s.courseOffering.course.title,
         dayOfWeek: s.dayOfWeek,
         startTime: s.startTime,
         endTime: s.endTime,
         scheduleType: s.scheduleType,
         venueName: s.venue?.name || 'TBA',
         venueCapacity: s.venue?.capacity,
-      }))
-    );
+      })),
+      registeredOfferingIds: Array.from(new Set(allSchedules.map((s) => s.courseOfferingId))),
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
 
-    return { success: true, data: schedulesList };
+export async function getTimetableBuilderOptionsAction(session = '2025/2026', semester = 1) {
+  try {
+    const [offerings, venues] = await Promise.all([
+      prisma.courseOffering.findMany({
+        where: { academicSession: session, semester },
+        include: { course: true },
+        orderBy: { course: { code: 'asc' } },
+      }),
+      prisma.lectureVenue.findMany({
+        orderBy: { name: 'asc' },
+      }),
+    ]);
+    return { success: true, data: { offerings, venues } };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -147,7 +206,7 @@ export async function createCourseScheduleAction(data: {
     const schedule = await prisma.courseSchedule.create({
       data: {
         courseOfferingId: data.courseOfferingId,
-        venueId: data.venueId || null,
+        venueId: data.venueId && data.venueId !== 'NONE' ? data.venueId : null,
         dayOfWeek: data.dayOfWeek.toUpperCase(),
         startTime: data.startTime,
         endTime: data.endTime,

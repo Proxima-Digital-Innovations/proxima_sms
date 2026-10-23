@@ -2,6 +2,7 @@
 
 import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
+import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
 import { CourseRegistrationService } from '@/lib/services/tims/course-registration-service';
 import { ExamProcessingService, BlindGradeEntry } from '@/lib/services/tims/exam-processing-service';
@@ -11,6 +12,60 @@ const regService = new CourseRegistrationService();
 const examService = new ExamProcessingService();
 
 // ==========================================
+// 0. DYNAMIC STUDENT & USER CONTEXT RESOLVER
+// ==========================================
+
+export async function getCurrentStudentContextAction(academicSession = '2025/2026', semester = 1) {
+  try {
+    const session = await auth();
+    const userId = session?.user?.id as string | undefined;
+    const userRole = ((session?.user as any)?.role || 'STUDENT').toUpperCase();
+
+    const allStudents = await prisma.studentProfile.findMany({
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true, email: true } },
+        program: { include: { department: true, faculty: true } },
+        registrations: {
+          where: { academicSession, semester },
+          include: {
+            courses: {
+              include: {
+                offering: { include: { course: true } },
+              },
+            },
+          },
+        },
+        academicStandings: {
+          orderBy: { createdAt: 'desc' },
+        },
+        grades: {
+          include: { offering: { include: { course: true } } },
+        },
+      },
+      orderBy: { matricNumber: 'asc' },
+    });
+
+    let activeStudent = allStudents.find((s) => s.userId === userId) || null;
+    if (!activeStudent && allStudents.length > 0) {
+      activeStudent = allStudents[0];
+    }
+
+    return {
+      success: true,
+      data: {
+        userId,
+        userRole,
+        isStudentRole: userRole === 'STUDENT',
+        activeStudent,
+        allStudents: userRole === 'STUDENT' && activeStudent ? [activeStudent] : allStudents,
+      },
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+// ==========================================
 // 1. PROGRAMS & COURSES
 // ==========================================
 
@@ -18,7 +73,8 @@ export async function getTimsPrograms() {
   try {
     const programs = await prisma.academicProgram.findMany({
       include: {
-        department: true,
+        department: { include: { faculty: true } },
+        faculty: true,
         _count: { select: { students: true, courses: true } },
       },
       orderBy: { code: 'asc' },
@@ -35,18 +91,29 @@ export async function createTimsProgram(data: {
   gradingStandard: AccreditationStandard;
   totalCreditsRequired?: number;
   departmentId?: string;
+  facultyId?: string;
 }) {
   try {
+    let resolvedFacultyId = data.facultyId && data.facultyId !== 'NONE' ? data.facultyId : null;
+    const resolvedDeptId = data.departmentId && data.departmentId !== 'NONE' ? data.departmentId : null;
+
+    if (!resolvedFacultyId && resolvedDeptId) {
+      const dept = await prisma.department.findUnique({ where: { id: resolvedDeptId } });
+      if (dept?.facultyId) resolvedFacultyId = dept.facultyId;
+    }
+
     const program = await prisma.academicProgram.create({
       data: {
-        code: data.code.toUpperCase(),
-        name: data.name,
+        code: data.code.toUpperCase().trim(),
+        name: data.name.trim(),
         gradingStandard: data.gradingStandard,
         totalCreditsRequired: data.totalCreditsRequired || 120,
-        departmentId: data.departmentId || null,
+        departmentId: resolvedDeptId,
+        facultyId: resolvedFacultyId,
       },
     });
     revalidatePath('/dashboard/tertiary/programs');
+    revalidatePath('/dashboard/departments');
     return { success: true, data: program };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -59,7 +126,7 @@ export async function getTimsCourses(programId?: string) {
     const courses = await prisma.course.findMany({
       where,
       include: {
-        program: true,
+        program: { include: { department: true, faculty: true } },
         prerequisites: { include: { prerequisite: true } },
         _count: { select: { offerings: true } },
       },
@@ -107,7 +174,7 @@ export async function createTimsCourse(data: {
 }
 
 // ==========================================
-// 2. COURSE OFFERINGS & REGISTRATION
+// 2. COURSE OFFERINGS, LECTURERS & REGISTRATION
 // ==========================================
 
 export async function getTimsOfferings(session?: string, semester?: number) {
@@ -119,7 +186,28 @@ export async function getTimsOfferings(session?: string, semester?: number) {
     const offerings = await prisma.courseOffering.findMany({
       where,
       include: {
-        course: { include: { program: true } },
+        course: {
+          include: {
+            program: {
+              include: {
+                department: { include: { faculty: true } },
+                faculty: true,
+              },
+            },
+          },
+        },
+        lecturers: {
+          include: {
+            staff: {
+              include: {
+                user: { select: { id: true, firstName: true, lastName: true, email: true, role: true } },
+              },
+            },
+          },
+        },
+        schedules: {
+          include: { venue: true },
+        },
         _count: { select: { registeredCourses: true, grades: true } },
       },
       orderBy: { course: { code: 'asc' } },
@@ -130,11 +218,92 @@ export async function getTimsOfferings(session?: string, semester?: number) {
   }
 }
 
+export async function getEligibleLecturersAction() {
+  try {
+    // Auto-sync any LECTURER / HOD / SLT / ADMIN User who lacks a StaffProfile
+    const academicUsers = await prisma.user.findMany({
+      where: {
+        role: { in: ['LECTURER', 'HOD', 'HeadOfDepartment', 'SLT', 'ADMIN'] },
+      },
+      include: { staffProfile: true },
+    });
+
+    for (const u of academicUsers) {
+      if (!u.staffProfile) {
+        const staffCode = u.staffId || `STF-${u.id.slice(0, 8).toUpperCase()}`;
+        await prisma.staffProfile.upsert({
+          where: { userId: u.id },
+          create: {
+            userId: u.id,
+            staffCode,
+            departmentId: u.departmentId || null,
+          },
+          update: {},
+        });
+      }
+    }
+
+    const profiles = await prisma.staffProfile.findMany({
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true, email: true, role: true } },
+        department: true,
+      },
+      orderBy: { staffCode: 'asc' },
+    });
+
+    return { success: true, data: profiles };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function assignLecturerToOfferingAction(data: {
+  courseOfferingId: string;
+  staffProfileId: string;
+  role?: string;
+}) {
+  try {
+    const record = await prisma.courseLecturer.upsert({
+      where: {
+        courseOfferingId_staffId: {
+          courseOfferingId: data.courseOfferingId,
+          staffId: data.staffProfileId,
+        },
+      },
+      create: {
+        courseOfferingId: data.courseOfferingId,
+        staffId: data.staffProfileId,
+        role: data.role || 'PRIMARY_LECTURER',
+      },
+      update: {
+        role: data.role || 'PRIMARY_LECTURER',
+      },
+    });
+    revalidatePath('/dashboard/tertiary/offerings');
+    revalidatePath('/dashboard/tertiary/lecturer-studio');
+    return { success: true, data: record };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function removeLecturerFromOfferingAction(courseLecturerId: string) {
+  try {
+    await prisma.courseLecturer.delete({ where: { id: courseLecturerId } });
+    revalidatePath('/dashboard/tertiary/offerings');
+    revalidatePath('/dashboard/tertiary/lecturer-studio');
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 export async function createTimsOffering(data: {
   courseId: string;
   academicSession: string;
   semester: number;
   maxCapacity: number;
+  lecturerStaffProfileId?: string;
 }) {
   try {
     const offering = await prisma.courseOffering.create({
@@ -143,6 +312,14 @@ export async function createTimsOffering(data: {
         academicSession: data.academicSession,
         semester: data.semester,
         maxCapacity: data.maxCapacity,
+        lecturers: data.lecturerStaffProfileId && data.lecturerStaffProfileId !== 'NONE'
+          ? {
+              create: {
+                staffId: data.lecturerStaffProfileId,
+                role: 'PRIMARY_LECTURER',
+              },
+            }
+          : undefined,
       },
     });
     revalidatePath('/dashboard/tertiary/offerings');
@@ -162,16 +339,52 @@ export async function registerStudentCoursesAction(data: {
   try {
     const result = await regService.registerCourses(data);
     revalidatePath('/dashboard/tertiary/registration');
+    revalidatePath('/dashboard/tertiary/student-hub');
+    revalidatePath('/dashboard/tertiary/cbt');
+    revalidatePath('/dashboard/tertiary/docket');
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
 }
 
-export async function approveStudentRegistrationAction(registrationId: string, advisorStaffProfileId: string) {
+export async function getSemesterRegistrationsForApprovalAction(academicSession: string, semester: number) {
   try {
-    const result = await regService.approveRegistration(registrationId, advisorStaffProfileId);
+    const registrations = await prisma.semesterRegistration.findMany({
+      where: { academicSession, semester },
+      include: {
+        student: {
+          include: {
+            user: { select: { firstName: true, lastName: true, email: true } },
+            program: true,
+          },
+        },
+        advisor: {
+          include: {
+            user: { select: { firstName: true, lastName: true } },
+          },
+        },
+        courses: {
+          include: {
+            offering: { include: { course: true } },
+          },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+    return { success: true, data: registrations };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function approveStudentRegistrationAction(registrationId: string, advisorStaffProfileId?: string) {
+  try {
+    const session = await auth();
+    const fallbackUserId = advisorStaffProfileId || (session?.user?.id as string | undefined);
+    const result = await regService.approveRegistration(registrationId, fallbackUserId);
     revalidatePath('/dashboard/tertiary/registration');
+    revalidatePath('/dashboard/tertiary/docket');
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -182,10 +395,78 @@ export async function approveStudentRegistrationAction(registrationId: string, a
 // 3. BLIND EXAM GRADING & SENATE GOVERNANCE
 // ==========================================
 
-export async function submitBlindGradesAction(offeringId: string, entries: BlindGradeEntry[], graderUserId: string) {
+export async function getOfferingCandidateTokensAction(offeringId: string) {
   try {
-    const result = await examService.submitBlindGrades(offeringId, entries, graderUserId);
+    // 1. Ensure every registered student in this offering has an ExamCandidateToken
+    const regCourses = await prisma.studentRegisteredCourse.findMany({
+      where: { offeringId },
+      include: {
+        registration: {
+          include: { student: true },
+        },
+      },
+    });
+
+    for (const rc of regCourses) {
+      const student = rc.registration.student;
+      if (!student) continue;
+      const randomSalt = crypto.randomBytes(3).toString('hex').toUpperCase();
+      await prisma.examCandidateToken.upsert({
+        where: {
+          studentId_offeringId: {
+            studentId: student.id,
+            offeringId,
+          },
+        },
+        create: {
+          studentId: student.id,
+          offeringId,
+          anonymousToken: `CIN-${student.currentLevel}-${randomSalt}`,
+        },
+        update: {},
+      });
+    }
+
+    // 2. Fetch all candidate tokens and existing grades for this offering
+    const [tokens, grades] = await Promise.all([
+      prisma.examCandidateToken.findMany({
+        where: { offeringId },
+        orderBy: { anonymousToken: 'asc' },
+      }),
+      prisma.studentGrade.findMany({
+        where: { offeringId },
+      }),
+    ]);
+
+    const gradeByStudent = new Map(grades.map((g) => [g.studentId, g]));
+
+    const rows = tokens.map((t) => {
+      const g = gradeByStudent.get(t.studentId);
+      return {
+        anonymousToken: t.anonymousToken,
+        caScore: g ? String(Number(g.caScore)) : '0',
+        examScore: g ? String(Number(g.examScore)) : '0',
+        secondGraderScore: g?.secondGraderExamScore != null ? String(Number(g.secondGraderExamScore)) : '',
+        status: g?.status || 'DRAFT',
+        letterGrade: g?.letterGrade || null,
+        totalScore: g ? Number(g.totalScore) : null,
+        dataHash: g?.dataHash || '',
+      };
+    });
+
+    return { success: true, data: rows };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function submitBlindGradesAction(offeringId: string, entries: BlindGradeEntry[], graderUserId?: string) {
+  try {
+    const session = await auth();
+    const resolvedUserId = (session?.user?.id as string) || graderUserId || 'authorizer-id';
+    const result = await examService.submitBlindGrades(offeringId, entries, resolvedUserId);
     revalidatePath('/dashboard/tertiary/exams');
+    revalidatePath('/dashboard/tertiary/senate');
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -195,11 +476,13 @@ export async function submitBlindGradesAction(offeringId: string, entries: Blind
 export async function advanceExamStageAction(
   offeringId: string,
   targetStage: 'HOD_APPROVED' | 'DEAN_APPROVED' | 'SENATE_RATIFIED' | 'PUBLISHED',
-  authorizerUserId: string,
-  passwordVerify: string
+  authorizerUserId?: string,
+  passwordVerify?: string
 ) {
   try {
-    const result = await examService.advanceApprovalStage(offeringId, targetStage, authorizerUserId, passwordVerify);
+    const session = await auth();
+    const resolvedUserId = (session?.user?.id as string) || authorizerUserId || 'authorizer-id';
+    const result = await examService.advanceApprovalStage(offeringId, targetStage, resolvedUserId, passwordVerify || '');
     revalidatePath('/dashboard/tertiary/exams');
     revalidatePath('/dashboard/tertiary/senate');
     return { success: true, data: result };
@@ -350,3 +633,49 @@ export async function sealSenateBatchAction(data: {
     return { success: false, error: error.message };
   }
 }
+
+export async function enrollTertiaryStudentAction(data: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  matricNumber: string;
+  programId: string;
+  currentLevel?: number;
+  password?: string;
+}) {
+  try {
+    const bcrypt = await import('bcryptjs');
+    const hashedPassword = await bcrypt.hash(data.password || 'student123', 10);
+
+    const result = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          firstName: data.firstName.trim(),
+          lastName: data.lastName.trim(),
+          email: data.email.trim().toLowerCase(),
+          password: hashedPassword,
+          role: 'STUDENT',
+        },
+      });
+
+      const profile = await tx.studentProfile.create({
+        data: {
+          userId: user.id,
+          matricNumber: data.matricNumber.trim().toUpperCase(),
+          programId: data.programId,
+          currentLevel: data.currentLevel || 100,
+          academicStatus: 'GOOD_STANDING',
+        },
+      });
+
+      return { user, profile };
+    });
+
+    revalidatePath('/dashboard/students');
+    revalidatePath('/dashboard/tertiary/registration');
+    return { success: true, data: result };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+

@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
@@ -14,11 +15,14 @@ import {
   updateDepartmentClearanceAction,
   issueDegreeCertificateAction,
 } from '@/actions/graduation-clearance-actions';
-import { CheckCircle2, XCircle, Award, ShieldCheck, QrCode, FileText, Loader2, Sparkles } from 'lucide-react';
+import { getCurrentStudentContextAction } from '@/actions/tims-actions';
+import { CheckCircle2, XCircle, Award, ShieldCheck, QrCode, Loader2, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 
 export default function GraduationClearancePage() {
   const [clearances, setClearances] = useState<any[]>([]);
+  const [allStudents, setAllStudents] = useState<any[]>([]);
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [selectedClearance, setSelectedClearance] = useState<any>(null);
   const [activeDept, setActiveDept] = useState<'bursary' | 'library' | 'department' | 'faculty' | 'studentAffairs' | null>(null);
@@ -29,9 +33,21 @@ export default function GraduationClearancePage() {
 
   const loadClearances = async () => {
     setIsLoading(true);
-    const res = await getGraduationClearances('2025/2026');
+    const [res, ctxRes] = await Promise.all([
+      getGraduationClearances('2025/2026'),
+      getCurrentStudentContextAction(),
+    ]);
     if (res.success && res.data) {
       setClearances(res.data);
+    }
+    if (ctxRes.success && ctxRes.data) {
+      const studentsList = ctxRes.data.allStudents || (ctxRes.data.student ? [ctxRes.data.student] : []);
+      setAllStudents(studentsList);
+      if (ctxRes.data.student?.id) {
+        setSelectedCandidateId(ctxRes.data.student.id);
+      } else if (studentsList.length > 0) {
+        setSelectedCandidateId(studentsList[0].id);
+      }
     }
     setIsLoading(false);
   };
@@ -86,9 +102,10 @@ export default function GraduationClearancePage() {
     });
   };
 
-  const handleInitiateSampleStudent = () => {
+  const handleInitiateStudentClearance = () => {
+    const targetId = selectedCandidateId || '93e0878e-891f-4a60-ad1a-b0019b6c17f2';
     startTransition(async () => {
-      const res = await initiateGraduationClearance('93e0878e-891f-4a60-ad1a-b0019b6c17f2', '2025/2026');
+      const res = await initiateGraduationClearance(targetId, '2025/2026');
       if (res.success) {
         toast({ title: 'Clearance File Created', description: 'Initiated exit clearance checklist for candidate.' });
         loadClearances();
@@ -102,17 +119,31 @@ export default function GraduationClearancePage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Graduation Exit Clearance & Certification</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Graduation Exit Clearance &amp; Certification</h1>
           <p className="text-muted-foreground text-sm mt-1">
             Statutory 5-department clearance matrix (Bursary, Library, Department, Faculty, Student Affairs) and cryptographic certificate issuance.
           </p>
         </div>
 
-        {clearances.length === 0 && (
-          <Button onClick={handleInitiateSampleStudent} disabled={isPending} className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {allStudents.length > 0 && (
+            <Select value={selectedCandidateId} onValueChange={setSelectedCandidateId}>
+              <SelectTrigger className="w-60 h-9 rounded-xl text-xs">
+                <SelectValue placeholder="Select candidate" />
+              </SelectTrigger>
+              <SelectContent>
+                {allStudents.map((st: any) => (
+                  <SelectItem key={st.id} value={st.id}>
+                    {st.matricNumber} — {st.user?.firstName} {st.user?.lastName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <Button onClick={handleInitiateStudentClearance} disabled={isPending} className="flex items-center gap-2 rounded-xl">
             <Sparkles className="h-4 w-4" /> Initialize Candidate Clearance
           </Button>
-        )}
+        </div>
       </div>
 
       {/* Clearance Table */}
@@ -134,7 +165,7 @@ export default function GraduationClearancePage() {
               <Award className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
               <p className="font-semibold text-foreground">No Active Graduation Clearance Records</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Click &apos;Initialize Candidate Clearance&apos; to begin final-year exit clearance.
+                Select a candidate above and click &apos;Initialize Candidate Clearance&apos; to begin final-year exit clearance.
               </p>
             </div>
           ) : (
@@ -276,7 +307,7 @@ export default function GraduationClearancePage() {
               onClick={() => handleSaveDepartmentClearance(true)}
               disabled={isPending}
             >
-              Approve & Clear
+              Approve &amp; Clear
             </Button>
           </DialogFooter>
         </DialogContent>

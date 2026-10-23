@@ -10,10 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { getTimsPrograms, createTimsProgram } from '@/actions/tims-actions';
-import { GraduationCap, Plus, BookOpen, Users, ShieldCheck, Award } from 'lucide-react';
+import { getDepartmentsData } from '@/actions/academic-data';
+import { GraduationCap, Plus, BookOpen, Users, Building2, School } from 'lucide-react';
 
 export default function TertiaryProgramsPage() {
   const [programs, setPrograms] = useState<any[]>([]);
+  const [faculties, setFaculties] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -22,32 +25,60 @@ export default function TertiaryProgramsPage() {
   const [form, setForm] = useState({
     code: '',
     name: '',
+    facultyId: 'NONE',
+    departmentId: 'NONE',
     gradingStandard: 'NIGERIA_NUC_5_0' as 'NIGERIA_NUC_5_0' | 'US_4_0' | 'UK_HONOURS',
     totalCreditsRequired: 120,
   });
 
   const loadData = async () => {
-    setIsLoading(false);
-    const res = await getTimsPrograms();
-    if (res.success && res.data) {
-      setPrograms(res.data);
+    setIsLoading(true);
+    const [progRes, deptRes] = await Promise.all([
+      getTimsPrograms(),
+      getDepartmentsData(),
+    ]);
+    if (progRes.success && progRes.data) {
+      setPrograms(progRes.data);
     }
+    if (deptRes.success) {
+      setDepartments(deptRes.data || []);
+      setFaculties(deptRes.faculties || []);
+    }
+    setIsLoading(false);
   };
 
   useEffect(() => {
     loadData();
   }, []);
 
+  const filteredDepartments = form.facultyId !== 'NONE'
+    ? departments.filter((d) => !d.facultyId || d.facultyId === form.facultyId)
+    : departments;
+
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.code || !form.name) return;
 
     startTransition(async () => {
-      const res = await createTimsProgram(form);
+      const res = await createTimsProgram({
+        code: form.code,
+        name: form.name,
+        gradingStandard: form.gradingStandard,
+        totalCreditsRequired: form.totalCreditsRequired,
+        facultyId: form.facultyId !== 'NONE' ? form.facultyId : undefined,
+        departmentId: form.departmentId !== 'NONE' ? form.departmentId : undefined,
+      });
       if (res.success) {
         toast({ title: 'Academic Program Created', description: `${form.code} added to institutional registry.` });
         setIsDialogOpen(false);
-        setForm({ code: '', name: '', gradingStandard: 'NIGERIA_NUC_5_0', totalCreditsRequired: 120 });
+        setForm({
+          code: '',
+          name: '',
+          facultyId: 'NONE',
+          departmentId: 'NONE',
+          gradingStandard: 'NIGERIA_NUC_5_0',
+          totalCreditsRequired: 120,
+        });
         loadData();
       } else {
         toast({ title: 'Creation Failed', description: res.error, variant: 'destructive' });
@@ -77,7 +108,7 @@ export default function TertiaryProgramsPage() {
             <h1 className="text-2xl font-bold tracking-tight text-foreground">Academic Degree Programs</h1>
           </div>
           <p className="text-muted-foreground text-sm mt-1">
-            Configure tertiary degree curricula, required graduation units, and multi-accreditation grading frameworks.
+            Configure tertiary degree curricula, parent Faculty &amp; Department, required graduation units, and grading frameworks.
           </p>
         </div>
 
@@ -91,7 +122,7 @@ export default function TertiaryProgramsPage() {
             <DialogHeader>
               <DialogTitle>New Academic Program</DialogTitle>
               <DialogDescription>
-                Define an undergraduate or postgraduate program with its statutory grading scale.
+                Define an undergraduate or postgraduate program and link it to its Faculty and Department.
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleCreate} className="space-y-4 py-2">
@@ -115,6 +146,48 @@ export default function TertiaryProgramsPage() {
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   required
                 />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Faculty / College</Label>
+                  <Select
+                    value={form.facultyId}
+                    onValueChange={(val) => setForm({ ...form, facultyId: val, departmentId: 'NONE' })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Faculty" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="NONE">General / Unassigned</SelectItem>
+                      {faculties.map((f) => (
+                        <SelectItem key={f.id} value={f.id}>
+                          [{f.code}] {f.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Academic Department</Label>
+                  <Select
+                    value={form.departmentId}
+                    onValueChange={(val) => setForm({ ...form, departmentId: val })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="NONE">General / Unassigned</SelectItem>
+                      {filteredDepartments.map((d) => (
+                        <SelectItem key={d.id} value={d.id}>
+                          {d.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="space-y-1.5">
@@ -169,35 +242,51 @@ export default function TertiaryProgramsPage() {
             </p>
           </Card>
         ) : (
-          programs.map((prog) => (
-            <Card key={prog.id} className="border border-border bg-card rounded-2xl shadow-sm hover:border-primary/40 transition-all flex flex-col justify-between">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between gap-2">
-                  <Badge variant="outline" className="font-mono text-xs px-2.5 py-0.5 font-bold text-primary bg-primary/5">
-                    {prog.code}
-                  </Badge>
-                  {getStandardBadge(prog.gradingStandard)}
-                </div>
-                <CardTitle className="text-lg font-bold text-foreground mt-2 line-clamp-1">
-                  {prog.name}
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Graduation requirement: <span className="font-semibold text-foreground">{prog.totalCreditsRequired} Credit Units</span>
-                </CardDescription>
-              </CardHeader>
+          programs.map((prog) => {
+            const facultyName = prog.faculty?.name || prog.department?.faculty?.name;
+            const deptName = prog.department?.name;
+            return (
+              <Card key={prog.id} className="border border-border bg-card rounded-2xl shadow-sm hover:border-primary/40 transition-all flex flex-col justify-between">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <Badge variant="outline" className="font-mono text-xs px-2.5 py-0.5 font-bold text-primary bg-primary/5">
+                      {prog.code}
+                    </Badge>
+                    {getStandardBadge(prog.gradingStandard)}
+                  </div>
+                  <CardTitle className="text-lg font-bold text-foreground mt-2 line-clamp-1">
+                    {prog.name}
+                  </CardTitle>
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    {facultyName && (
+                      <Badge variant="secondary" className="text-[10px] font-medium flex items-center gap-1">
+                        <School className="h-3 w-3 text-indigo-600" /> {facultyName}
+                      </Badge>
+                    )}
+                    {deptName && (
+                      <Badge variant="outline" className="text-[10px] font-medium flex items-center gap-1">
+                        <Building2 className="h-3 w-3 text-violet-600" /> {deptName}
+                      </Badge>
+                    )}
+                  </div>
+                  <CardDescription className="text-xs pt-1">
+                    Graduation requirement: <span className="font-semibold text-foreground">{prog.totalCreditsRequired} Credit Units</span>
+                  </CardDescription>
+                </CardHeader>
 
-              <CardContent className="pt-0 pb-4 text-xs space-y-2 border-t border-border/50 pt-3">
-                <div className="flex justify-between items-center text-muted-foreground">
-                  <span className="flex items-center gap-1.5"><BookOpen className="h-3.5 w-3.5" /> Enrolled Courses:</span>
-                  <span className="font-semibold text-foreground">{prog._count?.courses || 0}</span>
-                </div>
-                <div className="flex justify-between items-center text-muted-foreground">
-                  <span className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> Enrolled Undergraduates:</span>
-                  <span className="font-semibold text-foreground">{prog._count?.students || 0}</span>
-                </div>
-              </CardContent>
-            </Card>
-          ))
+                <CardContent className="pt-0 pb-4 text-xs space-y-2 border-t border-border/50 pt-3">
+                  <div className="flex justify-between items-center text-muted-foreground">
+                    <span className="flex items-center gap-1.5"><BookOpen className="h-3.5 w-3.5" /> Curriculum Courses:</span>
+                    <span className="font-semibold text-foreground">{prog._count?.courses || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-muted-foreground">
+                    <span className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> Enrolled Undergraduates:</span>
+                    <span className="font-semibold text-foreground">{prog._count?.students || 0}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
         )}
       </div>
     </div>

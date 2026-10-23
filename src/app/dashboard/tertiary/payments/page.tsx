@@ -6,9 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { getStudentTertiaryInvoices, generateTertiaryInvoice } from '@/actions/tertiary-billing-actions';
+import {
+  getStudentTertiaryInvoices,
+  generateTertiaryInvoice,
+  getTertiaryFeeStructuresAction,
+  saveTertiaryFeeStructureAction,
+} from '@/actions/tertiary-billing-actions';
+import { getCurrentStudentContextAction, getTimsPrograms } from '@/actions/tims-actions';
 import { 
   initializeOnlineFeePayment, 
   verifyOnlinePayment, 
@@ -22,8 +29,6 @@ import {
   CheckCircle2, 
   AlertTriangle, 
   ShieldCheck, 
-  Download, 
-  ArrowRight, 
   Loader2, 
   Sparkles, 
   Building2, 
@@ -32,7 +37,7 @@ import {
   Printer, 
   Copy, 
   Check,
-  ExternalLink
+  Settings2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
@@ -40,8 +45,22 @@ import { useSession } from 'next-auth/react';
 export default function TertiaryPaymentsPage() {
   const { data: session } = useSession();
   const [invoices, setInvoices] = useState<any[]>([]);
+  const [allStudents, setAllStudents] = useState<any[]>([]);
+  const [selectedStudentId, setSelectedStudentId] = useState<string>('');
+  const [isStudentRole, setIsStudentRole] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [gatewayConfig, setGatewayConfig] = useState<PaymentGatewayConfig | null>(null);
+
+  // Fee Structure Configuration Modal (For Admin/Bursar)
+  const [isFeeConfigOpen, setIsFeeConfigOpen] = useState(false);
+  const [programs, setPrograms] = useState<any[]>([]);
+  const [feeStructures, setFeeStructures] = useState<any[]>([]);
+  const [feeProgramId, setFeeProgramId] = useState('');
+  const [feeLevel, setFeeLevel] = useState(100);
+  const [feeSession, setFeeSession] = useState('2025/2026');
+  const [tuitionAmount, setTuitionAmount] = useState(150000);
+  const [labFee, setLabFee] = useState(20000);
+  const [ictFee, setIctFee] = useState(15000);
 
   // Payment Selection State
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
@@ -57,18 +76,18 @@ export default function TertiaryPaymentsPage() {
   const [isCopied, setIsCopied] = useState(false);
   const { toast } = useToast();
 
-  const studentProfileId = (session?.user as any)?.studentProfileId || '93e0878e-891f-4a60-ad1a-b0019b6c17f2';
-
-  const loadInvoices = async () => {
+  const loadInvoicesForStudent = async (targetStudentId: string) => {
     setIsLoading(true);
     try {
       const [invRes, configRes] = await Promise.all([
-        getStudentTertiaryInvoices(studentProfileId),
+        getStudentTertiaryInvoices(targetStudentId),
         getPaymentGatewayConfig(),
       ]);
 
       if (invRes.success && invRes.data) {
         setInvoices(invRes.data);
+      } else {
+        setInvoices([]);
       }
       setGatewayConfig(configRes);
     } catch (err) {
@@ -79,15 +98,76 @@ export default function TertiaryPaymentsPage() {
   };
 
   useEffect(() => {
-    loadInvoices();
+    async function init() {
+      setIsLoading(true);
+      const ctxRes = await getCurrentStudentContextAction();
+      let targetId = (session?.user as any)?.studentProfileId || '93e0878e-891f-4a60-ad1a-b0019b6c17f2';
+      if (ctxRes.success && ctxRes.data) {
+        setIsStudentRole(ctxRes.data.isStudentRole);
+        setAllStudents(ctxRes.data.allStudents || []);
+        if (ctxRes.data.student?.id) {
+          targetId = ctxRes.data.student.id;
+        }
+      }
+      setSelectedStudentId(targetId);
+      await loadInvoicesForStudent(targetId);
+    }
+    init();
   }, []);
 
-  const handleGenerateInvoice = () => {
+  const handleSelectStudent = async (id: string) => {
+    setSelectedStudentId(id);
+    await loadInvoicesForStudent(id);
+  };
+
+  const handleOpenFeeConfigModal = async () => {
+    setIsFeeConfigOpen(true);
+    const [progRes, feeRes] = await Promise.all([
+      getTimsPrograms(),
+      getTertiaryFeeStructuresAction(),
+    ]);
+    if (progRes.success && progRes.data) {
+      setPrograms(progRes.data);
+      if (progRes.data.length > 0 && !feeProgramId) {
+        setFeeProgramId(progRes.data[0].id);
+      }
+    }
+    if (feeRes.success && feeRes.data) {
+      setFeeStructures(feeRes.data);
+    }
+  };
+
+  const handleSaveFeeStructure = () => {
+    if (!feeProgramId) return;
     startTransition(async () => {
-      const res = await generateTertiaryInvoice(studentProfileId, '2025/2026', 1);
+      const res = await saveTertiaryFeeStructureAction({
+        programId: feeProgramId,
+        academicSession: feeSession,
+        level: Number(feeLevel),
+        tuitionAmount: Number(tuitionAmount),
+        labFee: Number(labFee),
+        ictFee: Number(ictFee),
+      });
+      if (res.success) {
+        toast({
+          title: 'Program Fee Schedule Saved',
+          description: 'Updated tuition, laboratory, and ICT fee structure for the selected program level.',
+        });
+        const feeRes = await getTertiaryFeeStructuresAction();
+        if (feeRes.success && feeRes.data) setFeeStructures(feeRes.data);
+      } else {
+        toast({ variant: 'destructive', title: 'Error', description: res.error });
+      }
+    });
+  };
+
+  const handleGenerateInvoice = () => {
+    if (!selectedStudentId) return;
+    startTransition(async () => {
+      const res = await generateTertiaryInvoice(selectedStudentId, '2025/2026', 1);
       if (res.success) {
         toast({ title: 'Invoice Generated', description: 'Semester tuition bill created successfully.' });
-        loadInvoices();
+        loadInvoicesForStudent(selectedStudentId);
       } else {
         toast({ variant: 'destructive', title: 'Generation Failed', description: res.error });
       }
@@ -149,7 +229,7 @@ export default function TertiaryPaymentsPage() {
               description: 'Tuition verified. Course registration & examination docket unlocked.',
             });
             setIsPayOpen(false);
-            loadInvoices();
+            loadInvoicesForStudent(selectedStudentId);
           }
         }, 1200);
       }
@@ -165,7 +245,7 @@ export default function TertiaryPaymentsPage() {
           description: 'Payment verified and Bursary clearance updated.',
         });
         setIsPayOpen(false);
-        loadInvoices();
+        loadInvoicesForStudent(selectedStudentId);
       } else {
         toast({ variant: 'destructive', title: 'Verification Failed', description: res.error });
       }
@@ -196,7 +276,7 @@ export default function TertiaryPaymentsPage() {
           <div className="flex items-center gap-2.5 flex-wrap">
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-2.5">
               <CreditCard className="w-7 h-7 text-primary" />
-              Tuition & Fee Settlement
+              Tuition &amp; Fee Settlement
             </h1>
             <Badge variant="outline" className="text-xs font-semibold px-2.5 py-0.5 border-emerald-500/20 text-emerald-600 bg-emerald-500/5">
               Automated Bursary Clearance
@@ -207,11 +287,30 @@ export default function TertiaryPaymentsPage() {
           </p>
         </div>
 
-        {invoices.length === 0 && (
-          <Button onClick={handleGenerateInvoice} disabled={isPending} className="flex items-center gap-2 rounded-xl text-xs sm:text-sm shadow-sm">
+        <div className="flex flex-wrap items-center gap-2">
+          {!isStudentRole && allStudents.length > 0 && (
+            <Select value={selectedStudentId} onValueChange={handleSelectStudent}>
+              <SelectTrigger className="w-60 h-9 rounded-xl text-xs">
+                <SelectValue placeholder="Switch student" />
+              </SelectTrigger>
+              <SelectContent>
+                {allStudents.map((st: any) => (
+                  <SelectItem key={st.id} value={st.id}>
+                    {st.matricNumber} — {st.user?.firstName} {st.user?.lastName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          {!isStudentRole && (
+            <Button variant="outline" onClick={handleOpenFeeConfigModal} className="rounded-xl text-xs h-9">
+              <Settings2 className="h-3.5 w-3.5 mr-1.5" /> Program Fee Schedule
+            </Button>
+          )}
+          <Button onClick={handleGenerateInvoice} disabled={isPending} className="flex items-center gap-2 rounded-xl text-xs h-9 shadow-sm">
             <Sparkles className="h-4 w-4" /> Generate Semester Invoice
           </Button>
-        )}
+        </div>
       </div>
 
       {/* Invoices List */}
@@ -243,7 +342,7 @@ export default function TertiaryPaymentsPage() {
                         {inv.academicSession} • Semester {inv.semester}
                       </span>
                       <h3 className="text-lg font-bold text-foreground mt-0.5">
-                        Undergraduate Tuition & Departmental Dues
+                        Undergraduate Tuition &amp; Departmental Dues
                       </h3>
                       <p className="text-xs text-muted-foreground">
                         Program: <strong className="text-foreground">{inv.student?.program?.name || 'B.Sc. Computer Science'}</strong>
@@ -278,22 +377,6 @@ export default function TertiaryPaymentsPage() {
                       <div>
                         <span className="text-[10px] text-muted-foreground uppercase font-bold">Balance Due</span>
                         <div className="font-bold text-sm text-amber-600 mt-0.5 font-mono">₦{inv.balanceDue.toLocaleString()}</div>
-                      </div>
-                    </div>
-
-                    {/* Breakdown */}
-                    <div className="space-y-1.5 text-xs text-muted-foreground">
-                      <div className="flex justify-between">
-                        <span>Academic Tuition Fee:</span>
-                        <span className="font-medium text-foreground">₦150,000</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Laboratory & Practical Levy:</span>
-                        <span className="font-medium text-foreground">₦20,000</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>ICT Infrastructure & Library Access:</span>
-                        <span className="font-medium text-foreground">₦15,000</span>
                       </div>
                     </div>
 
@@ -355,6 +438,93 @@ export default function TertiaryPaymentsPage() {
           })}
         </div>
       )}
+
+      {/* Program Fee Schedule Configuration Dialog */}
+      <Dialog open={isFeeConfigOpen} onOpenChange={setIsFeeConfigOpen}>
+        <DialogContent className="max-w-lg rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings2 className="h-5 w-5 text-primary" /> Configure Program Tuition Schedule
+            </DialogTitle>
+            <DialogDescription>
+              Define the official Tuition, Laboratory, and ICT levies per degree program and academic level.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Degree Program</Label>
+                <Select value={feeProgramId} onValueChange={setFeeProgramId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select program" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {programs.map((p: any) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.code} — {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Academic Level</Label>
+                <Select value={String(feeLevel)} onValueChange={(v) => setFeeLevel(Number(v))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="100">100 Level</SelectItem>
+                    <SelectItem value="200">200 Level</SelectItem>
+                    <SelectItem value="300">300 Level</SelectItem>
+                    <SelectItem value="400">400 Level</SelectItem>
+                    <SelectItem value="500">500 Level</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Tuition Fee (₦)</Label>
+                <Input type="number" value={tuitionAmount} onChange={(e) => setTuitionAmount(Number(e.target.value))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Lab Levy (₦)</Label>
+                <Input type="number" value={labFee} onChange={(e) => setLabFee(Number(e.target.value))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">ICT / Library (₦)</Label>
+                <Input type="number" value={ictFee} onChange={(e) => setIctFee(Number(e.target.value))} />
+              </div>
+            </div>
+
+            {feeStructures.length > 0 && (
+              <div className="border rounded-xl p-3 bg-muted/20 max-h-40 overflow-y-auto space-y-1.5 text-xs">
+                <p className="font-bold text-muted-foreground uppercase text-[10px]">Active Program Fee Schedules</p>
+                {feeStructures.map((fs: any) => (
+                  <div key={fs.id} className="flex justify-between items-center border-b border-border/50 pb-1">
+                    <span>
+                      <strong>{fs.program?.code}</strong> • {fs.level}L ({fs.academicSession})
+                    </span>
+                    <span className="font-mono font-bold text-emerald-600">
+                      ₦{(fs.tuitionAmount + fs.labFee + fs.ictFee).toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsFeeConfigOpen(false)}>Close</Button>
+            <Button onClick={handleSaveFeeStructure} disabled={isPending || !feeProgramId}>
+              {isPending ? 'Saving...' : 'Save Fee Structure'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Payment Gateway Modal */}
       <Dialog open={isPayOpen} onOpenChange={setIsPayOpen}>
@@ -506,7 +676,7 @@ export default function TertiaryPaymentsPage() {
                   className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
                 >
                   {isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-                  Confirm Settlement & Bursary Clearance
+                  Confirm Settlement &amp; Bursary Clearance
                 </Button>
                 <Button variant="outline" onClick={() => setIsPayOpen(false)}>
                   Close
@@ -605,7 +775,7 @@ export default function TertiaryPaymentsPage() {
                   <strong className="text-slate-900 uppercase">{selectedReceipt.gateway}</strong>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-200">
-                  <span className="text-slate-500">Date & Timestamp</span>
+                  <span className="text-slate-500">Date &amp; Timestamp</span>
                   <span className="text-slate-700 font-mono">{new Date(selectedReceipt.paidAt).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between py-2 text-sm">

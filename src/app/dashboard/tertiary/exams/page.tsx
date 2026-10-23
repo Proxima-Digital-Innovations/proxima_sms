@@ -10,14 +10,20 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { getTimsOfferings, submitBlindGradesAction, advanceExamStageAction } from '@/actions/tims-actions';
-import { Award, ShieldCheck, Lock, EyeOff, AlertTriangle, CheckCircle2, Key, Loader2, ArrowRight } from 'lucide-react';
+import {
+  getTimsOfferings,
+  submitBlindGradesAction,
+  advanceExamStageAction,
+  getOfferingCandidateTokensAction,
+} from '@/actions/tims-actions';
+import { Award, ShieldCheck, Lock, EyeOff, Key, Loader2, RefreshCw } from 'lucide-react';
 
 export default function TertiaryExamProcessingPage() {
   const [offerings, setOfferings] = useState<any[]>([]);
   const [selectedOfferingId, setSelectedOfferingId] = useState<string>('');
   const [isDoubleBlind, setIsDoubleBlind] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [isLoadingTokens, setIsLoadingTokens] = useState(false);
   const [stepUpModalOpen, setStepUpModalOpen] = useState(false);
   const [targetStage, setTargetStage] = useState<'HOD_APPROVED' | 'DEAN_APPROVED' | 'SENATE_RATIFIED' | 'PUBLISHED'>('HOD_APPROVED');
   const [stepUpPassword, setStepUpPassword] = useState('');
@@ -25,9 +31,9 @@ export default function TertiaryExamProcessingPage() {
 
   // Dynamic blind entry rows
   const [rows, setRows] = useState([
-    { anonymousToken: 'CIN-200-8A3', caScore: '32', examScore: '48', secondGraderScore: '49' },
-    { anonymousToken: 'CIN-200-9B1', caScore: '28', examScore: '41', secondGraderScore: '42' },
-    { anonymousToken: 'CIN-200-F72', caScore: '35', examScore: '55', secondGraderScore: '54' },
+    { anonymousToken: 'CIN-200-8A3', caScore: '32', examScore: '48', secondGraderScore: '49', letterGrade: '', dataHash: '' },
+    { anonymousToken: 'CIN-200-9B1', caScore: '28', examScore: '41', secondGraderScore: '42', letterGrade: '', dataHash: '' },
+    { anonymousToken: 'CIN-200-F72', caScore: '35', examScore: '55', secondGraderScore: '54', letterGrade: '', dataHash: '' },
   ]);
 
   useEffect(() => {
@@ -41,9 +47,43 @@ export default function TertiaryExamProcessingPage() {
     loadOfferings();
   }, []);
 
+  const loadCandidateTokens = async (offeringId: string) => {
+    if (!offeringId) return;
+    setIsLoadingTokens(true);
+    const res = await getOfferingCandidateTokensAction(offeringId);
+    if (res.success && res.data && res.data.length > 0) {
+      setRows(
+        res.data.map((t: any) => ({
+          anonymousToken: t.anonymousToken,
+          caScore: String(t.caScore ?? ''),
+          examScore: String(t.examScore ?? ''),
+          secondGraderScore: '',
+          letterGrade: t.letterGrade || '',
+          dataHash: t.dataHash || '',
+        }))
+      );
+    } else {
+      setRows([
+        { anonymousToken: 'CIN-200-8A3', caScore: '32', examScore: '48', secondGraderScore: '49', letterGrade: '', dataHash: '' },
+        { anonymousToken: 'CIN-200-9B1', caScore: '28', examScore: '41', secondGraderScore: '42', letterGrade: '', dataHash: '' },
+        { anonymousToken: 'CIN-200-F72', caScore: '35', examScore: '55', secondGraderScore: '54', letterGrade: '', dataHash: '' },
+      ]);
+    }
+    setIsLoadingTokens(false);
+  };
+
+  useEffect(() => {
+    if (selectedOfferingId) {
+      loadCandidateTokens(selectedOfferingId);
+    }
+  }, [selectedOfferingId]);
+
   const addRow = () => {
     const randomHex = Math.random().toString(16).substring(2, 5).toUpperCase();
-    setRows([...rows, { anonymousToken: `CIN-200-${randomHex}`, caScore: '', examScore: '', secondGraderScore: '' }]);
+    setRows([
+      ...rows,
+      { anonymousToken: `CIN-200-${randomHex}`, caScore: '', examScore: '', secondGraderScore: '', letterGrade: '', dataHash: '' },
+    ]);
   };
 
   const updateRow = (index: number, field: string, value: string) => {
@@ -63,12 +103,13 @@ export default function TertiaryExamProcessingPage() {
         secondGraderExamScore: isDoubleBlind && r.secondGraderScore ? Number(r.secondGraderScore) : undefined,
       }));
 
-      const res = await submitBlindGradesAction(selectedOfferingId, entries, 'authorizer-id');
+      const res = await submitBlindGradesAction(selectedOfferingId, entries);
       if (res.success) {
         toast({
           title: 'Blind Examination Marks Committed',
           description: `Cryptographic SHA-256 dataHash ledger computed for ${res.data?.processedCount} candidate tokens.`,
         });
+        loadCandidateTokens(selectedOfferingId);
       } else {
         toast({
           title: 'Submission Flagged',
@@ -86,7 +127,7 @@ export default function TertiaryExamProcessingPage() {
     }
 
     startTransition(async () => {
-      const res = await advanceExamStageAction(selectedOfferingId, targetStage, 'authorizer-id', stepUpPassword);
+      const res = await advanceExamStageAction(selectedOfferingId, targetStage, undefined, stepUpPassword);
       if (res.success) {
         toast({
           title: 'Governance Stage Ratified',
@@ -94,6 +135,7 @@ export default function TertiaryExamProcessingPage() {
         });
         setStepUpModalOpen(false);
         setStepUpPassword('');
+        loadCandidateTokens(selectedOfferingId);
       } else {
         toast({
           title: 'Authorization Rejected',
@@ -158,6 +200,16 @@ export default function TertiaryExamProcessingPage() {
               variant="outline"
               size="sm"
               className="rounded-xl"
+              onClick={() => loadCandidateTokens(selectedOfferingId)}
+              disabled={isLoadingTokens}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isLoadingTokens ? 'animate-spin' : ''}`} />
+              Sync Candidate Tokens
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-xl"
               onClick={() => {
                 setTargetStage('HOD_APPROVED');
                 setStepUpModalOpen(true);
@@ -189,7 +241,7 @@ export default function TertiaryExamProcessingPage() {
                 <EyeOff className="h-5 w-5 text-primary" /> Anonymous Candidate Ledger
               </CardTitle>
               <CardDescription className="text-xs">
-                Candidate names and matriculation numbers are permanently blinded during examination entry.
+                Candidate names and matriculation numbers are permanently blinded during examination entry. CBT CA marks are pre-populated automatically.
               </CardDescription>
             </div>
             <Button size="sm" variant="outline" onClick={addRow} className="rounded-xl">
@@ -216,7 +268,9 @@ export default function TertiaryExamProcessingPage() {
                   const ca = Number(row.caScore) || 0;
                   const ex = Number(row.examScore) || 0;
                   const total = (ca + ex).toFixed(2);
-                  const mockHash = `sha256:7f9${idx}a${Math.round(ca * ex)}...`;
+                  const displayHash = row.dataHash
+                    ? `sha256:${row.dataHash.substring(0, 14)}...`
+                    : `sha256:7f9${idx}a${Math.round(ca * ex)}...`;
 
                   return (
                     <tr key={idx} className="hover:bg-muted/30 transition-colors">
@@ -258,11 +312,18 @@ export default function TertiaryExamProcessingPage() {
                         </td>
                       )}
                       <td className="py-3 px-4">
-                        <span className="font-mono font-black text-base text-foreground">{total}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-black text-base text-foreground">{total}</span>
+                          {row.letterGrade && (
+                            <Badge variant="outline" className="text-[10px] font-bold">
+                              {row.letterGrade}
+                            </Badge>
+                          )}
+                        </div>
                       </td>
                       <td className="py-3 px-4">
                         <span className="font-mono text-[10px] text-muted-foreground bg-muted/60 px-2 py-0.5 rounded">
-                          {mockHash}
+                          {displayHash}
                         </span>
                       </td>
                     </tr>
@@ -275,7 +336,7 @@ export default function TertiaryExamProcessingPage() {
 
         <CardFooter className="p-4 bg-muted/20 border-t border-border flex justify-between items-center">
           <span className="text-xs text-muted-foreground">
-            {rows.length} candidate mark entries pending commitment.
+            {rows.length} candidate mark entries ready for ledger commitment.
           </span>
           <Button onClick={handleSubmitGrades} disabled={isPending} className="rounded-xl">
             {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Lock className="h-4 w-4 mr-2" />}
@@ -298,7 +359,7 @@ export default function TertiaryExamProcessingPage() {
 
           <div className="space-y-4 py-3">
             <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-400">
-              Senate Ratification makes all grade point averages permanently immutable on the student ledger.
+              Senate Ratification makes all grade point averages permanently immutable on the student ledger and computes semester GPA/CGPA standing.
             </div>
 
             <div className="space-y-1.5">

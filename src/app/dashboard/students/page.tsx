@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, Users, User, UserCheck, UserX } from 'lucide-react';
+import { Search, Users, User, UserCheck, UserX, GraduationCap } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { StudentHeaderActions } from '@/components/dashboard/students/student-header-actions';
@@ -52,8 +52,18 @@ export default async function StudentsPage(props: {
         ],
     };
 
-    // Fetch students using Prisma with relational links
-    const [students, totalFiltered, totalActive, maleActive, femaleActive] = await Promise.all([
+    const tertiaryWhere = query
+        ? {
+              OR: [
+                  { matricNumber: { contains: query } },
+                  { user: { firstName: { contains: query } } },
+                  { user: { lastName: { contains: query } } },
+              ],
+          }
+        : {};
+
+    // Fetch K-12 students and Tertiary undergraduates in parallel
+    const [students, totalFiltered, totalActive, maleActive, femaleActive, tertiaryStudents] = await Promise.all([
         prisma.student.findMany({
             where,
             include: {
@@ -70,14 +80,29 @@ export default async function StudentsPage(props: {
         prisma.student.count({ where: { status: 'Active' } }),
         prisma.student.count({ where: { gender: 'Male', status: 'Active' } }),
         prisma.student.count({ where: { gender: 'Female', status: 'Active' } }),
+        prisma.studentProfile.findMany({
+            where: tertiaryWhere,
+            include: {
+                user: { select: { firstName: true, lastName: true, email: true } },
+                program: {
+                    include: {
+                        department: { select: { name: true } },
+                        faculty: { select: { name: true } },
+                    },
+                },
+            },
+            orderBy: { matricNumber: 'asc' },
+            take: 25,
+        }),
     ]);
 
     const totalPages = Math.ceil(totalFiltered / pageSize);
 
     const stats = {
-        total: totalActive,
+        total: totalActive + tertiaryStudents.length,
         male: maleActive,
         female: femaleActive,
+        tertiaryCount: tertiaryStudents.length,
     };
 
     return (
@@ -86,23 +111,23 @@ export default async function StudentsPage(props: {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-background p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-border backdrop-blur-sm shadow-sm w-full min-w-0">
                 <div className="min-w-0">
                     <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight truncate">
-                        {isAr ? 'سجل ودليل الطلاب' : 'Student Directory'}
+                        {isAr ? 'سجل ودليل الطلاب' : 'Unified Student Directory'}
                     </h1>
                     <p className="text-muted-foreground text-xs sm:text-sm mt-1">
                         {isAr 
                             ? 'إدارة التسجيل الأكاديمي، استعراض ملفات الطلاب، ومتابعة أولياء الأمور.' 
-                            : 'Manage enrollment, view records, and process admissions.'}
+                            : 'Manage K-12 & Tertiary undergraduate enrollment, view records, and process admissions.'}
                     </p>
                 </div>
                 <StudentHeaderActions />
             </div>
 
             {/* Responsive Stats Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 w-full min-w-0">
-                <Card className="col-span-2 sm:col-span-1 bg-background border-border shadow-none hover:bg-muted/50 transition-colors rounded-2xl sm:rounded-3xl group">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 w-full min-w-0">
+                <Card className="bg-background border-border shadow-none hover:bg-muted/50 transition-colors rounded-2xl sm:rounded-3xl group">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3.5 sm:p-6 pb-1 sm:pb-2">
                         <CardTitle className="text-[11px] sm:text-sm font-bold tracking-wider uppercase text-emerald-600 dark:text-emerald-400">
-                            {isAr ? 'الطلاب النشطون' : 'Total Active'}
+                            {isAr ? 'الطلاب النشطون' : 'Total Enrolled'}
                         </CardTitle>
                         <div className="p-1.5 sm:p-2 bg-emerald-500/10 rounded-lg group-hover:bg-emerald-500/20 transition-colors">
                             <Users className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-500" />
@@ -114,8 +139,19 @@ export default async function StudentsPage(props: {
                 </Card>
                 <Card className="bg-background border-border shadow-none hover:bg-muted/50 transition-colors rounded-2xl sm:rounded-3xl">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3.5 sm:p-6 pb-1 sm:pb-2">
+                        <CardTitle className="text-[11px] sm:text-sm font-bold tracking-wider uppercase text-indigo-600 dark:text-indigo-400">
+                            Tertiary (TIMS)
+                        </CardTitle>
+                        <div className="p-1.5 sm:p-2 bg-indigo-500/10 rounded-lg"><GraduationCap className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-indigo-500" /></div>
+                    </CardHeader>
+                    <CardContent className="p-3.5 sm:p-6 pt-0">
+                        <div className="text-2xl sm:text-3xl font-black text-foreground font-mono numeric-badge">{stats.tertiaryCount}</div>
+                    </CardContent>
+                </Card>
+                <Card className="bg-background border-border shadow-none hover:bg-muted/50 transition-colors rounded-2xl sm:rounded-3xl">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3.5 sm:p-6 pb-1 sm:pb-2">
                         <CardTitle className="text-[11px] sm:text-sm font-bold tracking-wider uppercase text-muted-foreground">
-                            {isAr ? 'الطلاب الذكور' : 'Male'}
+                            {isAr ? 'الطلاب الذكور' : 'K-12 Male'}
                         </CardTitle>
                         <div className="p-1.5 sm:p-2 bg-muted rounded-lg"><User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" /></div>
                     </CardHeader>
@@ -126,7 +162,7 @@ export default async function StudentsPage(props: {
                 <Card className="bg-background border-border shadow-none hover:bg-muted/50 transition-colors rounded-2xl sm:rounded-3xl">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3.5 sm:p-6 pb-1 sm:pb-2">
                         <CardTitle className="text-[11px] sm:text-sm font-bold tracking-wider uppercase text-muted-foreground">
-                            {isAr ? 'الطالبات الإناث' : 'Female'}
+                            {isAr ? 'الطالبات الإناث' : 'K-12 Female'}
                         </CardTitle>
                         <div className="p-1.5 sm:p-2 bg-muted rounded-lg"><User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" /></div>
                     </CardHeader>
@@ -136,11 +172,89 @@ export default async function StudentsPage(props: {
                 </Card>
             </div>
 
+            {/* Tertiary Undergraduates Section (TIMS) */}
+            {tertiaryStudents.length > 0 && (
+                <Card className="bg-background border-border shadow-none rounded-2xl sm:rounded-3xl overflow-hidden backdrop-blur-sm w-full min-w-0">
+                    <CardHeader className="border-b border-border bg-background p-4 sm:p-6 flex flex-col sm:flex-row gap-4 sm:items-center justify-between w-full min-w-0">
+                        <div>
+                            <CardTitle className="text-lg sm:text-xl font-bold text-foreground flex items-center gap-2">
+                                <GraduationCap className="h-5 w-5 text-indigo-500" />
+                                Tertiary Undergraduates (TIMS Registry)
+                            </CardTitle>
+                            <CardDescription className="text-muted-foreground text-xs sm:text-sm">
+                                Matriculated university/college degree candidates linked to Faculties, Departments, and NUC CCMAS programs.
+                            </CardDescription>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-0 w-full min-w-0">
+                        <div className="overflow-x-auto w-full min-w-0">
+                            <Table>
+                                <TableHeader className="bg-background">
+                                    <TableRow className="border-border hover:bg-transparent">
+                                        <TableHead className="font-bold text-muted-foreground py-3 px-4">Undergraduate</TableHead>
+                                        <TableHead className="font-bold text-muted-foreground py-3 px-4">Matric Number</TableHead>
+                                        <TableHead className="font-bold text-muted-foreground py-3 px-4">Degree Program &amp; Hierarchy</TableHead>
+                                        <TableHead className="font-bold text-muted-foreground py-3 px-4">Level</TableHead>
+                                        <TableHead className="font-bold text-muted-foreground py-3 px-4">Standing</TableHead>
+                                        <TableHead className="text-end font-bold text-muted-foreground py-3 px-4">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {tertiaryStudents.map((ts) => (
+                                        <TableRow key={ts.id} className="border-border hover:bg-muted/50 transition-colors">
+                                            <TableCell className="px-4 py-3">
+                                                <div className="font-bold text-foreground text-sm">
+                                                    {ts.user?.firstName} {ts.user?.lastName}
+                                                </div>
+                                                <div className="text-xs text-muted-foreground font-mono">
+                                                    {ts.user?.email}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="px-4 py-3 font-mono font-bold text-xs text-indigo-600 dark:text-indigo-400">
+                                                {ts.matricNumber}
+                                            </TableCell>
+                                            <TableCell className="px-4 py-3">
+                                                <div className="font-semibold text-xs text-foreground">
+                                                    {ts.program?.code} — {ts.program?.name}
+                                                </div>
+                                                <div className="text-[11px] text-muted-foreground">
+                                                    {ts.program?.faculty?.name || 'Faculty'} • {ts.program?.department?.name || 'Department'}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="px-4 py-3">
+                                                <Badge variant="outline" className="font-mono text-xs">
+                                                    {ts.currentLevel}L
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="px-4 py-3">
+                                                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs">
+                                                    {ts.academicStatus}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-end px-4 py-3">
+                                                <div className="flex justify-end gap-2">
+                                                    <Button asChild variant="outline" size="sm" className="h-8 text-xs rounded-lg">
+                                                        <Link href="/dashboard/tertiary/transcript">Transcript</Link>
+                                                    </Button>
+                                                    <Button asChild variant="outline" size="sm" className="h-8 text-xs rounded-lg">
+                                                        <Link href="/dashboard/tertiary/docket">Docket</Link>
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
             <Card className="bg-background border-border shadow-none rounded-2xl sm:rounded-3xl overflow-hidden backdrop-blur-sm w-full min-w-0">
                 <CardHeader className="border-b border-border bg-background p-4 sm:p-6 flex flex-col sm:flex-row gap-4 sm:items-center justify-between w-full min-w-0">
                     <div>
                         <CardTitle className="text-lg sm:text-xl font-bold text-foreground">
-                            {isAr ? 'كافة الطلاب المسجلين' : 'All Students'}
+                            {isAr ? 'كافة الطلاب المسجلين' : 'K-12 & Secondary Students'}
                         </CardTitle>
                         <CardDescription className="text-muted-foreground text-xs sm:text-sm">
                             {isAr ? 'البحث والتصفية في سجل الطلاب' : 'Search and manage the student registry.'}
@@ -152,7 +266,7 @@ export default async function StudentsPage(props: {
                             <Input
                                 name="q"
                                 type="search"
-                                placeholder={isAr ? 'بحث بالاسم أو رقم القيد...' : 'Search by name or ID...'}
+                                placeholder={isAr ? 'بحث بالاسم أو رقم القيد...' : 'Search by name, ID, or Matric...'}
                                 className="pl-10 rtl:pl-3 rtl:pr-10 bg-background border-border text-foreground rounded-xl focus-visible:ring-emerald-500 h-10 w-full"
                                 defaultValue={query}
                             />

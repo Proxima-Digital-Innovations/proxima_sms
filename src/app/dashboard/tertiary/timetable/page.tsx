@@ -1,48 +1,89 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect, useTransition, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { checkTimetableClashesAction, getStudentWeeklyTimetable, TimetableClash } from '@/actions/timetable-clash-actions';
-import { Calendar, Clock, MapPin, AlertTriangle, ShieldCheck, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
+import {
+  checkTimetableClashesAction,
+  getStudentWeeklyTimetable,
+  getTimetableBuilderOptionsAction,
+  createCourseScheduleAction,
+  TimetableClash,
+} from '@/actions/timetable-clash-actions';
+import { getCurrentStudentContextAction } from '@/actions/tims-actions';
+import { Calendar, Clock, MapPin, AlertTriangle, ShieldCheck, Loader2, Plus } from 'lucide-react';
 
 const DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'];
 
 export default function TertiaryTimetablePage() {
   const [schedules, setSchedules] = useState<any[]>([]);
+  const [registeredOfferingIds, setRegisteredOfferingIds] = useState<string[]>([]);
+  const [allStudents, setAllStudents] = useState<any[]>([]);
+  const [studentProfileId, setStudentProfileId] = useState<string>('');
+  const [isStudentRole, setIsStudentRole] = useState<boolean>(true);
+  const [offerings, setOfferings] = useState<any[]>([]);
+  const [venues, setVenues] = useState<any[]>([]);
+  const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [session, setSession] = useState('2025/2026');
-  const [semester, setSemester] = useState(1);
+  const [session] = useState('2025/2026');
+  const [semester] = useState(1);
   const [clashes, setClashes] = useState<TimetableClash[]>([]);
   const [isCheckingClashes, setIsCheckingClashes] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
-  const loadTimetable = async () => {
+  const [scheduleForm, setScheduleForm] = useState({
+    courseOfferingId: '',
+    venueId: 'NONE',
+    dayOfWeek: 'MONDAY',
+    startTime: '08:00',
+    endTime: '10:00',
+    scheduleType: 'LECTURE',
+  });
+
+  const loadTimetable = useCallback(async (overrideStudentId?: string) => {
     setIsLoading(true);
-    // Student U2025/CSC/001 demo id
-    const res = await getStudentWeeklyTimetable('93e0878e-891f-4a60-ad1a-b0019b6c17f2', session, semester);
+    const [ctxRes, builderRes] = await Promise.all([
+      getCurrentStudentContextAction(session, semester),
+      getTimetableBuilderOptionsAction(session, semester),
+    ]);
+
+    if (builderRes.success && builderRes.data) {
+      setOfferings(builderRes.data.offerings || []);
+      setVenues(builderRes.data.venues || []);
+    }
+
+    let activeId = overrideStudentId || '';
+    if (ctxRes.success && ctxRes.data) {
+      setIsStudentRole(ctxRes.data.isStudentRole);
+      setAllStudents(ctxRes.data.allStudents || []);
+      if (!activeId && ctxRes.data.activeStudent) {
+        activeId = ctxRes.data.activeStudent.id;
+      }
+      setStudentProfileId(activeId);
+    }
+
+    const res = await getStudentWeeklyTimetable(activeId, session, semester);
     if (res.success && res.data) {
       setSchedules(res.data);
+      setRegisteredOfferingIds((res as any).registeredOfferingIds || []);
     }
     setIsLoading(false);
-  };
+  }, [session, semester]);
 
   useEffect(() => {
     loadTimetable();
-  }, [session, semester]);
+  }, [loadTimetable]);
 
   const handleRunClashAudit = async () => {
     setIsCheckingClashes(true);
-    // Grab all registered offerings for the current session
-    const offeringIds = [
-      'cbt-offering-1',
-      'cbt-offering-2',
-    ];
-
-    const res = await checkTimetableClashesAction(offeringIds);
+    const res = await checkTimetableClashesAction(registeredOfferingIds);
     if (res.success) {
       setClashes(res.clashes);
       if (res.hasClashes) {
@@ -54,11 +95,34 @@ export default function TertiaryTimetablePage() {
       } else {
         toast({
           title: 'Zero Clashes Detected',
-          description: 'All selected lecture periods are conflict-free.',
+          description: 'All scheduled lecture periods are conflict-free.',
         });
       }
     }
     setIsCheckingClashes(false);
+  };
+
+  const handleCreateSchedule = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!scheduleForm.courseOfferingId) return;
+
+    startTransition(async () => {
+      const res = await createCourseScheduleAction(scheduleForm);
+      if (res.success) {
+        toast({
+          title: 'Lecture Slot Scheduled',
+          description: 'Added lecture period to weekly timetable.',
+        });
+        setIsScheduleOpen(false);
+        loadTimetable(studentProfileId);
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Schedule Error',
+          description: res.error,
+        });
+      }
+    });
   };
 
   return (
@@ -66,13 +130,34 @@ export default function TertiaryTimetablePage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Interactive Lecture Timetable & Clash Detector</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Interactive Lecture Timetable &amp; Clash Detector</h1>
           <p className="text-muted-foreground text-sm mt-1">
             Weekly lecture schedules, lecture hall venues, and automated real-time timetable conflict analysis.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {!isStudentRole && allStudents.length > 0 && (
+            <Select
+              value={studentProfileId}
+              onValueChange={(id) => {
+                setStudentProfileId(id);
+                loadTimetable(id);
+              }}
+            >
+              <SelectTrigger className="w-56 h-9 text-xs rounded-xl">
+                <SelectValue placeholder="Filter by Student" />
+              </SelectTrigger>
+              <SelectContent>
+                {allStudents.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.matricNumber} &mdash; {s.user?.firstName} {s.user?.lastName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
           <Button
             variant="outline"
             size="sm"
@@ -83,6 +168,129 @@ export default function TertiaryTimetablePage() {
             {isCheckingClashes ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5 text-primary" />}
             Run Conflict Audit
           </Button>
+
+          {!isStudentRole && (
+            <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="text-xs flex items-center gap-1.5">
+                  <Plus className="h-3.5 w-3.5" /> Schedule Lecture Slot
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md rounded-2xl">
+                <DialogHeader>
+                  <DialogTitle>Schedule Course Lecture Slot</DialogTitle>
+                  <DialogDescription>
+                    Assign a course offering to a day of the week, time window, and lecture theatre.
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleCreateSchedule} className="space-y-4 py-2">
+                  <div className="space-y-1.5">
+                    <Label>Course Offering</Label>
+                    <Select
+                      value={scheduleForm.courseOfferingId}
+                      onValueChange={(val) => setScheduleForm({ ...scheduleForm, courseOfferingId: val })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Course Offering" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {offerings.map((o) => (
+                          <SelectItem key={o.id} value={o.id}>
+                            {o.course?.code} &mdash; {o.course?.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label>Day of Week</Label>
+                      <Select
+                        value={scheduleForm.dayOfWeek}
+                        onValueChange={(val) => setScheduleForm({ ...scheduleForm, dayOfWeek: val })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {DAYS.map((d) => (
+                            <SelectItem key={d} value={d}>{d}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Schedule Type</Label>
+                      <Select
+                        value={scheduleForm.scheduleType}
+                        onValueChange={(val) => setScheduleForm({ ...scheduleForm, scheduleType: val })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="LECTURE">LECTURE</SelectItem>
+                          <SelectItem value="LAB">PRACTICAL / LAB</SelectItem>
+                          <SelectItem value="TUTORIAL">TUTORIAL</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label>Start Time</Label>
+                      <Input
+                        type="time"
+                        value={scheduleForm.startTime}
+                        onChange={(e) => setScheduleForm({ ...scheduleForm, startTime: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>End Time</Label>
+                      <Input
+                        type="time"
+                        value={scheduleForm.endTime}
+                        onChange={(e) => setScheduleForm({ ...scheduleForm, endTime: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label>Lecture Venue / Hall</Label>
+                    <Select
+                      value={scheduleForm.venueId}
+                      onValueChange={(val) => setScheduleForm({ ...scheduleForm, venueId: val })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Venue" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="NONE">TBA / Virtual Hall</SelectItem>
+                        {venues.map((v) => (
+                          <SelectItem key={v.id} value={v.id}>
+                            {v.name} ({v.capacity} seats)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setIsScheduleOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={isPending || !scheduleForm.courseOfferingId}>
+                      {isPending ? 'Saving...' : 'Save Slot'}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </div>
 
@@ -119,54 +327,54 @@ export default function TertiaryTimetablePage() {
 
           return (
             <Card key={day} className="border shadow-sm flex flex-col">
-              <CardHeader className="p-3.5 bg-muted/30 border-b">
-                <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+              <CardHeader className="bg-muted/40 border-b py-3 px-4">
+                <CardTitle className="text-xs font-bold uppercase tracking-wider flex items-center justify-between">
                   <span>{day}</span>
-                  <Badge variant="outline" className="text-[10px] font-mono">
-                    {daySchedules.length} Classes
+                  <Badge variant="secondary" className="text-[10px]">
+                    {daySchedules.length}
                   </Badge>
                 </CardTitle>
               </CardHeader>
 
-              <CardContent className="p-3 flex-1 space-y-3">
+              <CardContent className="p-3 space-y-3 flex-1">
                 {isLoading ? (
                   <div className="py-8 flex justify-center">
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                   </div>
                 ) : daySchedules.length === 0 ? (
-                  <div className="py-10 text-center text-xs text-muted-foreground/60 italic">
-                    No classes scheduled
+                  <div className="text-center py-8 text-xs text-muted-foreground/60 italic">
+                    Free Day / Personal Study
                   </div>
                 ) : (
-                  daySchedules.map((item) => (
+                  daySchedules.map((slot) => (
                     <div
-                      key={item.id}
-                      className="p-3 rounded-xl border bg-card hover:border-primary/50 transition-all shadow-xs space-y-2"
+                      key={slot.id}
+                      className="p-3 rounded-xl border bg-card hover:border-primary/50 transition-all space-y-1.5 shadow-2xs"
                     >
-                      <div className="flex justify-between items-start gap-1">
-                        <span className="font-bold text-xs text-foreground font-mono">
-                          {item.courseCode}
-                        </span>
-                        <Badge
-                          variant="secondary"
-                          className="text-[9px] px-1.5 py-0 uppercase"
-                        >
-                          {item.scheduleType}
+                      <div className="flex items-center justify-between">
+                        <Badge className="bg-primary/10 text-primary hover:bg-primary/20 font-mono text-[10px]">
+                          {slot.courseCode}
                         </Badge>
+                        <span className="text-[10px] font-medium text-muted-foreground uppercase">
+                          {slot.scheduleType}
+                        </span>
                       </div>
 
-                      <div className="text-xs font-medium text-foreground/90 line-clamp-2">
-                        {item.courseTitle}
-                      </div>
+                      <p className="font-semibold text-xs text-foreground line-clamp-2">
+                        {slot.courseTitle}
+                      </p>
 
-                      <div className="text-[11px] text-muted-foreground flex items-center gap-1 font-mono">
-                        <Clock className="h-3 w-3 text-primary" />
-                        <span>{item.startTime} - {item.endTime}</span>
-                      </div>
-
-                      <div className="text-[11px] text-muted-foreground flex items-center gap-1">
-                        <MapPin className="h-3 w-3 text-slate-500" />
-                        <span>{item.venueName}</span>
+                      <div className="pt-1 border-t space-y-1 text-[11px] text-muted-foreground">
+                        <div className="flex items-center gap-1.5 font-mono text-foreground/80">
+                          <Clock className="h-3 w-3 text-primary" />
+                          <span>
+                            {slot.startTime} &ndash; {slot.endTime}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <MapPin className="h-3 w-3 text-emerald-600" />
+                          <span className="truncate">{slot.venueName}</span>
+                        </div>
                       </div>
                     </div>
                   ))
