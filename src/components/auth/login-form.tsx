@@ -62,7 +62,7 @@ export function LoginForm({ schoolSlug }: { schoolSlug?: string }) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      identifier: searchParams.get('identifier') || 'admin@proximahub.com',
+      identifier: searchParams.get('identifier') || searchParams.get('email') || 'admin@proximahub.com',
       password: searchParams.get('password') || 'password123',
       rememberMe: false,
     },
