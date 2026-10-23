@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getExamResultsForPrint } from '@/actions/results-actions';
-import { Score, Student, BehaviouralAssessment } from '@/lib/schema';
 import { PrintableExamResultCard } from '@/components/reports/printable-exam-result-card';
 import { Button } from '@/components/ui/button';
 import { Loader2, Printer } from 'lucide-react';
@@ -22,7 +21,7 @@ export default function PrintExamResultsPage() {
 
   const handlePrint = useReactToPrint({
     contentRef: componentRef,
-    documentTitle: `Exam_Results_${session}_${term}`,
+    documentTitle: `Terminal_Report_${session}_${term}`,
   });
 
   useEffect(() => {
@@ -31,7 +30,7 @@ export default function PrintExamResultsPage() {
       try {
         const result = await getExamResultsForPrint(studentId, classId, term, session);
         if (result.success && result.data) {
-            setData(result.data);
+          setData(result.data);
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -45,37 +44,39 @@ export default function PrintExamResultsPage() {
     }
   }, [studentId, classId, term, session]);
 
-
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
   if (data.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
-        <p className="text-lg text-muted-foreground">No results found.</p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background text-center p-4">
+        <p className="text-lg font-semibold text-foreground">No examination results found.</p>
+        <p className="text-xs text-muted-foreground mt-1">Please ensure results have been submitted and generated for this term.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background p-8 print:p-0 print:bg-white">
-      <div className="mb-8 flex justify-between items-center print:hidden max-w-5xl mx-auto">
-        <h1 className="text-2xl font-bold text-foreground">Print Exam Results</h1>
-        <Button onClick={() => handlePrint()} className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white">
+    <div className="min-h-screen bg-slate-100 dark:bg-background p-4 sm:p-8 print:p-0 print:bg-white">
+      <div className="mb-6 flex justify-between items-center print:hidden max-w-4xl mx-auto">
+        <div>
+          <h1 className="text-xl font-bold text-foreground">Terminal Academic Report Cards</h1>
+          <p className="text-xs text-muted-foreground">Showing {data.length} candidate record(s) ready for high-fidelity A4 printing.</p>
+        </div>
+        <Button onClick={() => handlePrint()} className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
           <Printer className="w-4 h-4" />
           Print / Save as PDF
         </Button>
       </div>
 
-      <div ref={componentRef} className="bg-background print:bg-white max-w-5xl mx-auto">
+      <div ref={componentRef} className="bg-white print:bg-white max-w-4xl mx-auto space-y-8 print:space-y-0">
         {data.map((item, index) => (
-          <div key={item.student.id} className="print:break-after-page mb-8 print:mb-0 last:mb-0 shadow-2xl print:shadow-none">
+          <div key={item.student.id} className="print:break-after-page shadow-md print:shadow-none">
             <PrintableExamResultCard
               student={item.student}
               results={item.results}
@@ -83,10 +84,12 @@ export default function PrintExamResultsPage() {
               session={session}
               feeInfo={item.feeInfo}
               behaviouralAssessment={item.behavioralAssessment}
+              behaviouralScores={item.behaviouralScores}
+              summary={item.summary}
+              school={item.school}
             />
-            {/* Add a page break visual in non-print mode if multiple students */}
             {index < data.length - 1 && (
-              <div className="h-8 bg-background print:hidden" />
+              <div className="h-6 bg-slate-200 dark:bg-muted/50 print:hidden my-6" />
             )}
           </div>
         ))}

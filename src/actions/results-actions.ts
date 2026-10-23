@@ -1904,12 +1904,21 @@ export async function getMidtermResultsForPrint(
       include: { class: true },
     });
 
+    const systemProfile = await prisma.systemProfile.findFirst();
+    const school = {
+      name: systemProfile?.name || 'Proxima Academy',
+      address: systemProfile?.address || 'Victoria Island, Lagos, Nigeria',
+      phone: systemProfile?.phone || '+234 800 PROXIMA',
+      email: systemProfile?.email || 'admin@proximahub.com',
+      logoUrl: systemProfile?.logoUrl || null,
+    };
+
     const data = await Promise.all(students.map(async (student) => {
       const midterms = await prisma.midtermResult.findMany({
         where: { studentId: student.id, termId: term.id },
         include: { subject: true },
       });
-      return { student, results: midterms };
+      return { student, results: midterms, school };
     }));
 
     return { success: true, data };
@@ -1961,10 +1970,14 @@ export async function getExamResultsForPrint(
     const allData = await Promise.all(
       students.map(async (student) => {
         const reportCard = await getStudentReportCard(student.id, term.id);
+        const cardData = reportCard.success && reportCard.data ? reportCard.data : null;
         return {
           student,
-          results: reportCard.success && reportCard.data ? reportCard.data.grades : [],
-          behavioralAssessment: reportCard.success && reportCard.data ? reportCard.data.behaviouralAssessment : null,
+          results: cardData ? cardData.grades : [],
+          behavioralAssessment: cardData ? cardData.behaviouralAssessment : null,
+          behaviouralScores: cardData ? cardData.behaviouralScores : [],
+          summary: cardData ? cardData.summary : null,
+          school: cardData ? cardData.school : null,
           feeInfo: null,
         };
       })
