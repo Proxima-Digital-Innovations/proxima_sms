@@ -121,6 +121,19 @@ export interface TranslationDictionary {
   messaging: string;
   announcements: string;
   reportsAndAnalytics: string;
+  // Parent Portal & Hostels
+  tuitionWallet: string;
+  feeInvoices: string;
+  attendanceLog: string;
+  classTimetable: string;
+  reportCards: string;
+  hostels: string;
+  bedspaceAllocations: string;
+  hostelBooking: string;
+  tuitionPayments: string;
+  courseRegistration: string;
+  senateApprovals: string;
+  tertiaryStudentHub: string;
 }
 
 export const translations: Record<Language, TranslationDictionary> = {
@@ -236,6 +249,18 @@ export const translations: Record<Language, TranslationDictionary> = {
     messaging: 'Internal Messaging',
     announcements: 'Announcements & Memos',
     reportsAndAnalytics: 'Reports & Analytics',
+    tuitionWallet: 'School Tuition Wallet',
+    feeInvoices: 'Fee Invoices',
+    attendanceLog: 'Attendance Log',
+    classTimetable: 'Class Timetable',
+    reportCards: 'Report Cards',
+    hostels: 'Hostels & Accommodation',
+    bedspaceAllocations: 'Bedspace Allocations',
+    hostelBooking: 'Hostel Booking',
+    tuitionPayments: 'Tuition Payments',
+    courseRegistration: 'Course Registration',
+    senateApprovals: 'Senate Broadsheet & CGPA',
+    tertiaryStudentHub: 'Student Portal & Activities',
   },
   ar: {
     schoolPortal: 'بروكسيما لإدارة المدارس',
@@ -349,5 +374,17 @@ export const translations: Record<Language, TranslationDictionary> = {
     messaging: 'الرسائل الداخلية',
     announcements: 'التعاميم والإعلانات',
     reportsAndAnalytics: 'التقارير والإحصائيات العامة',
+    tuitionWallet: 'محفظة الرسوم والمصاريف',
+    feeInvoices: 'فواتير الرسوم الدراسية',
+    attendanceLog: 'سجل الحضور والغياب',
+    classTimetable: 'جدول الحصص الأسبوعي',
+    reportCards: 'بطاقات درجات وتقارير الأداء',
+    hostels: 'سكن الطلاب والداخلي',
+    bedspaceAllocations: 'توزيع وتسكين الأسرة',
+    hostelBooking: 'حجز السكن الداخلي',
+    tuitionPayments: 'دفع الرسوم الجامعية',
+    courseRegistration: 'تسجيل المقررات',
+    senateApprovals: 'اعتماد نتائج مجلس الكلية',
+    tertiaryStudentHub: 'بوابة وأنشطة الطالب',
   },
 };
