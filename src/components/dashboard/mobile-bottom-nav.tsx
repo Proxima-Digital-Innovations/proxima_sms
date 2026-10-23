@@ -16,6 +16,8 @@ import {
   FileSpreadsheet,
   GraduationCap,
   Building2,
+  Presentation,
+  CheckSquare,
 } from 'lucide-react';
 
 interface NavShortcut {
@@ -26,10 +28,13 @@ interface NavShortcut {
 
 export function MobileBottomNav() {
   const pathname = usePathname();
-  const { role, activeModules } = useRole();
+  const { user, role, activeModules } = useRole();
   const { openMobile, setOpenMobile } = useSidebar();
 
-  const hasTertiary = !activeModules || activeModules.includes('TERTIARY');
+  const hasTertiary =
+    (user as any)?.isTertiaryStudent !== undefined
+      ? Boolean((user as any).isTertiaryStudent)
+      : !activeModules || activeModules.includes('TERTIARY_INSTITUTION');
 
   const getShortcutsForRole = (r: string | null): NavShortcut[] => {
     switch (r) {
@@ -38,14 +43,14 @@ export function MobileBottomNav() {
           ? [
               { label: 'Home', href: '/dashboard', icon: LayoutDashboard },
               { label: 'Courses', href: '/dashboard/tertiary/registration', icon: BookOpen },
-              { label: 'Fees', href: '/dashboard/parent/invoices', icon: Wallet },
+              { label: 'Fees', href: '/dashboard/tertiary/payments', icon: Wallet },
               { label: 'Hostel', href: '/dashboard/hostels/booking', icon: Building2 },
             ]
           : [
               { label: 'Home', href: '/dashboard', icon: LayoutDashboard },
-              { label: 'Results', href: '/dashboard/results/view', icon: Award },
-              { label: 'Fees', href: '/dashboard/parent/invoices', icon: Wallet },
+              { label: 'Results', href: '/dashboard/performance', icon: Award },
               { label: 'Schedule', href: '/dashboard/timetable', icon: Calendar },
+              { label: 'e-Library', href: '/dashboard/elibrary', icon: BookOpen },
             ];
       case 'PARENT':
         return [
@@ -60,6 +65,13 @@ export function MobileBottomNav() {
           { label: 'Invoices', href: '/dashboard/finance/invoices', icon: FileSpreadsheet },
           { label: 'Payments', href: '/dashboard/finance/payments', icon: Wallet },
           { label: 'Fees', href: '/dashboard/finance/fee-structures', icon: GraduationCap },
+        ];
+      case 'LECTURER':
+        return [
+          { label: 'Studio', href: '/dashboard', icon: Presentation },
+          { label: 'Offerings', href: '/dashboard/tertiary/offerings', icon: BookOpen },
+          { label: 'CBT', href: '/dashboard/tertiary/cbt', icon: CheckSquare },
+          { label: 'Grading', href: '/dashboard/tertiary/exams', icon: Award },
         ];
       case 'TEACHER':
       case 'EXAM_OFFICER':

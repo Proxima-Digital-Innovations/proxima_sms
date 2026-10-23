@@ -45,6 +45,10 @@ const TeacherDashboard = dynamic(
   () => import('@/components/dashboard/teacher/teacher-dashboard').then(mod => mod.TeacherDashboard),
   { loading: () => <DashboardSkeleton />, ssr: false }
 );
+const TertiaryLecturerDashboard = dynamic(
+  () => import('@/app/dashboard/tertiary/lecturer-studio/page'),
+  { loading: () => <DashboardSkeleton />, ssr: false }
+);
 const ParentDashboard = dynamic(
   () => import('@/components/dashboard/parent/parent-dashboard').then(mod => mod.ParentDashboard),
   { loading: () => <DashboardSkeleton />, ssr: false }
@@ -59,15 +63,19 @@ const TertiaryStudentDashboard = dynamic(
 );
 
 export default function DashboardPage() {
-  const { role, activeModules, isLoading } = useRole();
+  const { user, role, activeModules, isLoading } = useRole();
   const { language } = useLanguage();
-  const isTertiary = activeModules?.includes('TERTIARY_INSTITUTION');
+  const isTertiaryModuleActive = activeModules?.includes('TERTIARY_INSTITUTION');
+  const isTertiaryStudent =
+    (user as any)?.isTertiaryStudent !== undefined
+      ? Boolean((user as any).isTertiaryStudent)
+      : isTertiaryModuleActive;
 
   if (isLoading) {
     return <DashboardSkeleton />;
   }
 
-  // Switch based on the standardized uppercase user role
+  // Switch based on the user's assigned institutional role & tier
   switch (role) {
     case 'SUPER_ADMIN':
     case 'ADMIN':
@@ -80,12 +88,14 @@ export default function DashboardPage() {
       return <AccountantDashboard />;
     case 'EXAM_OFFICER':
       return <ExamOfficerDashboard />;
+    case 'LECTURER':
+      return <TertiaryLecturerDashboard />;
     case 'TEACHER':
       return <TeacherDashboard />;
     case 'PARENT':
       return <ParentDashboard />;
     case 'STUDENT':
-      if (isTertiary) {
+      if (isTertiaryStudent) {
         return <TertiaryStudentDashboard />;
       }
       return <ParentDashboard />;

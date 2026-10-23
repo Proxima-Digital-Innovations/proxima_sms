@@ -142,16 +142,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
            });
         }
 
+        // Resolve effective role & institution tier from assigned DB role + profile
+        const rawRole = (user.role || 'TEACHER').toUpperCase();
+        const isLecturer = rawRole === 'LECTURER' || (rawRole === 'TEACHER' && Boolean(user.staffProfile));
+        const effectiveRole = isLecturer ? 'LECTURER' : rawRole;
+        const isTertiaryStudent = rawRole === 'TERTIARY_STUDENT' || (rawRole === 'STUDENT' && Boolean(user.studentProfile));
+        const normalizedRole = rawRole === 'TERTIARY_STUDENT' || rawRole === 'SECONDARY_STUDENT' ? 'STUDENT' : effectiveRole;
+        const institutionTier =
+          isLecturer || isTertiaryStudent
+            ? 'TERTIARY'
+            : normalizedRole === 'TEACHER' || (normalizedRole === 'STUDENT' && !isTertiaryStudent)
+              ? 'SECONDARY'
+              : 'ALL';
+
         return {
           id: user.id,
           email: user.email,
           name: `${user.firstName} ${user.lastName}`,
-          role: user.role as any,
+          role: normalizedRole as any,
           isSuperAdmin: user.isSuperAdmin,
           activeModules: activeModules,
           rbacPermissions: Array.from(userPerms),
           rememberMe: rememberMe === 'true',
           requiresPasswordChange: (user as any).requiresPasswordChange || false,
+          isTertiaryStudent,
+          institutionTier,
         };
       },
     }),

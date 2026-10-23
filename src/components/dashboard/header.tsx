@@ -139,10 +139,11 @@ const SEGMENT_ARABIC_MAP: Record<string, string> = {
 const ROLE_DISPLAY_NAMES: Record<string, { en: string; ar: string }> = {
   'SUPER_ADMIN': { en: 'Super Admin', ar: 'المشرف العام' },
   'ADMIN': { en: 'Administrator', ar: 'مدير النظام' },
-  'TEACHER': { en: 'Teacher', ar: 'معلم' },
-  'PARENT': { en: 'Parent', ar: 'ولي أمر' },
+  'LECTURER': { en: 'Tertiary Lecturer', ar: 'محاضر جامعي' },
+  'TEACHER': { en: 'Secondary Teacher', ar: 'معلم مدرسة' },
+  'PARENT': { en: 'Parent / Guardian', ar: 'ولي أمر' },
   'STUDENT': { en: 'Student', ar: 'طالب' },
-  'ACCOUNTANT': { en: 'Accountant', ar: 'المحاسب المالي' },
+  'ACCOUNTANT': { en: 'Accountant / Bursar', ar: 'المحاسب المالي' },
   'EXAM_OFFICER': { en: 'Exam Officer', ar: 'مسؤول الامتحانات' },
   'HOD': { en: 'Head of Department', ar: 'رئيس القسم' },
   'SLT': { en: 'School Leadership', ar: 'إدارة المدرسة' },
@@ -262,6 +263,7 @@ export function DashboardHeader() {
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">{displayName}</p>
+                <p className="text-[11px] font-semibold text-primary leading-none pt-0.5">{displayRole}</p>
                 <p className="text-xs leading-none text-muted-foreground">{user?.email || 'admin@proximahub.com'}</p>
               </div>
             </DropdownMenuLabel>

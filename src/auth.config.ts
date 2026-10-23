@@ -37,6 +37,8 @@ export const authConfig = {
         token.activeModules = (user as any).activeModules;
         token.rbacPermissions = (user as any).rbacPermissions;
         token.requiresPasswordChange = (user as any).requiresPasswordChange;
+        token.isTertiaryStudent = (user as any).isTertiaryStudent;
+        token.institutionTier = (user as any).institutionTier;
         
         // Handle rememberMe custom expiration
         const isRememberMe = (user as any).rememberMe;
@@ -60,6 +62,8 @@ export const authConfig = {
         (session.user as any).activeModules = token.activeModules as string[];
         (session.user as any).rbacPermissions = token.rbacPermissions as string[];
         (session.user as any).requiresPasswordChange = token.requiresPasswordChange as boolean;
+        (session.user as any).isTertiaryStudent = token.isTertiaryStudent as boolean;
+        (session.user as any).institutionTier = token.institutionTier as string;
       }
       return session;
     },

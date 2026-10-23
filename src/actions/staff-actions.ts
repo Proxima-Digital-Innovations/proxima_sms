@@ -15,7 +15,7 @@ const staffSchema = z.object({
   phone: z.string().min(1, 'Phone number is required.'),
   email: z.string().email('Invalid email address.'),
   address: z.string().min(1, 'Address is required.'),
-  role: z.enum(['ADMIN', 'SLT', 'HOD', 'TEACHER', 'ACCOUNTANT', 'EXAM_OFFICER']),
+  role: z.enum(['ADMIN', 'SLT', 'HOD', 'LECTURER', 'TEACHER', 'ACCOUNTANT', 'EXAM_OFFICER']),
   departmentId: z.string().optional().nullable(),
   dateOfEmployment: z.string(),
   baseSalary: z.string().optional(),

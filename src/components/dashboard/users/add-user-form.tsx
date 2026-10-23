@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -63,6 +62,7 @@ const roleDefaultSalaries: Record<string, number> = {
   HOD: 200000,
   ACCOUNTANT: 220000,
   EXAM_OFFICER: 190000,
+  LECTURER: 240000,
   TEACHER: 150000,
 };
 
@@ -81,7 +81,7 @@ const formSchema = z.object({
   address: z.string().min(1, 'Address is required.'),
 
   // Professional Info
-  role: z.enum(['ADMIN', 'SLT', 'HOD', 'TEACHER', 'ACCOUNTANT', 'EXAM_OFFICER'], { required_error: 'Role is required.' }),
+  role: z.enum(['ADMIN', 'SLT', 'HOD', 'LECTURER', 'TEACHER', 'ACCOUNTANT', 'EXAM_OFFICER'], { required_error: 'Role is required.' }),
   departmentId: z.string().optional(),
   dateOfEmployment: z.date({ required_error: 'Employment date is required.' }),
   staffId: z.string().optional(),
@@ -100,12 +100,12 @@ const formSchema = z.object({
   // Documents
   documents: typeof window !== 'undefined' ? z.instanceof(FileList).optional() : z.any().optional(),
 }).refine(data => {
-  if (['HOD', 'TEACHER'].includes(data.role)) {
+  if (['HOD', 'LECTURER', 'TEACHER'].includes(data.role)) {
     return !!data.departmentId && data.departmentId.length > 0;
   }
   return true;
 }, {
-  message: "Department is required for Teacher and HOD roles.",
+  message: "Department is required for Lecturer, Teacher, and HOD roles.",
   path: ["departmentId"],
 });
 
@@ -142,7 +142,7 @@ export function AddUserForm({ onUserAdded }: { onUserAdded: () => void }) {
     name: 'role'
   });
 
-  const showDepartmentField = ['HOD', 'TEACHER'].includes(selectedRole);
+  const showDepartmentField = ['HOD', 'LECTURER', 'TEACHER'].includes(selectedRole);
 
   // Automatically update suggested salary when role changes if value is default
   useEffect(() => {
@@ -383,7 +383,8 @@ export function AddUserForm({ onUserAdded }: { onUserAdded: () => void }) {
                             <SelectItem value="ADMIN">Administrator</SelectItem>
                             <SelectItem value="SLT">Senior Leadership Team (SLT)</SelectItem>
                             <SelectItem value="HOD">Head of Department (HOD)</SelectItem>
-                            <SelectItem value="TEACHER">Teacher / Educator</SelectItem>
+                            <SelectItem value="LECTURER">Lecturer (Tertiary Institution)</SelectItem>
+                            <SelectItem value="TEACHER">Teacher (Secondary / Basic School)</SelectItem>
                             <SelectItem value="ACCOUNTANT">Accountant / Finance</SelectItem>
                             <SelectItem value="EXAM_OFFICER">Examination Officer</SelectItem>
                           </SelectContent>

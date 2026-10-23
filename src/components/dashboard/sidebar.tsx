@@ -16,7 +16,7 @@ import { useSidebar } from '@/components/ui/sidebar';
 
 export default function Sidebar() {
     const pathname = usePathname();
-    const { role, rbacPermissions, activeModules } = useRole();
+    const { user, role, rbacPermissions, activeModules } = useRole();
     const { isRtl } = useLanguage();
     const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
     const [schoolName, setSchoolName] = useState<string>('Proxima SMS');
@@ -43,7 +43,7 @@ export default function Sidebar() {
         fetchSchool();
     }, []);
 
-    const baseNavConfig = getFilteredNavConfig(role as string, activeModules || []);
+    const baseNavConfig = getFilteredNavConfig(role as string, activeModules || [], (user as any)?.institutionTier);
     
     // Compute dynamic nav config from RBAC permissions
     const dynamicNavConfig = [...baseNavConfig];

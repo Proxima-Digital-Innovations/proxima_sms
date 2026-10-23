@@ -22,6 +22,7 @@ export class StaffService {
             HOD: 200000,
             ACCOUNTANT: 220000,
             EXAM_OFFICER: 190000,
+            LECTURER: 240000,
             TEACHER: 150000,
         };
 
@@ -87,6 +88,7 @@ export class StaffService {
             HOD: 200000,
             ACCOUNTANT: 220000,
             EXAM_OFFICER: 190000,
+            LECTURER: 240000,
             TEACHER: 150000,
         };
 
@@ -96,7 +98,7 @@ export class StaffService {
                     throw new Error('Email, First Name, and Last Name are required.');
                 }
                 const roleStr = (record.role || 'TEACHER').toUpperCase();
-                if (!['ADMIN', 'SLT', 'HOD', 'TEACHER', 'ACCOUNTANT', 'EXAM_OFFICER'].includes(roleStr)) {
+                if (!['ADMIN', 'SLT', 'HOD', 'LECTURER', 'TEACHER', 'ACCOUNTANT', 'EXAM_OFFICER'].includes(roleStr)) {
                     throw new Error(`Invalid role: ${record.role}`);
                 }
                 const role = roleStr as string;

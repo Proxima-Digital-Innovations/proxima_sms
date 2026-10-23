@@ -180,11 +180,16 @@ export const navConfig: Record<string, { group: string; links: (keyof typeof all
     { group: 'Examinations', links: ['reviewQuestions', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'generateResults', 'viewResults', 'timetable', 'examRegistration', 'seatingPlans'] },
     { group: 'Tertiary Examinations', links: ['tertiaryOfferings', 'tertiaryTimetable', 'tertiaryRegistration', 'tertiaryCbt', 'tertiaryExams', 'tertiarySenate', 'tertiaryDocket', 'tertiaryTranscript', 'tertiaryCertificate'] },
   ],
+  LECTURER: [
+    { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'announcements'] },
+    { group: 'Communication', links: ['messaging'] },
+    { group: 'Tertiary Academics', links: ['tertiaryLecturerStudio', 'tertiaryOfferings', 'tertiaryCourses', 'tertiaryTimetable', 'tertiaryCbt', 'tertiaryExams', 'tertiarySenate', 'staffAttendance'] },
+    { group: 'e-Library', links: ['elibraryCatalog'] },
+  ],
   TEACHER: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'announcements'] },
     { group: 'Communication', links: ['messaging'] },
-    { group: 'My Work', links: ['lessonPlans', 'examQuestions', 'bulkUpload', 'enterScores', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'attendance', 'myStudents', 'timetable'] },
-    { group: 'Tertiary Academics', links: ['tertiaryLecturerStudio', 'tertiaryOfferings', 'tertiaryTimetable', 'tertiaryCbt', 'tertiaryExams'] },
+    { group: 'My Work', links: ['lessonPlans', 'examQuestions', 'bulkUpload', 'enterScores', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'attendance', 'myStudents', 'timetable', 'staffAttendance'] },
     { group: 'e-Library', links: ['elibraryCatalog'] },
   ],
   PARENT: [
@@ -194,7 +199,7 @@ export const navConfig: Record<string, { group: string; links: (keyof typeof all
   ],
   STUDENT: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'messaging'] },
-    { group: 'Academics', links: ['studentResults', 'timetable'] },
+    { group: 'Academics', links: ['studentResults', 'studentAssignments', 'studentQuizzes', 'timetable'] },
     { group: 'Tertiary (TIMS)', links: ['tertiaryStudentHub', 'studentHostelBooking', 'tertiaryPayments', 'tertiaryTimetable', 'tertiaryRegistration', 'tertiaryAddDrop', 'tertiaryForecast', 'tertiaryCbt', 'tertiaryDocket', 'tertiaryTranscript', 'tertiaryOfficialTranscript', 'tertiaryCertificate'] },
     { group: 'e-Library', links: ['elibraryCatalog'] },
   ],
@@ -355,11 +360,20 @@ export function isPathAuthorized(
     return false;
 }
 
-export function getFilteredNavConfig(role: string, activeModules: string[]) {
+export function getFilteredNavConfig(role: string, activeModules: string[], institutionTier?: string) {
     const effectiveRole = role === 'SUPER_ADMIN' ? 'ADMIN' : role;
     if (!navConfig[effectiveRole]) return [];
 
     return navConfig[effectiveRole].map(group => {
+        // If user is a Secondary School Student, hide the Tertiary (TIMS) group
+        if (effectiveRole === 'STUDENT' && institutionTier === 'SECONDARY' && group.group === 'Tertiary (TIMS)') {
+            return { ...group, links: [] };
+        }
+        // If user is a Tertiary Student, hide the K-12 Academics group
+        if (effectiveRole === 'STUDENT' && institutionTier === 'TERTIARY' && group.group === 'Academics') {
+            return { ...group, links: [] };
+        }
+
         // Filter links in this group
         const filteredLinks = group.links.filter(linkKey => {
             const link = allNavLinks[linkKey];
