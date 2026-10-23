@@ -4,30 +4,34 @@ import { prisma } from "@/lib/prisma";
 
 export async function getAtsData() {
   try {
-    const jobPostings = await prisma.jobPosting.findMany({
-      include: {
-        department: true,
-      }
-    });
-    
-    const jobApplications = await prisma.jobApplication.findMany({
-      include: {
-        job: true,
-      }
-    });
-    
-    const interviews = await prisma.interview.findMany({
-      include: {
-        application: {
-          include: {
-            job: true,
-          }
+    const [jobPostings, jobApplications, interviews, departments] = await Promise.all([
+      prisma.jobPosting.findMany({
+        include: {
+          department: true,
         },
-        interviewer: true,
-      }
-    });
-
-    const departments = await prisma.department.findMany();
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.jobApplication.findMany({
+        include: {
+          job: true,
+        },
+        orderBy: { appliedAt: "desc" },
+      }),
+      prisma.interview.findMany({
+        include: {
+          application: {
+            include: {
+              job: true,
+            }
+          },
+          interviewer: true,
+        },
+        orderBy: { scheduledAt: "desc" },
+      }),
+      prisma.department.findMany({
+        orderBy: { name: "asc" },
+      }),
+    ]);
 
     return {
       success: true,
@@ -80,4 +84,3 @@ export async function updateApplicationStatus(id: string, status: string) {
     return { success: false, error: "Failed to update status" };
   }
 }
-

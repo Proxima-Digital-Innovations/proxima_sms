@@ -4,19 +4,21 @@ import { prisma } from "@/lib/prisma";
 
 export async function getFleetData() {
   try {
-    const vehicles = await prisma.vehicle.findMany({
-      include: {
-        routes: true,
-        dispatches: {
-          include: {
-            driver: true,
+    const [vehicles, routes, dispatches, fuelLogs] = await Promise.all([
+      prisma.vehicle.findMany({
+        include: {
+          routes: true,
+          dispatches: {
+            include: {
+              driver: true,
+            }
           }
         }
-      }
-    });
-    const routes = await prisma.transportRoute.findMany();
-    const dispatches = await prisma.vehicleDispatch.findMany();
-    const fuelLogs = await prisma.fuelLog.findMany();
+      }),
+      prisma.transportRoute.findMany(),
+      prisma.vehicleDispatch.findMany({ take: 200, orderBy: { departureTime: "desc" } }),
+      prisma.fuelLog.findMany({ take: 200, orderBy: { date: "desc" } }),
+    ]);
 
     return {
       success: true,

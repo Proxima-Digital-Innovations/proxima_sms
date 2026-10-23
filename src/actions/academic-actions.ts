@@ -12,80 +12,91 @@ export async function getAdminDashboardStats() {
         const hasSecondary = activeModules.includes('SECONDARY_SCHOOL');
         const hasTertiary = activeModules.includes('TERTIARY_INSTITUTION');
         const hasFinance = activeModules.includes('FINANCE');
+        const hasElibrary = activeModules.includes('E_LIBRARY');
 
-        // Student counts based on active module domains
-        let totalStudents = 0;
-        if (hasSecondary && hasTertiary) {
-            const [sec, ter] = await Promise.all([
-                prisma.student.count({ where: { status: { in: ['ACTIVE', 'Active'] } } }),
-                prisma.studentProfile.count()
-            ]);
-            totalStudents = sec + ter;
-        } else if (hasTertiary) {
-            totalStudents = await prisma.studentProfile.count();
-        } else {
-            totalStudents = await prisma.student.count({ where: { status: { in: ['ACTIVE', 'Active'] } } });
-        }
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-        const totalStaff = await prisma.user.count({ where: STAFF_FILTER });
-        
-        let activeClasses = 0;
-        let totalPrograms = 0;
-        let totalCourses = 0;
-        let totalBooks = 0;
-        let totalApplicants = 0;
+        // Execute all dashboard queries concurrently in a single Promise.all wave
+        const [
+            secStudents,
+            terStudents,
+            totalStaff,
+            secClasses,
+            totalPrograms,
+            totalCourses,
+            totalApplicants,
+            totalBooks,
+            currentTerm,
+            finSummary,
+            revExpData,
+            recentActivities,
+            recentAttendance,
+        ] = await Promise.all([
+            hasSecondary || !hasTertiary
+                ? prisma.student.count({ where: { status: { in: ['ACTIVE', 'Active'] } } })
+                : Promise.resolve(0),
+            hasTertiary
+                ? prisma.studentProfile.count()
+                : Promise.resolve(0),
+            prisma.user.count({ where: STAFF_FILTER }),
+            hasSecondary
+                ? prisma.class.count()
+                : Promise.resolve(0),
+            hasTertiary
+                ? prisma.academicProgram.count()
+                : Promise.resolve(0),
+            hasTertiary
+                ? prisma.course.count()
+                : Promise.resolve(0),
+            hasTertiary
+                ? prisma.admissionApplicant.count()
+                : Promise.resolve(0),
+            hasElibrary
+                ? prisma.eLibraryBook.count()
+                : Promise.resolve(0),
+            hasFinance
+                ? prisma.term.findFirst({ where: { isActive: true }, select: { id: true } })
+                : Promise.resolve(null),
+            hasFinance
+                ? getFinancialSummary()
+                : Promise.resolve({ totalRevenue: 0, totalExpenses: 0, netProfit: 0, profitMargin: 0 }),
+            hasFinance
+                ? getRevenueVsExpenseData()
+                : Promise.resolve([]),
+            prisma.auditLog.findMany({
+                take: 5,
+                orderBy: { createdAt: 'desc' },
+                select: { action: true, entity: true, createdAt: true }
+            }),
+            prisma.staffAttendance.findMany({
+                where: { date: { gte: sevenDaysAgo } },
+                select: { date: true, timeIn: true }
+            }),
+        ]);
 
-        if (hasSecondary) {
-            activeClasses = await prisma.class.count();
-        } 
-        if (hasTertiary) {
-            totalPrograms = await prisma.academicProgram.count();
-            if (!hasSecondary) {
-                activeClasses = totalPrograms;
-            }
-            totalCourses = await prisma.course.count();
-            totalApplicants = await prisma.admissionApplicant.count();
-        }
-        if (activeModules.includes('E_LIBRARY')) {
-            totalBooks = await prisma.eLibraryBook.count();
-        }
+        const totalStudents = hasSecondary && hasTertiary
+            ? secStudents + terStudents
+            : hasTertiary
+                ? terStudents
+                : secStudents;
+
+        const activeClasses = hasSecondary ? secClasses : totalPrograms;
 
         let totalRevenue = 0;
         let pendingPayments = 0;
         let chartRevenueData: any[] = [];
 
         if (hasFinance) {
-            const currentTerm = await prisma.term.findFirst({
-                where: { isActive: true },
-                select: { id: true }
-            });
-
-            // Use the centralized financial logic so main dashboard and finance dashboard are perfectly in sync
-            const finSummary = await getFinancialSummary();
-            const revExpData = await getRevenueVsExpenseData();
             totalRevenue = finSummary.totalRevenue;
-
-            if (currentTerm) {
-                const pending = await prisma.invoice.aggregate({
-                    _sum: { balance: true },
-                    where: { termId: currentTerm.id, status: { not: 'PAID' } }
-                });
-                pendingPayments = pending._sum.balance || 0;
-            } else {
-                const pending = await prisma.invoice.aggregate({
-                    _sum: { balance: true },
-                    where: { status: { not: 'PAID' } }
-                });
-                pendingPayments = pending._sum.balance || 0;
-            }
+            const pending = await prisma.invoice.aggregate({
+                _sum: { balance: true },
+                where: currentTerm
+                    ? { termId: currentTerm.id, status: { not: 'PAID' } }
+                    : { status: { not: 'PAID' } }
+            });
+            pendingPayments = pending._sum.balance || 0;
             chartRevenueData = revExpData.map(d => ({ name: d.name, total: d.Revenue }));
         }
-
-        const recentActivities = await prisma.auditLog.findMany({
-            take: 5,
-            orderBy: { createdAt: 'desc' },
-            select: { action: true, entity: true, createdAt: true }
-        });
 
         const formattedActivities = recentActivities.map(log => ({
             title: `${log.action} on ${log.entity}`,
@@ -100,12 +111,6 @@ export async function getAdminDashboardStats() {
             { name: 'Thu', present: 0, absent: 0 },
             { name: 'Fri', present: 0, absent: 0 },
         ];
-        
-        const recentAttendance = await prisma.staffAttendance.findMany({
-            where: {
-                date: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
-            }
-        });
         
         recentAttendance.forEach(a => {
             const dayName = new Date(a.date).toLocaleString('default', { weekday: 'short' });
@@ -138,6 +143,7 @@ export async function getAdminDashboardStats() {
         return { success: false, error: error.message };
     }
 }
+
 export async function getMidtermResults(classId: string) {
     try {
         const results = await prisma.termGrade.findMany({

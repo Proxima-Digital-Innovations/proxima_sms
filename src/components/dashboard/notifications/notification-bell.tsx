@@ -1,8 +1,7 @@
-
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { getNotifications } from '@/actions/notification-actions';
+import { useState, useEffect } from 'react';
+import { getUnreadNotificationCount } from '@/actions/notification-actions';
 import { useRole } from '@/context/role-context';
 import { Button } from '@/components/ui/button';
 import { Bell } from 'lucide-react';
@@ -18,16 +17,18 @@ export function NotificationBell() {
             return;
         }
 
-        const fetchNotifications = async () => {
-            const result = await getNotifications(user.id || (user as any).uid);
-            if (result.success && result.data) {
-                const unread = result.data.filter((n: any) => !n.read).length;
-                setUnreadCount(unread);
+        const userId = user.id || (user as any).uid;
+        if (!userId) return;
+
+        const fetchUnreadCount = async () => {
+            const result = await getUnreadNotificationCount(userId);
+            if (result.success) {
+                setUnreadCount(result.count || 0);
             }
         };
 
-        fetchNotifications();
-        const interval = setInterval(fetchNotifications, 60000); // Poll every minute
+        fetchUnreadCount();
+        const interval = setInterval(fetchUnreadCount, 60000);
 
         return () => clearInterval(interval);
     }, [user]);
@@ -53,5 +54,5 @@ export function NotificationBell() {
                 <span className="sr-only">Toggle notifications</span>
             </Link>
         </Button>
-    )
+    );
 }

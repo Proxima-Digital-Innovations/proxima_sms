@@ -2,7 +2,11 @@
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { AVAILABLE_MODULES, getActiveInstitutionalModules } from '@/lib/modules/module-registry';
+import {
+  AVAILABLE_MODULES,
+  getActiveInstitutionalModules,
+  invalidateActiveModulesCache,
+} from '@/lib/modules/module-registry';
 
 export async function getInstitutionalModulesAction() {
   const active = await getActiveInstitutionalModules();
@@ -32,6 +36,7 @@ export async function toggleModuleAction(moduleId: string, enable: boolean) {
       });
     }
 
+    invalidateActiveModulesCache();
     revalidatePath('/dashboard', 'layout');
     revalidatePath('/dashboard/system/modules');
 
@@ -52,6 +57,7 @@ export async function updateEnabledModulesAction(moduleIds: string[]) {
       });
     }
 
+    invalidateActiveModulesCache();
     revalidatePath('/dashboard', 'layout');
     revalidatePath('/dashboard/system/modules');
 

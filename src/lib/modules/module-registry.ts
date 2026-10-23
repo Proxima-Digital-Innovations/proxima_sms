@@ -86,10 +86,24 @@ export const AVAILABLE_MODULES: SystemModule[] = [
 
 export const DEFAULT_ACTIVE_MODULES = AVAILABLE_MODULES.map((m) => m.id);
 
+const globalForModules = globalThis as unknown as {
+  __activeModulesCache?: { modules: string[]; expiresAt: number } | null;
+};
+
+export function invalidateActiveModulesCache() {
+  globalForModules.__activeModulesCache = null;
+}
+
 /**
- * Fetch list of currently enabled modules from the institutional SystemProfile.
+ * Fetch list of currently enabled modules from the institutional SystemProfile
+ * with a 15-second in-memory cache to eliminate redundant DB hits across layout/actions.
  */
 export async function getActiveInstitutionalModules(): Promise<string[]> {
+  const now = Date.now();
+  if (globalForModules.__activeModulesCache && globalForModules.__activeModulesCache.expiresAt > now) {
+    return globalForModules.__activeModulesCache.modules;
+  }
+
   try {
     const profile = await prisma.systemProfile.findFirst({
       select: { enabledModules: true },
@@ -98,6 +112,10 @@ export async function getActiveInstitutionalModules(): Promise<string[]> {
     if (profile?.enabledModules) {
       const parsed = JSON.parse(profile.enabledModules);
       if (Array.isArray(parsed) && parsed.length > 0) {
+        globalForModules.__activeModulesCache = {
+          modules: parsed,
+          expiresAt: now + 15000,
+        };
         return parsed;
       }
     }
@@ -105,5 +123,9 @@ export async function getActiveInstitutionalModules(): Promise<string[]> {
     console.error('Error reading institutional modules:', err);
   }
 
+  globalForModules.__activeModulesCache = {
+    modules: DEFAULT_ACTIVE_MODULES,
+    expiresAt: now + 15000,
+  };
   return DEFAULT_ACTIVE_MODULES;
 }

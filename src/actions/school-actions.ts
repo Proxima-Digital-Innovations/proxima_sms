@@ -3,21 +3,52 @@
 import fs from 'fs';
 import path from 'path';
 import { revalidatePath } from 'next/cache';
-import { getSystemSettings, updateSystemSettings } from './system-actions';
+import { prisma } from '@/lib/prisma';
+import { updateSystemSettings } from './system-actions';
+
+const globalForSchoolInfo = globalThis as unknown as {
+    __schoolInfoCache?: {
+        data: {
+            name: string;
+            address: string | null;
+            phone: string | null;
+            email: string | null;
+            logoUrl: string | null;
+        };
+        expiresAt: number;
+    } | null;
+};
 
 export async function getSchoolInfo() {
+    const now = Date.now();
+    if (globalForSchoolInfo.__schoolInfoCache && globalForSchoolInfo.__schoolInfoCache.expiresAt > now) {
+        return { success: true, data: globalForSchoolInfo.__schoolInfoCache.data };
+    }
+
     try {
-        const res = await getSystemSettings();
-        if (!res.success || !res.data) {
+        // Select only lightweight branding columns instead of LongText JSON blobs
+        const settings = await prisma.systemProfile.findFirst({
+            select: {
+                name: true,
+                address: true,
+                phone: true,
+                email: true,
+                logoUrl: true,
+            },
+        });
+        if (!settings) {
             return { success: false, error: 'Could not fetch settings' };
         }
-        const settings = res.data;
         const school = {
             name: settings.name,
             address: settings.address,
             phone: settings.phone,
             email: settings.email,
             logoUrl: settings.logoUrl,
+        };
+        globalForSchoolInfo.__schoolInfoCache = {
+            data: school,
+            expiresAt: now + 30000,
         };
         return { success: true, data: school };
     } catch (error: any) {
@@ -36,6 +67,7 @@ export async function updateSchoolInfo(data: { name: string; address?: string; p
             schoolLogoUrl: data.logoUrl,
         });
 
+        globalForSchoolInfo.__schoolInfoCache = null;
         revalidatePath('/dashboard/system/school-info');
         revalidatePath('/dashboard/system');
         revalidatePath('/dashboard');
@@ -84,6 +116,7 @@ export async function uploadSchoolLogo(formData: FormData) {
 
         await updateSystemSettings({ schoolLogoUrl: logoUrl });
 
+        globalForSchoolInfo.__schoolInfoCache = null;
         revalidatePath('/dashboard/system/school-info');
         revalidatePath('/dashboard/system');
         revalidatePath('/dashboard');
@@ -98,6 +131,7 @@ export async function uploadSchoolLogo(formData: FormData) {
 export async function removeSchoolLogo() {
     try {
         await updateSystemSettings({ schoolLogoUrl: null });
+        globalForSchoolInfo.__schoolInfoCache = null;
         revalidatePath('/dashboard/system/school-info');
         revalidatePath('/dashboard/system');
         revalidatePath('/dashboard');
@@ -108,4 +142,3 @@ export async function removeSchoolLogo() {
         return { success: false, error: error.message || 'Failed to remove logo.' };
     }
 }
-

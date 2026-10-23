@@ -8,7 +8,11 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 const basePrisma = new PrismaClient({
-  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  log: process.env.PRISMA_LOG_QUERIES === 'true'
+    ? ['query', 'error', 'warn']
+    : process.env.NODE_ENV === 'development'
+      ? ['error', 'warn']
+      : ['error'],
 });
 
 export const prisma = globalForPrisma.prisma ?? basePrisma.$extends({
@@ -68,4 +72,4 @@ export const prisma = globalForPrisma.prisma ?? basePrisma.$extends({
   }
 });
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+globalForPrisma.prisma = prisma;

@@ -6,28 +6,31 @@ import { auth } from "@/auth";
 
 export async function getLedgerData() {
   try {
-    const categories = await prisma.accountCategory.findMany();
-    const accounts = await prisma.accountCode.findMany({
-      include: {
-        category: true,
-      },
-      orderBy: { code: "asc" }
-    });
-    const entries = await prisma.journalEntry.findMany({
-      include: {
-        recordedBy: {
-          select: { firstName: true, lastName: true }
+    const [categories, accounts, entries] = await Promise.all([
+      prisma.accountCategory.findMany(),
+      prisma.accountCode.findMany({
+        include: {
+          category: true,
         },
-        lines: {
-          include: {
-            account: true,
+        orderBy: { code: "asc" }
+      }),
+      prisma.journalEntry.findMany({
+        take: 250,
+        include: {
+          recordedBy: {
+            select: { firstName: true, lastName: true }
+          },
+          lines: {
+            include: {
+              account: true,
+            },
           },
         },
-      },
-      orderBy: {
-        date: "desc",
-      },
-    });
+        orderBy: {
+          date: "desc",
+        },
+      }),
+    ]);
 
     return { success: true, data: { categories, accounts, entries } };
   } catch (error) {
@@ -67,7 +70,6 @@ export async function createJournalEntry(data: {
     throw new Error("Total entry value must be greater than zero");
   }
 
-  // Resolve user recording this transaction
   let userId = data.recordedById;
   if (!userId) {
     try {
@@ -118,25 +120,31 @@ export async function createJournalEntry(data: {
       }
     });
 
-    // Update account balances according to standard double-entry rules:
-    // Assets & Expenses: normal balance is Debit (increment: debit - credit)
-    // Liabilities, Equity, & Revenue: normal balance is Credit (increment: credit - debit)
-    for (const line of data.lines) {
-      const account = await tx.accountCode.findUnique({
-        where: { id: line.accountId },
-        include: { category: true }
-      });
-      const catName = (account?.category?.name || "").toLowerCase();
-      const isCreditNormal = catName.includes("liability") || catName.includes("equity") || catName.includes("revenue");
-      const debitVal = Number(line.debit) || 0;
-      const creditVal = Number(line.credit) || 0;
-      const netChange = isCreditNormal ? (creditVal - debitVal) : (debitVal - creditVal);
+    const accountIds = Array.from(new Set(data.lines.map(l => l.accountId)));
+    const accounts = await tx.accountCode.findMany({
+      where: { id: { in: accountIds } },
+      include: { category: true },
+    });
+    const accountMap = new Map<string, any>(accounts.map((a: any) => [a.id, a]));
 
-      await tx.accountCode.update({
-        where: { id: line.accountId },
-        data: { balance: { increment: netChange } }
-      });
-    }
+    await Promise.all(
+      data.lines.map((line) => {
+        const account = accountMap.get(line.accountId);
+        const catName = (account?.category?.name || "").toLowerCase();
+        const isCreditNormal =
+          catName.includes("liability") ||
+          catName.includes("equity") ||
+          catName.includes("revenue");
+        const debitVal = Number(line.debit) || 0;
+        const creditVal = Number(line.credit) || 0;
+        const netChange = isCreditNormal ? creditVal - debitVal : debitVal - creditVal;
+
+        return tx.accountCode.update({
+          where: { id: line.accountId },
+          data: { balance: { increment: netChange } },
+        });
+      })
+    );
 
     return je;
   });
@@ -147,4 +155,3 @@ export async function createJournalEntry(data: {
   } catch {}
   return { success: true, entry };
 }
-

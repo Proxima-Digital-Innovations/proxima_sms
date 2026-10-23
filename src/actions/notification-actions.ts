@@ -1,7 +1,6 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { revalidatePath } from 'next/cache';
 
 export async function getNotifications(userId: string) {
     try {
@@ -13,6 +12,17 @@ export async function getNotifications(userId: string) {
         return { success: true, data: notifications };
     } catch (error: any) {
         return { success: false, error: error.message };
+    }
+}
+
+export async function getUnreadNotificationCount(userId: string) {
+    try {
+        const count = await prisma.notification.count({
+            where: { userId, read: false },
+        });
+        return { success: true, count };
+    } catch (error: any) {
+        return { success: false, count: 0, error: error.message };
     }
 }
 

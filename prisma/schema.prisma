@@ -152,6 +152,8 @@ model User {
   vouchersCancelled   PaymentVoucher[] @relation("VoucherCancelledBy")
   voucherAudits       PaymentVoucherAudit[] @relation("VoucherAuditActor")
   parentWallet        ParentWallet?
+  @@index([role, status])
+  @@index([departmentId])
 }
 
 model Department {
@@ -185,6 +187,7 @@ model AcademicSession {
   createdAt DateTime @default(now())
 
   @@unique([name])
+  @@index([isActive])
 }
 
 model CalendarEvent {
@@ -226,6 +229,8 @@ model Term {
   createdAt DateTime @default(now())
 
   @@unique([name, sessionId])
+  @@index([isActive])
+  @@index([sessionId])
 }
 
 model Enrollment {
@@ -336,6 +341,8 @@ model Student {
   behaviouralScores      BehaviouralScore[]
 
   @@unique([studentId])
+  @@index([status, classId])
+  @@index([sessionYear])
 }
 
 model Guardian {
@@ -399,6 +406,8 @@ model Attendance {
   term       Term?    @relation(fields: [termId], references: [id])
 
   createdAt DateTime @default(now())
+  @@index([date, classId])
+  @@index([studentId, termId])
 }
 
 model Room {
@@ -492,6 +501,7 @@ model StaffAttendance {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  @@index([date, staffId])
 }
 
 model Holiday {
@@ -591,6 +601,8 @@ model Invoice {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  @@index([status, termId])
+  @@index([studentId, status])
 }
 
 model PaymentReceipt {
@@ -609,6 +621,8 @@ model PaymentReceipt {
 
   loggedById String
   loggedBy   User   @relation(fields: [loggedById], references: [id])
+  @@index([date])
+  @@index([invoiceId])
 }
 
 // --- SYSTEM: Infrastructure ---
@@ -622,6 +636,7 @@ model Notification {
   type      String
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
+  @@index([userId, read, createdAt])
 }
 
 model Announcement {
@@ -642,6 +657,8 @@ model AuditLog {
   userId    String?
   user      User?    @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
+  @@index([createdAt])
+  @@index([userId])
 }
 
 // --- MEDICAL & HEALTH RECORDS ---
@@ -769,6 +786,8 @@ model TermGrade {
   updatedAt DateTime @updatedAt
 
   @@unique([studentId, subjectId, termId])
+  @@index([termId, subjectId])
+  @@index([studentId, termId])
 }
 
 model ScoreAuditLog {
@@ -976,6 +995,7 @@ model Expense {
 
   memoId String?
   memo   StaffMemo? @relation("ExpenseMemo", fields: [memoId], references: [id])
+  @@index([date])
 }
 
 model FeeStructure {
@@ -2086,6 +2106,7 @@ model TertiaryInvoice {
   updatedAt        DateTime       @updatedAt
 
   @@unique([studentId, academicSession, semester])
+  @@index([studentId, status])
 }
 
 // ==============================================================================
