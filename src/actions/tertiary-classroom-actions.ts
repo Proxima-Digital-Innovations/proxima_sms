@@ -1,9 +1,49 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
+import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
 import fs from 'fs';
 import path from 'path';
+
+const STUDENT_PORTAL_INCLUDE = {
+  user: true,
+  program: { include: { department: true, faculty: true } },
+  academicStandings: { orderBy: { academicSession: 'desc' as const }, take: 1 },
+  clearance: true,
+  invoices: { orderBy: { createdAt: 'desc' as const } },
+  registrations: {
+    orderBy: { createdAt: 'desc' as const },
+    take: 1,
+    include: {
+      courses: {
+        include: {
+          offering: {
+            include: {
+              course: true,
+              schedules: { include: { venue: true } },
+              lecturers: { include: { staff: { include: { user: true } } } },
+              materials: {
+                where: { isPublished: true },
+                orderBy: { weekNumber: 'asc' as const },
+                include: { uploadedBy: { include: { user: true } } }
+              },
+              assignments: {
+                where: { status: { in: ['PUBLISHED', 'CLOSED'] } },
+                orderBy: { dueDate: 'asc' as const },
+                include: {
+                  submissions: {
+                    include: { gradedBy: { include: { user: true } } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+};
 
 // ==============================================================================
 // 1. STUDENT PORTAL & INSTITUTION ACTIVITY MONITOR
@@ -16,88 +56,34 @@ export async function getStudentPortalData(targetStudentId?: string) {
     if (targetStudentId) {
       student = await prisma.studentProfile.findUnique({
         where: { id: targetStudentId },
-        include: {
-          user: true,
-          program: { include: { department: true, faculty: true } },
-          academicStandings: { orderBy: { academicSession: 'desc' }, take: 1 },
-          clearance: true,
-          invoices: { orderBy: { createdAt: 'desc' } },
-          registrations: {
-            where: { status: 'APPROVED' },
-            orderBy: { createdAt: 'desc' },
-            take: 1,
-            include: {
-              courses: {
-                include: {
-                  offering: {
-                    include: {
-                      course: true,
-                      schedules: { include: { venue: true } },
-                      lecturers: { include: { staff: { include: { user: true } } } },
-                      materials: {
-                        where: { isPublished: true },
-                        orderBy: { weekNumber: 'asc' },
-                        include: { uploadedBy: { include: { user: true } } }
-                      },
-                      assignments: {
-                        where: { status: { in: ['PUBLISHED', 'CLOSED'] } },
-                        orderBy: { dueDate: 'asc' },
-                        include: {
-                          submissions: {
-                            where: targetStudentId ? { studentId: targetStudentId } : undefined,
-                            include: { gradedBy: { include: { user: true } } }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+        include: STUDENT_PORTAL_INCLUDE
       });
     }
 
     if (!student) {
-      // Fallback to first student in the institution
+      // Check currently authenticated student session first
+      const session = await auth();
+      if (session?.user?.id) {
+        student = await prisma.studentProfile.findUnique({
+          where: { userId: session.user.id },
+          include: STUDENT_PORTAL_INCLUDE
+        });
+      }
+    }
+
+    if (!student) {
+      // Fallback to first student with registered courses (or first student in the institution)
       student = await prisma.studentProfile.findFirst({
-        include: {
-          user: true,
-          program: { include: { department: true, faculty: true } },
-          academicStandings: { orderBy: { academicSession: 'desc' }, take: 1 },
-          clearance: true,
-          invoices: { orderBy: { createdAt: 'desc' } },
-          registrations: {
-            orderBy: { createdAt: 'desc' },
-            take: 1,
-            include: {
-              courses: {
-                include: {
-                  offering: {
-                    include: {
-                      course: true,
-                      schedules: { include: { venue: true } },
-                      lecturers: { include: { staff: { include: { user: true } } } },
-                      materials: {
-                        where: { isPublished: true },
-                        orderBy: { weekNumber: 'asc' },
-                        include: { uploadedBy: { include: { user: true } } }
-                      },
-                      assignments: {
-                        where: { status: { in: ['PUBLISHED', 'CLOSED'] } },
-                        orderBy: { dueDate: 'asc' },
-                        include: {
-                          submissions: true
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+        where: { registrations: { some: {} } },
+        orderBy: { matricNumber: 'asc' },
+        include: STUDENT_PORTAL_INCLUDE
+      });
+    }
+
+    if (!student) {
+      student = await prisma.studentProfile.findFirst({
+        orderBy: { matricNumber: 'asc' },
+        include: STUDENT_PORTAL_INCLUDE
       });
     }
 
@@ -105,13 +91,57 @@ export async function getStudentPortalData(targetStudentId?: string) {
       return { success: false, error: 'No student profile found in database.' };
     }
 
-    // Filter submissions for this specific student if fallback was used
     const activeReg = student.registrations[0] || null;
-    const registeredOfferings = activeReg?.courses.map(rc => rc.offering) || [];
+    const regOfferings: any[] = activeReg?.courses.map((rc: any) => rc.offering) || [];
+
+    // Also include departmental course offerings that have published materials or assignments
+    // so students in the department always see assignments/notes published by their departmental lecturers
+    const deptOfferings = student.program?.departmentId
+      ? await prisma.courseOffering.findMany({
+          where: {
+            course: { departmentId: student.program.departmentId },
+            OR: [
+              { materials: { some: { isPublished: true } } },
+              { assignments: { some: { status: { in: ['PUBLISHED', 'CLOSED'] } } } }
+            ]
+          },
+          include: {
+            course: true,
+            schedules: { include: { venue: true } },
+            lecturers: { include: { staff: { include: { user: true } } } },
+            materials: {
+              where: { isPublished: true },
+              orderBy: { weekNumber: 'asc' },
+              include: { uploadedBy: { include: { user: true } } }
+            },
+            assignments: {
+              where: { status: { in: ['PUBLISHED', 'CLOSED'] } },
+              orderBy: { dueDate: 'asc' },
+              include: {
+                submissions: {
+                  include: { gradedBy: { include: { user: true } } }
+                }
+              }
+            }
+          }
+        })
+      : [];
+
+    // Deduplicate offerings by id
+    const offeringMap = new Map<string, any>();
+    for (const off of regOfferings) {
+      offeringMap.set(off.id, off);
+    }
+    for (const off of deptOfferings) {
+      if (!offeringMap.has(off.id)) {
+        offeringMap.set(off.id, off);
+      }
+    }
+    const registeredOfferings = Array.from(offeringMap.values());
 
     // Aggregate materials across all registered courses
     const allMaterials = registeredOfferings.flatMap(offering =>
-      offering.materials.map(mat => ({
+      offering.materials.map((mat: any) => ({
         ...mat,
         courseCode: offering.course.code,
         courseTitle: offering.course.title,
@@ -121,8 +151,8 @@ export async function getStudentPortalData(targetStudentId?: string) {
 
     // Aggregate assignments with student's personal submission status
     const allAssignments = registeredOfferings.flatMap(offering =>
-      offering.assignments.map(asgn => {
-        const studentSubmission = asgn.submissions.find(s => s.studentId === student.id) || null;
+      offering.assignments.map((asgn: any) => {
+        const studentSubmission = asgn.submissions.find((s: any) => s.studentId === student.id) || null;
         return {
           id: asgn.id,
           title: asgn.title,
@@ -151,8 +181,8 @@ export async function getStudentPortalData(targetStudentId?: string) {
     );
 
     // Financial clearance summary
-    const totalInvoiced = student.invoices.reduce((acc, inv) => acc + inv.totalAmount, 0);
-    const totalPaid = student.invoices.reduce((acc, inv) => acc + inv.paidAmount, 0);
+    const totalInvoiced = student.invoices.reduce((acc: number, inv: any) => acc + inv.totalAmount, 0);
+    const totalPaid = student.invoices.reduce((acc: number, inv: any) => acc + inv.paidAmount, 0);
     const paymentPercentage = totalInvoiced > 0 ? (totalPaid / totalInvoiced) * 100 : 100;
     const isBursaryCleared = activeReg?.isBursaryCleared || paymentPercentage >= 50;
 
@@ -209,6 +239,7 @@ export async function getStudentPortalData(targetStudentId?: string) {
 
     // All registered students for easy profile switching in demo
     const allStudentsList = await prisma.studentProfile.findMany({
+      orderBy: { matricNumber: 'asc' },
       include: { user: true, program: true },
       take: 10
     });
@@ -228,7 +259,7 @@ export async function getStudentPortalData(targetStudentId?: string) {
         academicStanding: latestStanding ? latestStanding.standingStatus : 'FIRST_CLASS_HONOURS',
         session: activeReg?.academicSession || '2025/2026',
         semester: activeReg?.semester || 1,
-        totalCredits: activeReg?.totalCredits || 18,
+        totalCredits: activeReg?.totalCredits || registeredOfferings.reduce((acc: number, o: any) => acc + (o.course?.creditUnits || 0), 0) || 18,
         isBursaryCleared,
         paymentPercentage,
         totalPaid,
@@ -239,12 +270,12 @@ export async function getStudentPortalData(targetStudentId?: string) {
           code: o.course.code,
           title: o.course.title,
           creditUnits: o.course.creditUnits,
-          schedules: o.schedules.map(s => ({
+          schedules: o.schedules.map((s: any) => ({
             day: s.dayOfWeek,
             time: `${s.startTime} - ${s.endTime}`,
             venue: s.venue?.name || 'Main Auditorium'
           })),
-          lecturers: o.lecturers.map(l => ({
+          lecturers: o.lecturers.map((l: any) => ({
             name: `${l.staff.user.firstName || ''} ${l.staff.user.lastName || ''}`.trim(),
             role: l.role
           }))
@@ -270,6 +301,43 @@ export async function getStudentPortalData(targetStudentId?: string) {
 // 2. LECTURER TEACHING STUDIO & COURSE MANAGEMENT
 // ==============================================================================
 
+const LECTURER_STUDIO_INCLUDE = {
+  user: true,
+  department: true,
+  assignedCourses: {
+    include: {
+      courseOffering: {
+        include: {
+          course: true,
+          registeredCourses: {
+            include: {
+              registration: {
+                include: {
+                  student: { include: { user: true } }
+                }
+              }
+            }
+          },
+          materials: {
+            orderBy: { createdAt: 'desc' as const },
+            include: { uploadedBy: { include: { user: true } } }
+          },
+          assignments: {
+            orderBy: { createdAt: 'desc' as const },
+            include: {
+              submissions: {
+                include: {
+                  student: { include: { user: true } }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+};
+
 export async function getLecturerStudioData(targetStaffId?: string) {
   try {
     let lecturer: any = null;
@@ -277,84 +345,25 @@ export async function getLecturerStudioData(targetStaffId?: string) {
     if (targetStaffId) {
       lecturer = await prisma.staffProfile.findUnique({
         where: { id: targetStaffId },
-        include: {
-          user: true,
-          department: true,
-          assignedCourses: {
-            include: {
-              courseOffering: {
-                include: {
-                  course: true,
-                  registeredCourses: {
-                    include: {
-                      registration: {
-                        include: {
-                          student: { include: { user: true } }
-                        }
-                      }
-                    }
-                  },
-                  materials: {
-                    orderBy: { createdAt: 'desc' },
-                    include: { uploadedBy: { include: { user: true } } }
-                  },
-                  assignments: {
-                    orderBy: { createdAt: 'desc' },
-                    include: {
-                      submissions: {
-                        include: {
-                          student: { include: { user: true } }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+        include: LECTURER_STUDIO_INCLUDE
       });
+    }
+
+    if (!lecturer) {
+      // Check currently authenticated lecturer session first
+      const session = await auth();
+      if (session?.user?.id) {
+        lecturer = await prisma.staffProfile.findUnique({
+          where: { userId: session.user.id },
+          include: LECTURER_STUDIO_INCLUDE
+        });
+      }
     }
 
     if (!lecturer) {
       lecturer = await prisma.staffProfile.findFirst({
         where: { assignedCourses: { some: {} } },
-        include: {
-          user: true,
-          department: true,
-          assignedCourses: {
-            include: {
-              courseOffering: {
-                include: {
-                  course: true,
-                  registeredCourses: {
-                    include: {
-                      registration: {
-                        include: {
-                          student: { include: { user: true } }
-                        }
-                      }
-                    }
-                  },
-                  materials: {
-                    orderBy: { createdAt: 'desc' },
-                    include: { uploadedBy: { include: { user: true } } }
-                  },
-                  assignments: {
-                    orderBy: { createdAt: 'desc' },
-                    include: {
-                      submissions: {
-                        include: {
-                          student: { include: { user: true } }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+        include: LECTURER_STUDIO_INCLUDE
       });
     }
 
@@ -362,9 +371,9 @@ export async function getLecturerStudioData(targetStaffId?: string) {
       return { success: false, error: 'No lecturer profile found.' };
     }
 
-    const assignedOfferings = lecturer.assignedCourses.map(ac => {
+    const assignedOfferings = lecturer.assignedCourses.map((ac: any) => {
       const off = ac.courseOffering;
-      const enrolledStudents = off.registeredCourses.map(rc => ({
+      const enrolledStudents = off.registeredCourses.map((rc: any) => ({
         studentId: rc.registration.student.id,
         matricNumber: rc.registration.student.matricNumber,
         name: `${rc.registration.student.user.firstName || ''} ${rc.registration.student.user.lastName || ''}`.trim()
@@ -381,7 +390,7 @@ export async function getLecturerStudioData(targetStaffId?: string) {
         semester: off.semester,
         enrolledCount: enrolledStudents.length,
         students: enrolledStudents,
-        materials: off.materials.map(m => ({
+        materials: off.materials.map((m: any) => ({
           id: m.id,
           title: m.title,
           description: m.description,
@@ -393,11 +402,11 @@ export async function getLecturerStudioData(targetStaffId?: string) {
           durationSeconds: m.durationSeconds,
           createdAt: m.createdAt
         })),
-        assignments: off.assignments.map(a => {
+        assignments: off.assignments.map((a: any) => {
           const totalSubmissions = a.submissions.length;
-          const gradedSubmissions = a.submissions.filter(s => s.status === 'GRADED');
+          const gradedSubmissions = a.submissions.filter((s: any) => s.status === 'GRADED');
           const avgScore = gradedSubmissions.length > 0
-            ? gradedSubmissions.reduce((sum, s) => sum + (s.score || 0), 0) / gradedSubmissions.length
+            ? gradedSubmissions.reduce((sum: number, s: any) => sum + (s.score || 0), 0) / gradedSubmissions.length
             : 0;
 
           return {
@@ -413,7 +422,7 @@ export async function getLecturerStudioData(targetStaffId?: string) {
             totalSubmissions,
             pendingReview: totalSubmissions - gradedSubmissions.length,
             averageScore: Math.round(avgScore * 10) / 10,
-            submissions: a.submissions.map(s => ({
+            submissions: a.submissions.map((s: any) => ({
               id: s.id,
               studentId: s.student.id,
               matricNumber: s.student.matricNumber,
@@ -447,9 +456,9 @@ export async function getLecturerStudioData(targetStaffId?: string) {
         department: lecturer.department?.name || 'Computer Science',
         assignedCourses: assignedOfferings,
         totalCourses: assignedOfferings.length,
-        totalMaterials: assignedOfferings.reduce((sum, c) => sum + c.materials.length, 0),
-        totalAudioLectures: assignedOfferings.reduce((sum, c) => sum + c.materials.filter(m => m.materialType === 'AUDIO_RECORDING').length, 0),
-        totalAssignments: assignedOfferings.reduce((sum, c) => sum + c.assignments.length, 0),
+        totalMaterials: assignedOfferings.reduce((sum: number, c: any) => sum + c.materials.length, 0),
+        totalAudioLectures: assignedOfferings.reduce((sum: number, c: any) => sum + c.materials.filter((m: any) => m.materialType === 'AUDIO_RECORDING').length, 0),
+        totalAssignments: assignedOfferings.reduce((sum: number, c: any) => sum + c.assignments.length, 0),
       },
       availableLecturers: allLecturersList.map(l => ({
         id: l.id,
