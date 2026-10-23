@@ -74,10 +74,32 @@ const PAGE_TITLE_KEYS: { [key: string]: string } = {
     '/dashboard/parent/attendance': 'attendanceLog',
     '/dashboard/parent/timetable': 'classTimetable',
     '/dashboard/parent/wallet': 'tuitionWallet',
+    '/dashboard/finance/loans': 'staffLoans',
+    '/dashboard/finance/expenses': 'expenses',
+    '/dashboard/inventory/orders': 'inventoryOrders',
+    '/dashboard/inventory/suppliers': 'inventorySuppliers',
+    '/dashboard/inventory/transactions': 'inventoryTransactions',
+    '/dashboard/system/ai-settings': 'aiSettings',
+    '/dashboard/system/fees': 'feeSetup',
+    '/dashboard/system/grading': 'gradingPolicy',
+    '/dashboard/system/maintenance': 'systemMaintenance',
+    '/dashboard/system/communications': 'communicationsSetup',
+    '/dashboard/upload/scores': 'uploadScores',
+    '/dashboard/upload/midterm': 'uploadMidterm',
+    '/dashboard/results/tokens': 'resultTokens',
+    '/dashboard/results/print': 'printResults',
+    '/dashboard/results/midterm/print': 'printMidterm',
+    '/dashboard/results/class': 'classResults',
+    '/dashboard/slt': 'sltDashboard',
+    '/dashboard/slt/academics': 'sltAcademics',
+    '/dashboard/hod': 'hodDashboard',
+    '/dashboard/hod/analytics': 'hodAnalytics',
 };
 
 const SEGMENT_ARABIC_MAP: Record<string, string> = {
     'dashboard': 'لوحة التحكم',
+    'parent': 'بوابة ولي الأمر',
+    'wallet': 'محفظة الرسوم',
     'students': 'دليل الطلاب',
     'admissions': 'القبول والتسجيل',
     'promote': 'الترقية والترحيل',
@@ -101,11 +123,16 @@ const SEGMENT_ARABIC_MAP: Record<string, string> = {
     'inventory': 'المستودع والمخزون',
     'assets': 'الأصول الثابتة',
     'items': 'الأصناف والمستلزمات',
+    'orders': 'أوامر الشراء',
+    'suppliers': 'دليل الموردين',
+    'transactions': 'حركات المخزون',
     'finance': 'المالية والحسابات',
     'invoices': 'الرسوم والفواتير',
     'payments': 'سندات وإيصالات القبض',
     'fee-structures': 'هيكل الرسوم',
     'payroll': 'مسير الرواتب',
+    'loans': 'سلف الموظفين',
+    'expenses': 'المصروفات',
     'ledger': 'دفتر الأستاذ العام',
     'chart-of-accounts': 'دليل الحسابات',
     'reports': 'التقارير المالية',
@@ -118,6 +145,11 @@ const SEGMENT_ARABIC_MAP: Record<string, string> = {
     'roles': 'الأدوار والصلاحيات',
     'school-info': 'بيانات وهوية المدرسة',
     'license': 'سعة الترخيص والاشتراك',
+    'ai-settings': 'الذكاء الاصطناعي',
+    'fees': 'هيكل الرسوم',
+    'grading': 'سلالم التقديرات',
+    'maintenance': 'صيانة وترقية النظام',
+    'communications': 'بوابات المراسلة',
     'profile': 'الملف الشخصي',
     'users': 'سجل الكادر الوظيفي',
     'db': 'قاعدة البيانات',
@@ -126,6 +158,12 @@ const SEGMENT_ARABIC_MAP: Record<string, string> = {
     'messaging': 'الرسائل الداخلية',
     'announcements': 'التعاميم والإعلانات',
     'analytics': 'التقارير والإحصائيات',
+    'slt': 'الإدارة العليا',
+    'hod': 'رؤساء الأقسام',
+    'upload': 'رفع البيانات',
+    'tokens': 'كروت الاستعلام',
+    'print': 'الطباعة',
+    'class': 'الفصل',
 };
 
 const ROLE_DISPLAY_NAMES: Record<string, { en: string; ar: string }> = {
@@ -151,6 +189,17 @@ export function DashboardHeader() {
   const displayRole = ROLE_DISPLAY_NAMES[role as string]?.[language] || role;
   const displayName = user?.name || displayRole;
 
+  const humanize = (s: string) => {
+    if (!s) return 'Dashboard';
+    return s
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/[-_]/g, ' ')
+      .split(' ')
+      .filter(Boolean)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   const formatSegment = (s: string) => {
     if ((s.length >= 24 && s.length <= 36 && !s.includes('-') && !s.includes(' ')) || 
         (s.length === 36 && s.split('-').length === 5)) {
@@ -162,20 +211,26 @@ export function DashboardHeader() {
             return SEGMENT_ARABIC_MAP[lower];
         }
     }
-    return s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, ' ');
+    return humanize(s);
   };
 
   const getPageTitle = () => {
     const key = PAGE_TITLE_KEYS[pathname];
     if (key) {
-        return t(key as any);
+        const translated = t(key as any);
+        if (translated === key) {
+            return humanize(key);
+        }
+        return translated;
     }
     const segments = pathname.split('/').filter(Boolean);
     if (segments.length > 2) {
-        const base = segments.slice(0, 2).join('/');
-        const pageKey = `/${base}`;
-        if (PAGE_TITLE_KEYS[pageKey]) {
-            return t(PAGE_TITLE_KEYS[pageKey] as any);
+        const base = `/${segments.slice(0, 2).join('/')}`;
+        if (PAGE_TITLE_KEYS[base]) {
+            const translated = t(PAGE_TITLE_KEYS[base] as any);
+            if (translated !== PAGE_TITLE_KEYS[base]) {
+                return translated;
+            }
         }
     }
     const title = segments[segments.length - 1] || 'Dashboard';
