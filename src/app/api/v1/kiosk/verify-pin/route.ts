@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   return withKioskAuth(req, async (req, kiosk) => {
     try {
       const body = await req.json();
-      const { personnel_number, pin } = body;
+      const personnel_number = body.personnel_number || body.staffId || body.staff_id; const pin = body.pin;
 
       if (!personnel_number || !pin) {
         return NextResponse.json(

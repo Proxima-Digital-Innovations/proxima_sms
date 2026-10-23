@@ -1,7 +1,7 @@
-
 'use client';
 
 import { useRole } from '@/context/role-context';
+import { useLanguage } from '@/context/language-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import dynamic from 'next/dynamic';
 
@@ -60,6 +60,7 @@ const TertiaryStudentDashboard = dynamic(
 
 export default function DashboardPage() {
   const { role, activeModules, isLoading } = useRole();
+  const { language } = useLanguage();
   const isTertiary = activeModules?.includes('TERTIARY_INSTITUTION');
 
   if (isLoading) {
@@ -68,6 +69,7 @@ export default function DashboardPage() {
 
   // Switch based on the standardized uppercase user role
   switch (role) {
+    case 'SUPER_ADMIN':
     case 'ADMIN':
       return <AdminDashboard />;
     case 'SLT':
@@ -88,6 +90,12 @@ export default function DashboardPage() {
       }
       return <ParentDashboard />;
     default:
-      return <div>Invalid role or dashboard not yet implemented. Please log out and try again.</div>;
+      return (
+        <div className="p-8 text-center text-muted-foreground">
+          {language === 'ar' 
+            ? 'الدور غير صالح أو أن لوحة التحكم قيد الإنشاء. يرجى تسجيل الخروج والمحاولة مجدداً.' 
+            : 'Invalid role or dashboard not yet implemented. Please log out and try again.'}
+        </div>
+      );
   }
 }

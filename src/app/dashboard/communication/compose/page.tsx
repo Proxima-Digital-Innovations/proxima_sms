@@ -75,7 +75,7 @@ export default function ComposeMemoPage() {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-4xl mx-auto">
+    <div className="w-full space-y-6">
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Compose Memo</h2>
         <p className="text-muted-foreground mt-1">Submit a formal request or internal message.</p>

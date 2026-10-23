@@ -207,3 +207,41 @@ export async function changeOwnPassword(userId?: string, newPassword?: string) {
         return { success: false, error: error.message };
     }
 }
+
+export async function updateUserLanguage(language: 'en' | 'ar') {
+    try {
+        const session = await auth();
+        const userId = session?.user?.id;
+        if (!userId) {
+            return { success: false, error: 'Unauthorized' };
+        }
+
+        await prisma.user.update({
+            where: { id: userId },
+            data: { preferredLanguage: language }
+        });
+
+        revalidatePath('/dashboard');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error updating language:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+export async function getUserLanguage(): Promise<'en' | 'ar'> {
+    try {
+        const session = await auth();
+        const userId = session?.user?.id;
+        if (!userId) return 'en';
+
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { preferredLanguage: true }
+        });
+
+        return (user?.preferredLanguage as 'en' | 'ar') || 'en';
+    } catch {
+        return 'en';
+    }
+}

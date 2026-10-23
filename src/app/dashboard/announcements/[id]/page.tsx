@@ -119,7 +119,7 @@ export default function IndividualAnnouncementPage() {
       <div className="space-y-4">
         <Skeleton className="h-10 w-48" />
         <Skeleton className="h-8 w-64" />
-        <div className="space-y-8 max-w-4xl mx-auto">
+        <div className="space-y-8 w-full">
           <Skeleton className="h-[800px] w-full" />
         </div>
       </div>

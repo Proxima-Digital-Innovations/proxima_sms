@@ -124,7 +124,7 @@ export default function BehaviouralEnterPage() {
         <div className="flex flex-col h-full bg-background min-h-screen">
             {/* Page Header */}
             <header className="bg-card border-b border-border px-6 py-5">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 max-w-7xl mx-auto w-full">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 w-full">
                     <div>
                         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Behavioural Assessment</h1>
                         <p className="text-sm text-muted-foreground mt-1">Rate students across official traits on a 1-5 scale.</p>
@@ -141,7 +141,7 @@ export default function BehaviouralEnterPage() {
                 </div>
             </header>
 
-            <main className="flex-1 p-6 max-w-7xl mx-auto w-full space-y-6">
+            <main className="flex-1 w-full space-y-6">
                 {/* Filter Bar */}
                 <div className="bg-card border border-border rounded-md p-4 shadow-sm flex flex-col md:flex-row items-end gap-4">
                     <div className="w-full md:w-64 space-y-1.5">

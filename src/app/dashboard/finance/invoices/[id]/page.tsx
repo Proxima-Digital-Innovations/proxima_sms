@@ -127,7 +127,7 @@ export default function InvoiceDetailPage() {
   const schoolPhone = schoolProfile?.phone || "+234 800 000 0000";
 
   return (
-    <div className="flex-1 space-y-6 p-4 md:p-8 pt-6 max-w-5xl mx-auto">
+    <div className="w-full space-y-5">
       {/* Top Controls (Hidden on Print) */}
       <div className="flex items-center justify-between print:hidden gap-4">
         <Button 

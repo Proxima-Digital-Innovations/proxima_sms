@@ -212,7 +212,7 @@ export default function StudentDashboard() {
                        <span className="text-lg font-black text-amber-400">B+</span>
                     </div>
                  </div>
-                 <Link href="/student/grading" className="mt-6 w-full py-3 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-xl text-[10px] font-black uppercase text-center block transition-colors border border-indigo-500/20">View Detailed Report Card</Link>
+                 <Link href="/result-checker" className="mt-6 w-full py-3 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-xl text-[10px] font-black uppercase text-center block transition-colors border border-indigo-500/20">View Detailed Report Card</Link>
               </div>
 
               {/* ANNOUNCEMENTS */}
@@ -233,13 +233,13 @@ export default function StudentDashboard() {
 
               {/* QUICK LINKS */}
               <div className="grid grid-cols-2 gap-4">
-                 <Link href="/student/schedule" className="p-5 bg-neutral-900 border border-white/5 rounded-2xl hover:border-indigo-500/30 hover:bg-white/5 transition-colors text-center group">
+                 <Link href="/dashboard/timetable" className="p-5 bg-neutral-900 border border-white/5 rounded-2xl hover:border-indigo-500/30 hover:bg-white/5 transition-colors text-center group">
                     <div className="w-12 h-12 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
                         <Calendar className="w-5 h-5 text-indigo-400" />
                     </div>
                     <span className="text-[10px] font-black uppercase tracking-wider text-neutral-400 group-hover:text-neutral-200">Schedule</span>
                  </Link>
-                 <Link href="/student/finance" className="p-5 bg-neutral-900 border border-white/5 rounded-2xl hover:border-rose-500/30 hover:bg-white/5 transition-colors text-center group">
+                 <Link href="/dashboard/pay" className="p-5 bg-neutral-900 border border-white/5 rounded-2xl hover:border-rose-500/30 hover:bg-white/5 transition-colors text-center group">
                      <div className="w-12 h-12 bg-rose-500/10 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
                         <CreditCard className="w-5 h-5 text-rose-400" />
                     </div>

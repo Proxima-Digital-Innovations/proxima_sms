@@ -80,7 +80,7 @@ export default function HolidaysPage() {
                 </Button>
             </div>
 
-            <div className="px-8 py-8 max-w-5xl mx-auto">
+            <div className="w-full space-y-6">
                 <motion.div variants={containerVariants} initial="hidden" animate="visible">
                     <motion.div variants={itemVariants}>
                         <Card className="bg-background border-border shadow-xl overflow-hidden">

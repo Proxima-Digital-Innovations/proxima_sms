@@ -84,15 +84,17 @@ export default function HodAnalyticsPage() {
         { name: 'Rejected', 'Lesson Plans': 0, 'Exam Questions': 0 },
       ];
 
-      lessonNotes.forEach((note: any) => {
-        if (note.status.includes('Approved')) stats[0]['Lesson Plans']++;
-        else if (note.status.includes('Pending')) stats[1]['Lesson Plans']++;
-        else if (note.status.includes('Rejected') || note.status.includes('Revision')) stats[2]['Lesson Plans']++;
+      (lessonNotes || []).forEach((note: any) => {
+        const s = (note.status || '').toUpperCase();
+        if (s.includes('APPROV')) stats[0]['Lesson Plans']++;
+        else if (s.includes('PEND') || s.includes('SUBMIT')) stats[1]['Lesson Plans']++;
+        else if (s.includes('REJECT') || s.includes('REVIS')) stats[2]['Lesson Plans']++;
       });
-      examQuestions.forEach((q: any) => {
-        if (q.status.includes('Approved')) stats[0]['Exam Questions']++;
-        else if (q.status.includes('Pending')) stats[1]['Exam Questions']++;
-        else if (q.status.includes('Rejected') || q.status.includes('Revision')) stats[2]['Exam Questions']++;
+      (examQuestions || []).forEach((q: any) => {
+        const s = (q.status || '').toUpperCase();
+        if (s.includes('APPROV')) stats[0]['Exam Questions']++;
+        else if (s.includes('PEND') || s.includes('SUBMIT')) stats[1]['Exam Questions']++;
+        else if (s.includes('REJECT') || s.includes('REVIS')) stats[2]['Exam Questions']++;
       });
       setSubmissionStats(stats);
       
@@ -255,3 +257,4 @@ export default function HodAnalyticsPage() {
     </div>
   )
 }
+

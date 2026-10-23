@@ -3,14 +3,16 @@
 import {
   Activity, BarChart2, Bell, Book, Building, Calendar, Wallet, LayoutDashboard, LogOut, MessageSquare, Server, Settings, Shield, User, Users,
   UsersRound, FileQuestion, BookCopy, Edit3, CheckSquare, Award, BookOpen, TrendingUp, Landmark, Briefcase, FileText, CreditCard,
-  Receipt, Ticket, Grid, BookMarked, Wrench, GraduationCap, Sparkles, UploadCloud, CalendarCheck, Heart, ClipboardCheck, BookText, QrCode, FileSpreadsheet, ArrowLeftRight,
+  Receipt, Ticket, Grid, BookMarked, Wrench, GraduationCap, Sparkles, UploadCloud, CalendarCheck, Heart, ClipboardCheck, BookText, Megaphone,
+  QrCode, FileSpreadsheet, ArrowLeftRight, Fingerprint, UserCheck, Presentation, FileEdit, HelpCircle
 } from 'lucide-react';
 import type { ElementType } from 'react';
 
 export const iconMap: { [key: string]: ElementType } = {
   LayoutDashboard, User, Users, UsersRound, Building, Server, Activity, Book, FileText, BarChart2, BookOpen, Edit3, Wallet, Calendar, Bell, MessageSquare,
   FileQuestion, BookCopy, CheckSquare, Award, Shield, Settings, LogOut, TrendingUp, Landmark, Briefcase, Receipt, CreditCard, Ticket, Grid,
-  BookMarked, Wrench, GraduationCap, Sparkles, UploadCloud, CalendarCheck, Heart, ClipboardCheck, BookText, QrCode, FileSpreadsheet
+  BookMarked, Wrench, GraduationCap, Sparkles, UploadCloud, CalendarCheck, Heart, ClipboardCheck, BookText, Megaphone, QrCode, FileSpreadsheet,
+  ArrowLeftRight, Fingerprint, UserCheck, Presentation, FileEdit, HelpCircle
 };
 
 export const allNavLinks: Record<string, { icon: string; label: string; path: string; requiredModule?: string; subLinks?: { label: string; path: string; requiredModule?: string }[] }> = {
@@ -18,7 +20,7 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
   profile: { icon: 'User', label: 'Profile', path: '/dashboard/profile' },
   notifications: { icon: 'Bell', label: 'Notifications', path: '/dashboard/notifications' },
   messaging: { icon: 'MessageSquare', label: 'Messaging', path: '/dashboard/messaging' },
-  announcements: { icon: 'Bell', label: 'Announcements', path: '/dashboard/announcements' },
+  announcements: { icon: 'Megaphone', label: 'Announcements', path: '/dashboard/announcements' },
   reports: { icon: 'TrendingUp', label: 'Reports & Analytics', path: '/dashboard/analytics' },
   system: { icon: 'Shield', label: 'System Config', path: '/dashboard/system',
     subLinks: [
@@ -44,16 +46,17 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
   lessonPlans: { icon: 'BookCopy', label: 'Lesson Plans', path: '/dashboard/lesson-notes', requiredModule: 'LMS' },
   examQuestions: { icon: 'FileQuestion', label: 'Question Bank', path: '/dashboard/exam-questions', requiredModule: 'CBT' },
   bulkUpload: { icon: 'UploadCloud', label: 'Bulk Upload', path: '/dashboard/upload/scores', requiredModule: 'SECONDARY_SCHOOL' },
-  enterScores: { icon: 'Edit3', label: 'Enter Scores', path: '/dashboard/scores/enter' , requiredModule: 'SECONDARY_SCHOOL' },
-  reviewScores: { icon: 'CheckSquare', label: 'Review Scores', path: '/dashboard/scores' , requiredModule: 'SECONDARY_SCHOOL' },
-  tahfeezScores: { icon: 'BookText', label: 'Tahfeez Scores', path: '/dashboard/tahfeez' , requiredModule: 'SECONDARY_SCHOOL' },
-  midtermScores: { icon: 'ClipboardCheck', label: 'Mid-Term Results', path: '/dashboard/midterm' , requiredModule: 'SECONDARY_SCHOOL' },
-  behaviouralAssessment: { icon: 'Heart', label: 'Behavioural Assessment', path: '/dashboard/behavioural' , requiredModule: 'SECONDARY_SCHOOL' },
+  enterScores: { icon: 'Edit3', label: 'Enter Scores', path: '/dashboard/scores/enter', requiredModule: 'SECONDARY_SCHOOL' },
+  reviewScores: { icon: 'CheckSquare', label: 'Review Scores', path: '/dashboard/scores', requiredModule: 'SECONDARY_SCHOOL' },
+  tahfeezScores: { icon: 'BookText', label: 'Tahfeez Scores', path: '/dashboard/tahfeez', requiredModule: 'SECONDARY_SCHOOL' },
+  midtermScores: { icon: 'ClipboardCheck', label: 'Mid-Term Results', path: '/dashboard/midterm', requiredModule: 'SECONDARY_SCHOOL' },
+  behaviouralAssessment: { icon: 'Heart', label: 'Behavioural Assessment', path: '/dashboard/behavioural', requiredModule: 'SECONDARY_SCHOOL' },
   myStudents: { icon: 'UsersRound', label: 'My Students', path: '/dashboard/performance' },
-  attendance: { icon: 'CalendarCheck', label: 'Take Attendance', path: '/dashboard/teacher/attendance' },
+  attendance: { icon: 'CalendarCheck', label: 'Student Attendance', path: '/dashboard/attendance' },
+  staffAttendance: { icon: 'Fingerprint', label: 'Staff Clock-In', path: '/dashboard/bas/attendance' },
   reviewQuestions: { icon: 'FileQuestion', label: 'Review Questions', path: '/dashboard/exam-questions', requiredModule: 'CBT' },
-  generateResults: { icon: 'CheckSquare', label: 'Generate Results', path: '/dashboard/results/generate' , requiredModule: 'SECONDARY_SCHOOL' },
-  viewResults: { icon: 'Award', label: 'View Results', path: '/dashboard/results/view' , requiredModule: 'SECONDARY_SCHOOL' },
+  generateResults: { icon: 'CheckSquare', label: 'Generate Results', path: '/dashboard/results/generate', requiredModule: 'SECONDARY_SCHOOL' },
+  viewResults: { icon: 'Award', label: 'View Results', path: '/dashboard/results/view', requiredModule: 'SECONDARY_SCHOOL' },
   timetable: { icon: 'Calendar', label: 'Timetable', path: '/dashboard/timetable' },
   examRegistration: { icon: 'Ticket', label: 'Exam Registration', path: '/dashboard/exam-registration', requiredModule: 'CBT' },
   seatingPlans: { icon: 'Grid', label: 'Seating Plans', path: '/dashboard/seating-plan', requiredModule: 'CBT' },
@@ -66,17 +69,25 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
   vouchers: { icon: 'Receipt', label: 'Payment Vouchers', path: '/dashboard/finance/vouchers', requiredModule: 'FINANCE' },
   chartOfAccounts: { icon: 'BookMarked', label: 'Chart of Accounts', path: '/dashboard/finance/chart-of-accounts', requiredModule: 'FINANCE' },
   financialReports: { icon: 'BarChart2', label: 'Financial Reports', path: '/dashboard/finance/reports', requiredModule: 'FINANCE' },
-  parentResults: { icon: 'BookOpen', label: 'Results', path: '/dashboard/performance', requiredModule: 'SECONDARY_SCHOOL' },
-  parentPayments: { icon: 'Wallet', label: 'Payments', path: '/dashboard/pay', requiredModule: 'FINANCE' },
-  parentAnnouncements: { icon: 'Bell', label: 'Announcements', path: '/dashboard/announcements' },
-  studentResults: { icon: 'Award', label: 'My Results', path: '/dashboard/performance', requiredModule: 'SECONDARY_SCHOOL' },
+
+  // Parent Portal Links
+  parentResults: { icon: 'GraduationCap', label: 'Report Cards', path: '/dashboard/parent/results' },
+  parentAttendance: { icon: 'CalendarCheck', label: 'Attendance Log', path: '/dashboard/parent/attendance' },
+  parentTimetable: { icon: 'Calendar', label: 'Class Timetable', path: '/dashboard/parent/timetable' },
+  parentWallet: { icon: 'Wallet', label: 'Tuition Wallet', path: '/dashboard/parent/wallet', requiredModule: 'FINANCE' },
+  parentInvoices: { icon: 'Receipt', label: 'Fee Invoices', path: '/dashboard/parent/invoices', requiredModule: 'FINANCE' },
+  parentPayments: { icon: 'CreditCard', label: 'Pay School Fees', path: '/dashboard/parent/invoices', requiredModule: 'FINANCE' },
+  parentAnnouncements: { icon: 'Megaphone', label: 'Announcements', path: '/dashboard/announcements' },
+  
+  studentResults: { icon: 'Award', label: 'My Results', path: '/dashboard/performance' },
   studentAssignments: { icon: 'FileEdit', label: 'Assignments', path: '/student/lms/assignments', requiredModule: 'LMS' },
   studentQuizzes: { icon: 'HelpCircle', label: 'Quizzes', path: '/student/lms/quizzes', requiredModule: 'CBT' },
-  classesAndSubjects: { icon: 'BookMarked', label: 'Classes & Subjects', path: '/dashboard/system/classes-subjects' , requiredModule: 'SECONDARY_SCHOOL' },
+  classesAndSubjects: { icon: 'BookMarked', label: 'Classes & Subjects', path: '/dashboard/system/classes-subjects', requiredModule: 'SECONDARY_SCHOOL' },
   gradingSystem: { icon: 'GraduationCap', label: 'Grading System', path: '/dashboard/system/grading', requiredModule: 'SECONDARY_SCHOOL' },
   aiSettings: { icon: 'Sparkles', label: 'AI Settings', path: '/dashboard/system/ai-settings' },
   idCards: { icon: 'CreditCard', label: 'ID Card Studio (PVC)', path: '/dashboard/system/id-cards' },
-    // --- TERTIARY INSTITUTION MANAGEMENT SYSTEM (TIMS) ---
+
+  // --- TERTIARY INSTITUTION MANAGEMENT SYSTEM (TIMS) ---
   tertiaryPrograms: { icon: 'GraduationCap', label: 'Degree Programs', path: '/dashboard/tertiary/programs', requiredModule: 'TERTIARY_INSTITUTION' },
   tertiaryCourses: { icon: 'BookMarked', label: 'Course Catalog', path: '/dashboard/tertiary/courses', requiredModule: 'TERTIARY_INSTITUTION' },
   tertiaryOfferings: { icon: 'Calendar', label: 'Course Offerings', path: '/dashboard/tertiary/offerings', requiredModule: 'TERTIARY_INSTITUTION' },
@@ -133,17 +144,17 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
 
 export const navConfig: Record<string, { group: string; links: (keyof typeof allNavLinks)[] }[]> = {
   ADMIN: [
-    { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'messaging', 'announcements'] },
+    { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'announcements', 'messaging'] },
     { group: 'Management', links: ['reports', 'system', 'manageStaff', 'manageStudents', 'departments', 'idCards', 'hostels', 'bas'] },
     { group: 'Finance', links: ['feeSystem', 'invoices', 'payments', 'expenses', 'vouchers', 'payroll', 'reconciliation', 'chartOfAccounts', 'financialReports'] },
-    { group: 'Academics', links: ['lessonApprovals', 'reviewQuestions', 'enterScores', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'generateResults', 'viewResults'] },
-        { group: 'Tertiary (TIMS)', links: ['tertiaryAdmissions', 'tertiaryStudentHub', 'tertiaryLecturerStudio', 'tertiaryCampuses', 'tertiaryPrograms', 'tertiaryCourses', 'tertiaryOfferings', 'tertiaryTimetable', 'tertiaryRegistration', 'tertiaryAddDrop', 'tertiaryPayments', 'tertiaryCbt', 'tertiaryExams', 'tertiarySenate', 'tertiaryDocket', 'tertiaryTranscript', 'tertiaryOfficialTranscript', 'tertiaryForecast', 'tertiaryClearance', 'tertiaryCertificate'] },
+    { group: 'Academics', links: ['attendance', 'lessonApprovals', 'reviewQuestions', 'enterScores', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'generateResults', 'viewResults'] },
+    { group: 'Tertiary (TIMS)', links: ['tertiaryAdmissions', 'tertiaryStudentHub', 'tertiaryLecturerStudio', 'tertiaryCampuses', 'tertiaryPrograms', 'tertiaryCourses', 'tertiaryOfferings', 'tertiaryTimetable', 'tertiaryRegistration', 'tertiaryAddDrop', 'tertiaryPayments', 'tertiaryCbt', 'tertiaryExams', 'tertiarySenate', 'tertiaryDocket', 'tertiaryTranscript', 'tertiaryOfficialTranscript', 'tertiaryForecast', 'tertiaryClearance', 'tertiaryCertificate'] },
     { group: 'e-Library', links: ['elibraryCatalog', 'elibraryLoans'] },
     { group: 'Infrastructure', links: ['database', 'logs'] }
   ],
   SLT: [
-    { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
-    { group: 'Communication', links: ['announcements', 'messaging'] },
+    { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'announcements'] },
+    { group: 'Communication', links: ['messaging'] },
     { group: 'Oversight', links: ['reports', 'manageStaff', 'manageStudents', 'hostels'] },
     { group: 'Academics', links: ['academicOverview', 'lessonApprovals', 'generateResults', 'viewResults', 'gradingSystem', 'classesAndSubjects', 'aiSettings'] },
     { group: 'Tertiary (TIMS)', links: ['tertiaryAdmissions', 'tertiaryStudentHub', 'tertiaryLecturerStudio', 'tertiaryCampuses', 'tertiaryPrograms', 'tertiaryCourses', 'tertiaryOfferings', 'tertiaryTimetable', 'tertiaryRegistration', 'tertiaryAddDrop', 'tertiaryPayments', 'tertiaryCbt', 'tertiaryExams', 'tertiarySenate', 'tertiaryDocket', 'tertiaryTranscript', 'tertiaryOfficialTranscript', 'tertiaryForecast', 'tertiaryClearance', 'tertiaryCertificate'] },
@@ -151,34 +162,35 @@ export const navConfig: Record<string, { group: string; links: (keyof typeof all
     { group: 'Finance', links: ['financialReports'] },
   ],
   HOD: [
-    { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
-    { group: 'Communication', links: ['announcements', 'messaging'] },
-    { group: 'Department', links: ['lessonApprovals', 'enterScores', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'hodAnalytics', 'manageStaff'] },
+    { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'announcements'] },
+    { group: 'Communication', links: ['messaging'] },
+    { group: 'Department', links: ['attendance', 'lessonApprovals', 'enterScores', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'hodAnalytics', 'manageStaff'] },
     { group: 'Academics', links: ['classesAndSubjects'] },
     { group: 'Tertiary Academics', links: ['tertiaryLecturerStudio', 'tertiaryCourses', 'tertiaryOfferings', 'tertiaryTimetable', 'tertiaryRegistration', 'tertiaryCbt', 'tertiaryExams', 'tertiarySenate', 'tertiaryDocket', 'tertiaryTranscript', 'tertiaryClearance'] },
     { group: 'e-Library', links: ['elibraryCatalog'] },
   ],
   ACCOUNTANT: [
-    { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
-    { group: 'Communication', links: ['announcements', 'messaging'] },
+    { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'announcements'] },
+    { group: 'Communication', links: ['messaging'] },
     { group: 'Finance', links: ['feeSystem', 'invoices', 'payments', 'expenses', 'vouchers', 'payroll', 'reconciliation', 'chartOfAccounts', 'financialReports'] },
   ],
   EXAM_OFFICER: [
-    { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
-    { group: 'Communication', links: ['announcements', 'messaging'] },
+    { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'announcements'] },
+    { group: 'Communication', links: ['messaging'] },
     { group: 'Examinations', links: ['reviewQuestions', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'generateResults', 'viewResults', 'timetable', 'examRegistration', 'seatingPlans'] },
     { group: 'Tertiary Examinations', links: ['tertiaryOfferings', 'tertiaryTimetable', 'tertiaryRegistration', 'tertiaryCbt', 'tertiaryExams', 'tertiarySenate', 'tertiaryDocket', 'tertiaryTranscript', 'tertiaryCertificate'] },
   ],
   TEACHER: [
-    { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
-    { group: 'Communication', links: ['announcements', 'messaging'] },
+    { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'announcements'] },
+    { group: 'Communication', links: ['messaging'] },
     { group: 'My Work', links: ['lessonPlans', 'examQuestions', 'bulkUpload', 'enterScores', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'attendance', 'myStudents', 'timetable'] },
     { group: 'Tertiary Academics', links: ['tertiaryLecturerStudio', 'tertiaryOfferings', 'tertiaryTimetable', 'tertiaryCbt', 'tertiaryExams'] },
     { group: 'e-Library', links: ['elibraryCatalog'] },
   ],
   PARENT: [
-    { group: 'Main', links: ['dashboard', 'profile', 'notifications'] },
-    { group: 'My Child', links: ['parentResults', 'parentPayments', 'parentAnnouncements', 'timetable', 'messaging'] },
+    { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'parentAnnouncements'] },
+    { group: 'My Wards', links: ['parentResults', 'parentAttendance', 'parentTimetable'] },
+    { group: 'Tuition & Wallet', links: ['parentWallet', 'parentInvoices'] },
   ],
   STUDENT: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'messaging'] },
@@ -186,7 +198,6 @@ export const navConfig: Record<string, { group: string; links: (keyof typeof all
     { group: 'Tertiary (TIMS)', links: ['tertiaryStudentHub', 'studentHostelBooking', 'tertiaryPayments', 'tertiaryTimetable', 'tertiaryRegistration', 'tertiaryAddDrop', 'tertiaryForecast', 'tertiaryCbt', 'tertiaryDocket', 'tertiaryTranscript', 'tertiaryOfficialTranscript', 'tertiaryCertificate'] },
     { group: 'e-Library', links: ['elibraryCatalog'] },
   ],
-
 };
 
 const routePermissions: Record<string, string[]> = {};
@@ -230,6 +241,11 @@ const commonPages = [
     '/dashboard/hostels',
     '/dashboard/hostels/booking',
     '/dashboard/hostels/allocations',
+    '/dashboard/parent/wallet',
+    '/dashboard/parent/invoices',
+    '/dashboard/parent/results',
+    '/dashboard/parent/attendance',
+    '/dashboard/parent/timetable',
 ];
 commonPages.forEach(path => {
     routePermissions[path] = Object.keys(navConfig);
@@ -324,8 +340,6 @@ export function isPathAuthorized(
     }
 
     // Prefix-based fallback for sub-pages (e.g. /dashboard/announcements/123)
-    // If the base path is authorized for the role, allow sub-paths.
-    // Exclude the root '/dashboard' from prefix matching because every role has access to '/dashboard'
     const basePathMatch = Object.keys(routePermissions)
         .filter(route => route !== '/dashboard' && !route.includes('['))
         .sort((a, b) => b.length - a.length)

@@ -1,4 +1,5 @@
 import { HrRepository } from '../dal/hr-repository';
+import { prisma } from '../prisma';
 
 const hrRepo = new HrRepository();
 
@@ -43,7 +44,36 @@ export class HrService {
     }
 
     static async getHodDashboardData() {
-        return {};
+        const [lessonNotes, staffCount, pendingCount, approvedCount, rejectedCount] = await Promise.all([
+            prisma.lessonNote.findMany({
+                take: 10,
+                orderBy: { submissionDate: 'desc' },
+                include: {
+                    subject: { select: { id: true, name: true } },
+                    teacher: { select: { id: true, firstName: true, lastName: true } },
+                }
+            }),
+            prisma.user.count({
+                where: { role: { in: ['TEACHER', 'HOD'] } }
+            }),
+            prisma.lessonNote.count({
+                where: { status: { in: ['SUBMITTED', 'PENDING'] } }
+            }),
+            prisma.lessonNote.count({
+                where: { status: 'APPROVED' }
+            }),
+            prisma.lessonNote.count({
+                where: { status: 'REJECTED' }
+            }),
+        ]);
+
+        return {
+            lessonNotes: lessonNotes || [],
+            staffCount: staffCount || 0,
+            pendingCount: pendingCount || 0,
+            approvedCount: approvedCount || 0,
+            rejectedCount: rejectedCount || 0,
+        };
     }
 
     static async getStaffProfiles() {

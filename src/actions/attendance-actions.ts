@@ -1,36 +1,48 @@
 'use server';
 
 import { z } from 'zod';
-import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
+import { revalidatePath } from 'next/cache';
 import { AttendanceService } from '@/lib/services/attendance-service';
 
 const attendanceRecordSchema = z.object({
   studentId: z.string(),
-  status: z.enum(['Present', 'Absent', 'Late', 'Excused']),
+  status: z.string(),
+  remark: z.string().optional(),
 });
 
 const attendanceSheetSchema = z.object({
-  date: z.date(),
+  date: z.string().or(z.date()),
   classId: z.string(),
   records: z.array(attendanceRecordSchema),
 });
 
-export async function saveAttendance(values: z.infer<typeof attendanceSheetSchema>) {
+export async function saveAttendance(values: {
+  date: string | Date;
+  classId: string;
+  records: Array<{ studentId: string; status: string; remark?: string }>;
+}) {
   try {
     const parsed = attendanceSheetSchema.safeParse(values);
     if (!parsed.success) {
-      return { error: 'Invalid data provided.' };
+      return { success: false, error: 'Invalid attendance data format.' };
     }
 
-    const { date, classId, records } = parsed.data;
+    const { classId, records } = parsed.data;
+    const date = new Date(parsed.data.date);
+
     await AttendanceService.saveAttendance(date, classId, records);
 
-    revalidatePath('/dashboard/teacher/attendance');
+    try {
+      revalidatePath('/dashboard/attendance');
+      revalidatePath('/dashboard/students');
+      revalidatePath('/dashboard/teacher/attendance');
+    } catch {}
+
     return { success: true };
   } catch (error: any) {
-    console.error('Error saving attendance:', error);
-    return { error: error.message || 'An unexpected error occurred.' };
+    console.error('Error saving student attendance:', error);
+    return { success: false, error: error.message || 'An unexpected error occurred.' };
   }
 }
 
@@ -122,72 +134,122 @@ export async function getAttendanceContext(userId?: string) {
   }
 }
 
-export async function getClassAttendanceRoster(classId: string, dateStr: string) {
+export async function getClassAttendanceRoster(classId: string, dateStr?: string) {
   try {
-    const targetDate = new Date(dateStr);
+    const targetDate = dateStr ? new Date(dateStr) : new Date();
     const startOfDay = new Date(targetDate);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(targetDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    const [students, existingAttendance] = await Promise.all([
+    const [classData, students, existingAttendance] = await Promise.all([
+      prisma.class.findUnique({
+        where: { id: classId },
+        select: { id: true, name: true, code: true },
+      }),
       prisma.student.findMany({
-        where: {
-          classId,
-          status: 'Active'
-        },
-        orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
+        where: { classId, status: { in: ['Active', 'ACTIVE'] } },
         select: {
           id: true,
-          studentId: true,
           firstName: true,
           lastName: true,
+          middleName: true,
+          admissionNumber: true,
           gender: true,
-        }
+          passportUrl: true,
+        },
+        orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
       }),
       prisma.attendance.findMany({
         where: {
           classId,
-          date: {
-            gte: startOfDay,
-            lte: endOfDay
-          }
-        }
-      })
+          date: { gte: startOfDay, lte: endOfDay },
+        },
+        select: {
+          studentId: true,
+          status: true,
+        },
+      }),
     ]);
 
+    if (!classData) {
+      return { success: false, error: 'Class not found', roster: [], stats: { total: 0, present: 0, absent: 0, late: 0, excused: 0, rate: 0, alreadySubmitted: false } };
+    }
+
     const attendanceMap = new Map<string, string>();
-    existingAttendance.forEach(att => {
-      attendanceMap.set(att.studentId, att.status);
+    for (const record of existingAttendance) {
+      attendanceMap.set(record.studentId, record.status.toUpperCase());
+    }
+
+    const roster = students.map((s) => {
+      const existingStatus = attendanceMap.get(s.id);
+      return {
+        id: s.id,
+        name: `${s.lastName.toUpperCase()} ${s.firstName} ${s.middleName || ''}`.trim(),
+        admissionNumber: s.admissionNumber || 'N/A',
+        gender: s.gender || 'Unknown',
+        passportUrl: s.passportUrl,
+        status: existingStatus || 'PRESENT',
+      };
     });
 
-    const roster = students.map(st => ({
-      id: st.id,
-      regNumber: st.studentId,
-      name: `${st.lastName} ${st.firstName}`,
-      gender: st.gender,
-      status: attendanceMap.get(st.id) || 'Unmarked'
-    }));
+    const presentCount = roster.filter((r) => r.status === 'PRESENT').length;
+    const absentCount = roster.filter((r) => r.status === 'ABSENT').length;
+    const lateCount = roster.filter((r) => r.status === 'LATE').length;
+    const excusedCount = roster.filter((r) => r.status === 'EXCUSED').length;
 
     return {
       success: true,
+      classData,
+      date: startOfDay.toISOString(),
       roster,
-      isRecorded: existingAttendance.length > 0
+      stats: {
+        total: roster.length,
+        present: presentCount,
+        absent: absentCount,
+        late: lateCount,
+        excused: excusedCount,
+        rate: roster.length > 0 ? Math.round((presentCount / roster.length) * 100) : 100,
+        alreadySubmitted: existingAttendance.length > 0,
+      },
     };
   } catch (error: any) {
     console.error('Error fetching class roster:', error);
-    return {
-      success: false,
-      error: error.message || 'Failed to load student roster',
-      roster: [],
-      isRecorded: false
-    };
+    return { success: false, error: error.message, roster: [], stats: { total: 0, present: 0, absent: 0, late: 0, excused: 0, rate: 100, alreadySubmitted: false } };
   }
 }
 
-export async function getTertiaryAttendanceRoster(courseOfferingId: string, dateStr: string) {
+export async function getAttendanceClasses() {
   try {
-    const targetDate = new Date(dateStr);
+    const classes = await prisma.class.findMany({
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        _count: {
+          select: { currentStudents: { where: { status: { in: ['Active', 'ACTIVE'] } } } },
+        },
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    return {
+      success: true,
+      classes: classes.map((c) => ({
+        id: c.id,
+        name: c.name,
+        code: c.code,
+        studentCount: c._count.currentStudents,
+      })),
+    };
+  } catch (error: any) {
+    return { success: false, classes: [], error: error.message };
+  }
+}
+
+export async function getTertiaryAttendanceRoster(courseOfferingId: string, dateStr?: string) {
+  try {
+    const targetDate = dateStr ? new Date(dateStr) : new Date();
     const startOfDay = new Date(targetDate);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(targetDate);
@@ -199,9 +261,13 @@ export async function getTertiaryAttendanceRoster(courseOfferingId: string, date
         course: true,
         registeredCourses: {
           include: {
-            student: {
+            registration: {
               include: {
-                user: true
+                student: {
+                  include: {
+                    user: true
+                  }
+                }
               }
             }
           }
@@ -209,37 +275,27 @@ export async function getTertiaryAttendanceRoster(courseOfferingId: string, date
       }
     });
 
-    if (!offering) {
-      return { success: false, error: 'Course offering not found', roster: [], isRecorded: false };
-    }
+    if (!offering) throw new Error('Course offering not found');
 
-    // Tertiary attendance records can be mapped from existing Attendance records or course attendance
+    const registeredStudents = offering.registeredCourses.map(rc => ({
+      studentId: rc.registration.studentId,
+      name: `${rc.registration.student.user.firstName} ${rc.registration.student.user.lastName}`,
+      matricNumber: rc.registration.student.matricNumber
+    }));
+
     const existingAttendance = await prisma.attendance.findMany({
       where: {
         subjectId: offering.courseId,
-        date: {
-          gte: startOfDay,
-          lte: endOfDay
-        }
+        date: { gte: startOfDay, lte: endOfDay }
       }
     });
 
-    const attendanceMap = new Map<string, string>();
-    existingAttendance.forEach(att => {
-      attendanceMap.set(att.studentId, att.status);
-    });
+    const statusMap = new Map(existingAttendance.map(a => [a.studentId, a.status]));
 
-    const roster = offering.registeredCourses.map(rc => {
-      const u = rc.student.user;
-      const matric = rc.student.matricNumber;
-      return {
-        id: rc.student.id,
-        regNumber: matric,
-        name: `${u.lastName} ${u.firstName}`,
-        gender: u.gender || 'N/A',
-        status: attendanceMap.get(rc.student.id) || 'Unmarked'
-      };
-    });
+    const roster = registeredStudents.map(s => ({
+      ...s,
+      status: (statusMap.get(s.studentId) || 'Present') as 'Present' | 'Absent' | 'Late' | 'Excused'
+    }));
 
     return {
       success: true,
@@ -267,6 +323,7 @@ export async function submitClassAttendance(data: {
     const targetDate = new Date(data.date);
     await AttendanceService.saveAttendance(targetDate, data.classId, data.records);
     revalidatePath('/dashboard/teacher/attendance');
+    revalidatePath('/dashboard/attendance');
     return { success: true, count: data.records.length };
   } catch (error: any) {
     console.error('Submit class attendance error:', error);
@@ -295,7 +352,6 @@ export async function submitTertiaryAttendance(data: {
     const activeTerm = await prisma.term.findFirst({ where: { isActive: true } });
 
     await prisma.$transaction(async (tx) => {
-      // Remove any for this offering course today
       await tx.attendance.deleteMany({
         where: {
           subjectId: offering.courseId,
@@ -304,7 +360,6 @@ export async function submitTertiaryAttendance(data: {
       });
 
       if (data.records.length > 0) {
-        // Need a classId reference for Attendance FK: fetch any default class or first class
         const defaultClass = await tx.class.findFirst();
         if (defaultClass) {
           await tx.attendance.createMany({

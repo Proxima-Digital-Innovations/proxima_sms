@@ -40,7 +40,7 @@ export default async function UserProfilePage(props: {
   const userName = `${user.firstName} ${user.lastName}`;
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto p-4 md:p-6">
+    <div className="w-full space-y-6">
       <div className="flex items-center justify-between">
         <Button variant="outline" asChild className="rounded-xl">
           <Link href="/dashboard/users">

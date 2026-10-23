@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getQuestionPaperById, updateQuestionPaper, submitQuestionPaper, reviewQuestionPaper } from '@/actions/question-paper-actions';
 import { ArrowLeft, Save, Send, Printer, MessageSquare, Check, X, FileQuestion, Loader2, Clock, Award, HelpCircle, BookOpen, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import { AttachedDocumentBanner, DocumentUploadZone } from '@/components/academics/document-upload-zone';
 
 const OFFICER_ROLES = ['EXAM_OFFICER', 'ADMIN', 'SUPER_ADMIN'];
 
@@ -235,6 +236,41 @@ export default function QuestionPaperEditorPage() {
               <div>Class: {paper.class?.name}</div>
               <div>Date: ________________________  Invigilator: _________</div>
             </div>
+
+            {/* Attached Outside Exam Document Banner */}
+            {paper.fileUrl && (
+              <div className="mb-8">
+                <AttachedDocumentBanner
+                  fileUrl={paper.fileUrl}
+                  title="Official Attached Outside Question Paper"
+                />
+              </div>
+            )}
+
+            {/* Author Outside Document Attachment / Replacement Zone */}
+            {canEdit && (
+              <div className="mb-8 p-4 rounded-xl border border-dashed border-border bg-muted/20">
+                <DocumentUploadZone
+                  folder="examQuestions"
+                  label={paper.fileUrl ? "Replace Attached Question Paper (PDF, Word, Scans)" : "Attach Outside Question Paper (PDF, Word, Scans)"}
+                  initialUrl={paper.fileUrl || ''}
+                  onUploaded={async (url) => {
+                    setPaper((prev: any) => ({ ...prev, fileUrl: url }));
+                    setForm((prev: any) => ({ ...prev, fileUrl: url }));
+                    if (typeof id === 'string') {
+                      await updateQuestionPaper(id, {
+                        ...form,
+                        fileUrl: url,
+                        paperType,
+                        duration: Number(form.duration),
+                        maxMarks: Number(form.maxMarks),
+                      });
+                      toast({ title: 'Question Paper Attached', description: 'Outside file saved to exam paper.' });
+                    }
+                  }}
+                />
+              </div>
+            )}
 
             <div className="space-y-8">
               

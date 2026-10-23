@@ -10,31 +10,74 @@ function safeRevalidatePath(path: string) {
   } catch {}
 }
 
-// --- Grade Calculation ---
+// --- Grade Calculation & International Scale Resolution ---
 
-function calculateGradeSync(score: number): string {
-  if (score >= 75) return 'A1';
-  if (score >= 70) return 'B2';
-  if (score >= 65) return 'B3';
-  if (score >= 60) return 'C4';
-  if (score >= 55) return 'C5';
-  if (score >= 50) return 'C6';
-  if (score >= 45) return 'D7';
-  if (score >= 40) return 'E8';
-  return 'F9';
+export interface GradingThreshold {
+  grade: string;
+  minScore: number;
+  maxScore: number;
+  remark?: string;
 }
 
-function getGradeRemark(grade: string): string {
+const DEFAULT_WAEC_SCALE: GradingThreshold[] = [
+  { grade: 'A1', minScore: 75, maxScore: 100, remark: 'Excellent' },
+  { grade: 'B2', minScore: 70, maxScore: 74, remark: 'Very Good' },
+  { grade: 'B3', minScore: 65, maxScore: 69, remark: 'Good' },
+  { grade: 'C4', minScore: 60, maxScore: 64, remark: 'Credit' },
+  { grade: 'C5', minScore: 55, maxScore: 59, remark: 'Credit' },
+  { grade: 'C6', minScore: 50, maxScore: 54, remark: 'Credit' },
+  { grade: 'D7', minScore: 45, maxScore: 49, remark: 'Pass' },
+  { grade: 'E8', minScore: 40, maxScore: 44, remark: 'Pass' },
+  { grade: 'F9', minScore: 0, maxScore: 39, remark: 'Fail' },
+];
+
+export async function getActiveGradingScale(): Promise<GradingThreshold[]> {
+  try {
+    const profile = await prisma.systemProfile.findFirst({ select: { gradingScale: true } });
+    if (profile?.gradingScale) {
+      const parsed = JSON.parse(profile.gradingScale);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch {}
+  return DEFAULT_WAEC_SCALE;
+}
+
+function calculateGradeFromScale(score: number, scale: GradingThreshold[] = DEFAULT_WAEC_SCALE): { grade: string; remark: string } {
+  const rounded = Math.round(score);
+  for (const tier of scale) {
+    if (rounded >= tier.minScore && rounded <= tier.maxScore) {
+      return { grade: tier.grade, remark: tier.remark || getGradeRemark(tier.grade) };
+    }
+  }
+  const lastTier = scale[scale.length - 1];
+  return { grade: lastTier?.grade || 'F9', remark: lastTier?.remark || 'Fail' };
+}
+
+function calculateGradeSync(score: number, scale?: GradingThreshold[]): string {
+  return calculateGradeFromScale(score, scale || DEFAULT_WAEC_SCALE).grade;
+}
+
+function getGradeRemark(grade: string, scale?: GradingThreshold[]): string {
+  if (scale) {
+    const match = scale.find(s => s.grade === grade);
+    if (match?.remark) return match.remark;
+  }
   const remarks: Record<string, string> = {
     A1: 'Excellent', B2: 'Very Good', B3: 'Good',
     C4: 'Credit', C5: 'Credit', C6: 'Credit',
     D7: 'Pass', E8: 'Pass', F9: 'Fail',
+    A: 'Excellent', B: 'Very Good', C: 'Credit', D: 'Pass', E: 'Pass', F: 'Fail',
+    'A*': 'Distinction',
+    '7': 'Excellent', '6': 'Very Good', '5': 'Good', '4': 'Satisfactory', '3': 'Mediocre', '2': 'Poor', '1': 'Very Poor',
   };
-  return remarks[grade] || 'N/A';
+  return remarks[grade] || 'Satisfactory';
 }
 
 export async function calculateGrade(score: number): Promise<string> {
-  return calculateGradeSync(score);
+  const scale = await getActiveGradingScale();
+  return calculateGradeSync(score, scale);
 }
 
 // --- Score Entry (Legacy CA1/CA2/Exam) ---
@@ -49,10 +92,12 @@ export async function saveScores(scores: Array<{
   status?: string;
 }>) {
   try {
+    const scale = await getActiveGradingScale();
     for (const entry of scores) {
       const total = (entry.ca1 || 0) + (entry.ca2 || 0) + (entry.exam || 0);
-      const grade = calculateGradeSync(total);
-      const remarks = getGradeRemark(grade);
+      const gradeResult = calculateGradeFromScale(total, scale);
+      const grade = gradeResult.grade;
+      const remarks = gradeResult.remark;
 
       await prisma.termGrade.upsert({
         where: {
@@ -950,6 +995,10 @@ export async function getStudentReportCard(studentId: string, termId: string) {
     const classSize = grades[0]?.classSize ?? null;
     const teacherRemark = grades.find(g => g.teacherRemark)?.teacherRemark || null;
     const principalRemark = grades.find(g => g.principalRemark)?.principalRemark || null;
+    let activeScale: any = undefined;
+    try {
+      if (systemProfile?.gradingScale) activeScale = JSON.parse(systemProfile.gradingScale);
+    } catch {}
 
     return {
       success: true,
@@ -973,7 +1022,7 @@ export async function getStudentReportCard(studentId: string, termId: string) {
           totalSubjects: grades.length,
           totalScore: Math.round(totalScore * 10) / 10,
           overallAverage: Math.round(overallAverage * 10) / 10,
-          overallGrade: calculateGradeSync(overallAverage),
+          overallGrade: calculateGradeSync(overallAverage, activeScale),
           classRank,
           classSize,
           teacherRemark,
@@ -1198,6 +1247,11 @@ export async function getClassBatchReportCards(classId: string, termIdentifier: 
       secondaryColor: systemProfile?.secondaryColor || '#10b981',
     };
 
+    let activeBatchScale: any = undefined;
+    try {
+      if (systemProfile?.gradingScale) activeBatchScale = JSON.parse(systemProfile.gradingScale);
+    } catch {}
+
     const reportCards = studentList.map(student => {
       const grades = allGrades.filter(g => g.studentId === student.id);
       const behaviouralAssessment = allBehaviourals.find(b => b.studentId === student.id) || null;
@@ -1224,7 +1278,7 @@ export async function getClassBatchReportCards(classId: string, termIdentifier: 
           totalSubjects: grades.length,
           totalScore: Math.round(totalScore * 10) / 10,
           overallAverage: Math.round(overallAverage * 10) / 10,
-          overallGrade: calculateGradeSync(overallAverage),
+          overallGrade: calculateGradeSync(overallAverage, activeBatchScale),
           classRank,
           classSize,
           teacherRemark,

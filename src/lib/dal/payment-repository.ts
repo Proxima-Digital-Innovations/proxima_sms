@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { ledgerService } from '@/lib/services/ledger-service';
 
 export class PaymentRepository {
   async getInvoiceById(id: string) {
@@ -19,9 +20,21 @@ export class PaymentRepository {
         where: { id: invoiceId },
         data: invoiceData,
       });
-      await tx.paymentReceipt.create({
+      const receipt = await tx.paymentReceipt.create({
         data: receiptData,
       });
+
+      // Automatically post double-entry Journal Entry to General Ledger
+      await ledgerService.recordPaymentGlEntry(tx, {
+        amount: receiptData.amount,
+        reference: receiptData.reference || `REC-${receipt.id.slice(-6).toUpperCase()}`,
+        description: `Tuition collection via ${receiptData.method || 'Online Deposit'} (${receiptData.payerName || 'Parent'})`,
+        recordedById: receiptData.loggedById,
+        method: receiptData.method,
+        date: receiptData.date || new Date(),
+      });
+
+      return receipt;
     });
   }
 

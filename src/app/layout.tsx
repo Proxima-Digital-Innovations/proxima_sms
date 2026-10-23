@@ -6,6 +6,7 @@ import { NavigationProgress } from '@/components/navigation-progress';
 import { Analytics } from "@vercel/analytics/react"
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
+import { Poppins, Cairo } from 'next/font/google';
 
 export const metadata: Metadata = {
   title: {
@@ -15,13 +16,18 @@ export const metadata: Metadata = {
   description: "Global Oversight and School Management System",
 };
 
-import { Poppins } from 'next/font/google';
-
 const poppins = Poppins({ 
   subsets: ['latin'],
   weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900'],
   display: 'swap',
   variable: '--font-poppins',
+});
+
+const cairo = Cairo({
+  subsets: ['arabic', 'latin'],
+  weight: ['400', '500', '600', '700', '800', '900'],
+  display: 'swap',
+  variable: '--font-cairo',
 });
 
 export default async function RootLayout({
@@ -45,13 +51,13 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${poppins.variable} font-body antialiased`}>
+      <body className={`${poppins.variable} ${cairo.variable} font-body antialiased`}>
         <AppProviders>
           <NavigationProgress />
           {children}
           <Toaster />
         </AppProviders>
-        <Analytics />
+        {process.env.VERCEL && <Analytics />}
       </body>
     </html>
   );

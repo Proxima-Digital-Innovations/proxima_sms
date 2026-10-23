@@ -3,11 +3,37 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { canAdmitStudents } from '@/lib/services/license-capacity';
+import { auth } from '@/auth';
 
 function safeRevalidatePath(path: string) {
     try {
         revalidatePath(path);
     } catch {}
+}
+
+export async function generateNextStudentId(prefix: string = 'STU'): Promise<string> {
+    try {
+        const students = await prisma.student.findMany({
+            select: { studentId: true },
+        });
+
+        let highestNumber = 20000;
+        for (const s of students) {
+            if (!s.studentId) continue;
+            const match = s.studentId.match(/(\d+)$/);
+            if (match) {
+                const num = parseInt(match[1], 10);
+                if (!isNaN(num) && num > highestNumber && num < 1000000) {
+                    highestNumber = num;
+                }
+            }
+        }
+
+        const nextNum = highestNumber + 1;
+        return `${prefix}-${nextNum}`;
+    } catch {
+        return `${prefix}-${Date.now().toString().slice(-5)}`;
+    }
 }
 
 export async function getStudents(classId?: string) {
@@ -25,9 +51,29 @@ export async function getStudents(classId?: string) {
 
 export async function getStudentDashboardData(targetStudentId?: string) {
     try {
-        const studentWhere = targetStudentId
-            ? { OR: [{ id: targetStudentId }, { studentId: targetStudentId }] }
-            : { status: { in: ['Active', 'ACTIVE'] } };
+        let studentWhere: any = null;
+        if (targetStudentId) {
+            studentWhere = { OR: [{ id: targetStudentId }, { studentId: targetStudentId }] };
+        } else {
+            const session = await auth();
+            const sessionUser = session?.user as any;
+            if (sessionUser) {
+                const matchedStudent = await prisma.student.findFirst({
+                    where: {
+                        OR: [
+                            { studentId: sessionUser.staffId || sessionUser.username || '' },
+                            { id: sessionUser.id },
+                        ]
+                    }
+                });
+                if (matchedStudent) {
+                    studentWhere = { id: matchedStudent.id };
+                }
+            }
+            if (!studentWhere) {
+                studentWhere = { status: { in: ['Active', 'ACTIVE'] } };
+            }
+        }
 
         const student = await prisma.student.findFirst({
             where: studentWhere,
@@ -173,12 +219,14 @@ export async function bulkCreateStudents(studentsList: any[]): Promise<{
                 const guardianContact = item.guardianContact?.toString().trim() || item.guardianPhone?.toString().trim();
                 const guardianEmail = item.guardianEmail?.toString().trim();
 
+                const studentId = item.studentId?.toString().trim() || await generateNextStudentId();
+
                 await prisma.student.create({
                     data: {
                         firstName,
                         lastName,
                         middleName: item.middleName?.toString().trim() || null,
-                        studentId: item.studentId?.toString().trim() || `STU${Date.now().toString().slice(-4)}${Math.floor(1000 + Math.random() * 9000)}`,
+                        studentId,
                         gender: (item.gender?.toString().trim().toLowerCase() === 'female' ? 'Female' : 'Male'),
                         dateOfBirth: item.dateOfBirth ? new Date(item.dateOfBirth) : new Date(2010, 0, 1),
                         admissionDate: item.admissionDate ? new Date(item.admissionDate) : new Date(),
@@ -233,11 +281,13 @@ export async function admitStudent(data: any) {
             };
         }
 
+        const studentId = data.studentId?.toString().trim() || await generateNextStudentId();
+
         const student = await prisma.student.create({
             data: {
                 firstName: data.firstName,
                 lastName: data.lastName,
-                studentId: data.studentId || `STU${Date.now()}`,
+                studentId,
                 gender: data.gender || 'NOT_SPECIFIED',
                 dateOfBirth: new Date(data.dateOfBirth || new Date()),
                 admissionDate: new Date(),

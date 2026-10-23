@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRouter, usePathname } from 'next/navigation';
@@ -8,6 +7,7 @@ import { DashboardHeader } from '@/components/dashboard/header';
 import DashboardSidebar from '@/components/dashboard/sidebar';
 import { SidebarProvider, useSidebar } from '@/components/ui/sidebar';
 import { useRole } from '@/context/role-context';
+import { useLanguage } from '@/context/language-context';
 import { cn } from '@/lib/utils';
 import { Loader2, ShieldAlert, Layers } from 'lucide-react';
 import { MaintenanceBanner } from '@/components/maintenance-banner';
@@ -56,24 +56,29 @@ function ModuleDisabledNotice({ moduleName }: { moduleName: string }) {
 
 function AccessDenied() {
     const router = useRouter();
+    const { language } = useLanguage();
     return (
         <div className="flex flex-1 items-center justify-center h-full">
-            <Card className="w-full max-w-md text-center">
+            <Card className="w-full max-w-md text-center rounded-2xl shadow-lg border-border">
                 <CardHeader>
-                    <CardTitle className="flex items-center justify-center gap-2 text-3xl text-destructive">
-                        <ShieldAlert className="h-8 w-8" />
-                        Access Denied
+                    <CardTitle className="flex items-center justify-center gap-2 text-2xl font-bold text-destructive">
+                        <ShieldAlert className="h-7 w-7" />
+                        {language === 'ar' ? 'غير مصرح بالوصول' : 'Access Denied'}
                     </CardTitle>
                     <CardDescription>
-                        You do not have the necessary permissions to view this page.
+                        {language === 'ar' 
+                            ? 'ليس لديك الصلاحيات الكافية للوصول إلى هذه الصفحة أو هذا القسم.' 
+                            : 'You do not have the necessary permissions to view this page.'}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <p className="text-sm text-muted-foreground">
-                        The page you are trying to access is restricted to other user roles.
+                        {language === 'ar'
+                            ? 'هذه الصفحة مخصصة لأدوار أخرى ضمن إدارة المدرسة.'
+                            : 'The page you are trying to access is restricted to other user roles.'}
                     </p>
-                    <Button onClick={() => router.push('/dashboard')} className="mt-6">
-                        Return to Dashboard
+                    <Button onClick={() => router.push('/dashboard')} className="mt-6 rounded-xl">
+                        {language === 'ar' ? 'العودة للوحة التحكم' : 'Return to Dashboard'}
                     </Button>
                 </CardContent>
             </Card>
@@ -81,14 +86,19 @@ function AccessDenied() {
     );
 }
 
-const AuthLoader = () => (
-    <div className="flex flex-1 items-center justify-center h-full">
-        <div className="flex flex-col items-center gap-4">
-             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-             <p className="text-muted-foreground">Verifying permissions...</p>
+const AuthLoader = () => {
+    const { language } = useLanguage();
+    return (
+        <div className="flex flex-1 items-center justify-center h-full">
+            <div className="flex flex-col items-center gap-4">
+                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                 <p className="text-muted-foreground text-sm font-medium">
+                    {language === 'ar' ? 'جاري التحقق من الصلاحيات...' : 'Verifying permissions...'}
+                 </p>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 function MainLayout({ 
   children, 
@@ -98,11 +108,16 @@ function MainLayout({
 }: { 
   children: React.ReactNode; 
   isCheckingAuth: boolean; 
-  isAuthorized: boolean;
+  isAuthorized: boolean; 
   disabledModuleName: string | null;
 }) {
   const { state } = useSidebar();
+  const { isRtl } = useLanguage();
   const isCollapsed = state === "collapsed";
+
+  const marginClass = isRtl
+    ? (isCollapsed ? "lg:mr-[80px]" : "lg:mr-[270px]")
+    : (isCollapsed ? "lg:ml-[80px]" : "lg:ml-[270px]");
 
   return (
     <div className="flex h-full overflow-hidden print:h-auto print:overflow-visible">
@@ -111,15 +126,15 @@ function MainLayout({
       </div>
       <div 
         className={cn(
-          "flex flex-1 flex-col overflow-y-auto overflow-x-hidden relative transition-all duration-300 ease-in-out min-w-0 print:ml-0 print:w-full print:h-auto print:overflow-visible print:bg-white",
-          isCollapsed ? "lg:ml-[80px]" : "lg:ml-72"
+          "flex flex-1 flex-col overflow-y-auto overflow-x-hidden relative transition-all duration-300 ease-in-out min-w-0 print:ml-0 print:mr-0 print:w-full print:h-auto print:overflow-visible print:bg-white",
+          marginClass
         )}
       >
           <div className="print-hidden sticky top-0 z-20 bg-background/95 backdrop-blur border-b border-border">
             <MaintenanceBanner />
             <DashboardHeader />
           </div>
-          <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 flex flex-col max-w-7xl mx-auto w-full print:p-0 print:m-0 print:block min-w-0 overflow-x-hidden">
+          <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 flex flex-col w-full print:p-0 print:m-0 print:block min-w-0 overflow-x-hidden">
             {isCheckingAuth ? (
               <AuthLoader />
             ) : disabledModuleName ? (

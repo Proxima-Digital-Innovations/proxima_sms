@@ -259,7 +259,7 @@ export default function TahfeezPage() {
   }, [studentsData]);
 
   return (
-    <div className="space-y-6 p-4 md:p-8 max-w-7xl mx-auto">
+    <div className="w-full space-y-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}

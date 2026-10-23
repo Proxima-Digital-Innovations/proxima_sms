@@ -1,401 +1,923 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { useToast } from "@/hooks/use-toast";
-import { useSession } from "next-auth/react";
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { 
+  getParentFeeInvoices, 
+  initiatePaystackPayment, 
+  verifyPaystackReference 
+} from '@/actions/paystack-actions';
+import { getParentWalletDetails, payInvoiceWithWallet } from '@/actions/wallet-actions';
+import { 
+  getInvoiceVirtualAccount, 
+  confirmBankTransferArrival, 
+  submitManualOfflineTransferProof 
+} from '@/actions/betastack-actions';
 import { 
   CreditCard, 
   Wallet, 
   CheckCircle2, 
-  AlertTriangle, 
+  AlertCircle, 
   ShieldCheck, 
-  Loader2, 
-  Building2, 
-  QrCode, 
+  Receipt, 
+  Users, 
+  Clock, 
   Printer, 
   Copy, 
-  Check,
-  Landmark,
-  ArrowRight
-} from "lucide-react";
+  Check, 
+  Landmark, 
+  Building2, 
+  ArrowRight, 
+  Sparkles,
+  Lock,
+  RefreshCw,
+  FileText,
+  Zap
+} from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/context/language-context';
 import Link from 'next/link';
-import { 
-  initializeOnlineFeePayment, 
-  verifyOnlinePayment, 
-  getPaymentReceiptDetails,
-  getPaymentGatewayConfig,
-  PaymentGatewayConfig 
-} from '@/actions/payment-gateway-actions';
 
-export default function GenericFeePaymentPage() {
-  const { data: session } = useSession();
-  const [invoices, setInvoices] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [gatewayConfig, setGatewayConfig] = useState<PaymentGatewayConfig | null>(null);
-
-  // Payment Selection State
-  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
-  const [payAmount, setPayAmount] = useState<number>(50000);
-  const [selectedGateway, setSelectedGateway] = useState<'PAYSTACK' | 'REMITA' | 'BANK_TRANSFER'>('PAYSTACK');
-  const [isPayOpen, setIsPayOpen] = useState(false);
-  const [paymentStep, setPaymentStep] = useState<'SELECT_GATEWAY' | 'REMITA_RRR_DISPLAY' | 'BANK_TRANSFER_DISPLAY'>('SELECT_GATEWAY');
-  const [paymentInitData, setPaymentInitData] = useState<any>(null);
-  const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
-  const [isCopied, setIsCopied] = useState(false);
-  const [isPending, startTransition] = useTransition();
+function ParentPaymentsContent() {
   const { toast } = useToast();
+  const { language } = useLanguage();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [data, setData] = useState<any>(null);
+  const [selectedWardId, setSelectedWardId] = useState<string>('ALL');
+
+  // Checkout Dialog State
+  const [activeInvoice, setActiveInvoice] = useState<any>(null);
+  const [checkoutTab, setCheckoutTab] = useState<string>('TRANSFER');
+  const [paymentType, setPaymentType] = useState<'FULL' | 'CUSTOM'>('FULL');
+  const [customAmount, setCustomAmount] = useState<string>('');
+  const [payerEmail, setPayerEmail] = useState<string>('parent@proximahub.com');
+
+  // Virtual Account state
+  const [virtualAccount, setVirtualAccount] = useState<any>(null);
+  const [loadingAccount, setLoadingAccount] = useState(false);
+  const [hasCopiedAccount, setHasCopiedAccount] = useState(false);
+  const [isVerifyingTransfer, setIsVerifyingTransfer] = useState(false);
+
+  // Manual Transfer Form state
+  const [manualSenderName, setManualSenderName] = useState('');
+  const [manualTxRef, setManualTxRef] = useState('');
+  const [isSubmittingProof, setIsSubmittingProof] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
+  const [isWalletPaying, setIsWalletPaying] = useState(false);
+
+  // Card payment processing
+  const [isCardProcessing, setIsCardProcessing] = useState(false);
+
+  // Verification & Success Modal state
+  const [verificationResult, setVerificationResult] = useState<any>(null);
+
+  // Load Invoices
+  const loadInvoices = useCallback(async (wardId?: string) => {
+    setIsLoading(true);
+    try {
+      const res = await getParentFeeInvoices(wardId === 'ALL' ? undefined : wardId);
+      if (res.success) {
+        setData(res);
+      }
+    } catch (err: any) {
+      toast({ title: 'Error loading invoices', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
 
   useEffect(() => {
-    // Simulated invoice fetch or connection to generic student invoices
-    getPaymentGatewayConfig().then(cfg => setGatewayConfig(cfg));
-    setIsLoading(false);
-  }, []);
+    loadInvoices(selectedWardId);
+  }, [loadInvoices, selectedWardId]);
 
-  const handleOpenPay = (inv: any) => {
-    setSelectedInvoice(inv);
-    setPayAmount(inv.balance);
-    setPaymentStep('SELECT_GATEWAY');
-    setSelectedGateway('PAYSTACK');
-    setIsPayOpen(true);
-  };
-
-  const handleProceedPayment = () => {
-    startTransition(async () => {
-      const payerEmail = session?.user?.email || 'parent@institution.edu.ng';
-      const payerName = session?.user?.name || 'Parent / Student';
-
-      const res = await initializeOnlineFeePayment({
-        invoiceId: selectedInvoice?.id || 'inv-generic',
-        amount: Number(payAmount),
-        gateway: selectedGateway,
-        payerEmail,
-        payerName,
-        invoiceType: 'SECONDARY',
-      });
-
-      if (!res.success || !res.data) {
-        toast({ variant: 'destructive', title: 'Payment Error', description: res.error || 'Failed to initialize payment.' });
-        return;
-      }
-
-      setPaymentInitData(res.data);
-
-      if (selectedGateway === 'REMITA') {
-        setPaymentStep('REMITA_RRR_DISPLAY');
-      } else if (selectedGateway === 'BANK_TRANSFER') {
-        setPaymentStep('BANK_TRANSFER_DISPLAY');
-      } else {
-        toast({
-          title: 'Paystack Checkout Active',
-          description: `Processing card settlement for ₦${Number(payAmount).toLocaleString()}.`,
-        });
-
-        setTimeout(async () => {
-          const verifyRes = await verifyOnlinePayment({
-            reference: res.data.reference,
-            gateway: 'PAYSTACK',
-          });
-
-          if (verifyRes.success) {
+  // Handle URL callback verification if redirected back from online checkout
+  useEffect(() => {
+    const ref = searchParams.get('reference');
+    if (ref) {
+      async function verify(reference: string) {
+        try {
+          const res = await verifyPaystackReference(reference);
+          if (res.success) {
+            setVerificationResult(res);
             toast({
-              title: 'Fee Payment Verified!',
-              description: 'Transaction confirmed and official receipt issued.',
+              title: 'Payment Confirmed',
+              description: `Receipt reference ${reference} has been successfully verified.`,
             });
-            setIsPayOpen(false);
+            loadInvoices(selectedWardId);
+          } else {
+            toast({
+              title: 'Verification Failed',
+              description: res.error || 'Could not verify payment reference.',
+              variant: 'destructive',
+            });
           }
-        }, 1200);
+        } catch (err: any) {
+          toast({ title: 'Error', description: err.message, variant: 'destructive' });
+        } finally {
+          router.replace('/dashboard/pay');
+        }
       }
-    });
-  };
+      verify(ref);
+    }
+  }, [searchParams, router, loadInvoices, selectedWardId, toast]);
 
-  const handleVerifyCompleted = (ref: string, gateway: string) => {
-    startTransition(async () => {
-      const res = await verifyOnlinePayment({ reference: ref, gateway });
-      if (res.success) {
-        toast({ title: 'Payment Confirmed', description: 'Settlement confirmed by Bursary.' });
-        setIsPayOpen(false);
-      } else {
-        toast({ variant: 'destructive', title: 'Verification Failed', description: res.error });
+  // When opening checkout modal, load dedicated virtual account
+  const handleOpenCheckout = async (invoice: any) => {
+    setActiveInvoice(invoice);
+    setPaymentType('FULL');
+    setCustomAmount(invoice.balance.toString());
+    setVirtualAccount(null);
+    setCheckoutTab('WALLET');
+    getParentWalletDetails().then((res) => {
+      if (res.success && res.wallet) {
+        setWalletBalance(res.wallet.balance);
       }
     });
+
+    // Fetch or generate dedicated virtual account
+    setLoadingAccount(true);
+    try {
+      const res = await getInvoiceVirtualAccount(invoice.id);
+      if (res.success) {
+        setVirtualAccount(res.virtualAccount);
+      }
+    } catch (err: any) {
+      console.error('Failed to load virtual account:', err);
+    } finally {
+      setLoadingAccount(false);
+    }
   };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
-    toast({ title: 'Copied', description: 'RRR copied to clipboard.' });
+    setHasCopiedAccount(true);
+    toast({ title: 'Copied to Clipboard', description: `Account number ${text} copied.` });
+    setTimeout(() => setHasCopiedAccount(false), 2500);
   };
 
+  // Confirm Bank Transfer Arrival (Instant DVA check / simulation)
+  const handleConfirmTransfer = async () => {
+    if (!activeInvoice || !virtualAccount) return;
+    setIsVerifyingTransfer(true);
+    try {
+      const amount = paymentType === 'FULL' ? activeInvoice.balance : parseFloat(customAmount);
+      const res = await confirmBankTransferArrival({
+        invoiceId: activeInvoice.id,
+        accountNumber: virtualAccount.accountNumber,
+        amountTransferred: amount,
+      });
+
+      if (res.success) {
+        setVerificationResult(res);
+        setActiveInvoice(null);
+        toast({
+          title: 'Transfer Received & Verified!',
+          description: 'Payment has settled into the school account and the invoice is updated.',
+        });
+        loadInvoices(selectedWardId);
+      } else {
+        toast({ title: 'Check Failed', description: res.error || 'Could not confirm transfer yet.', variant: 'destructive' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsVerifyingTransfer(false);
+    }
+  };
+
+  // Submit Manual Offline Proof
+  const handleSubmitManualProof = async () => {
+    if (!activeInvoice) return;
+    if (!manualSenderName.trim() || !manualTxRef.trim()) {
+      toast({ title: 'Missing Details', description: 'Please enter sender name and transaction reference.', variant: 'destructive' });
+      return;
+    }
+
+    setIsSubmittingProof(true);
+    try {
+      const amount = paymentType === 'FULL' ? activeInvoice.balance : parseFloat(customAmount);
+      const res = await submitManualOfflineTransferProof({
+        invoiceId: activeInvoice.id,
+        amount,
+        transferDate: new Date().toISOString(),
+        bankName: virtualAccount?.settlementDestination?.bankName || 'GTBank',
+        senderAccountName: manualSenderName,
+        transactionReference: manualTxRef,
+      });
+
+      if (res.success) {
+        setActiveInvoice(null);
+        toast({
+          title: 'Proof Submitted to Bursary',
+          description: res.message,
+        });
+        loadInvoices(selectedWardId);
+      } else {
+        toast({ title: 'Submission Failed', description: res.error, variant: 'destructive' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsSubmittingProof(false);
+    }
+  };
+
+  // Pay with School Wallet (Instant 1-Click)
+  const handlePayWithWallet = async () => {
+    if (!activeInvoice) return;
+    const amountToPay = paymentType === 'FULL' ? activeInvoice.balance : parseFloat(customAmount);
+    if (isNaN(amountToPay) || amountToPay <= 0) {
+      toast({ title: 'Invalid Amount', description: 'Please enter a valid amount.', variant: 'destructive' });
+      return;
+    }
+    setIsWalletPaying(true);
+    try {
+      const res = await payInvoiceWithWallet(activeInvoice.id, amountToPay);
+      if (res.success) {
+        toast({
+          title: 'Settled from School Wallet! 🎉',
+          description: `₦${amountToPay.toLocaleString()} settled. Receipt: ${res.receipt?.reference}`,
+        });
+        setActiveInvoice(null);
+        loadInvoices(selectedWardId);
+      } else {
+        toast({ title: 'Payment Failed', description: res.error || 'Could not pay from wallet.', variant: 'destructive' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Payment Failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsWalletPaying(false);
+    }
+  };
+
+  // Pay with Card / Online Gateway
+  const handlePayWithCard = async () => {
+    if (!activeInvoice) return;
+    const amountToPay = paymentType === 'FULL' ? activeInvoice.balance : parseFloat(customAmount);
+
+    if (isNaN(amountToPay) || amountToPay <= 0) {
+      toast({ title: 'Invalid Amount', description: 'Please enter a valid amount.', variant: 'destructive' });
+      return;
+    }
+
+    setIsCardProcessing(true);
+    try {
+      const res = await initiatePaystackPayment({
+        invoiceId: activeInvoice.id,
+        amount: amountToPay,
+        email: payerEmail,
+        studentName: `${activeInvoice.student.firstName} ${activeInvoice.student.lastName}`,
+        callbackUrl: typeof window !== 'undefined' ? `${window.location.origin}/dashboard/pay` : undefined,
+      });
+
+      if (res.success && 'authorizationUrl' in res && res.authorizationUrl) {
+        toast({ title: 'Connecting to Gateway', description: 'Redirecting to payment checkout...' });
+        window.location.href = res.authorizationUrl as string;
+      } else {
+        toast({ title: 'Payment Error', description: res.error || 'Failed to initialize payment.', variant: 'destructive' });
+        setIsCardProcessing(false);
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+      setIsCardProcessing(false);
+    }
+  };
+
+  const wards = data?.wards || [];
+  const invoices = data?.invoices || [];
+  const stats = data?.stats || { totalBilled: 0, totalPaid: 0, outstanding: 0 };
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-300 max-w-5xl mx-auto">
+    <div className="w-full space-y-5">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-background p-5 sm:p-6 rounded-2xl border border-border shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-2.5">
-              <Wallet className="w-7 h-7 text-primary" />
-              Online Fee Payment Portal
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+              {language === 'ar' ? 'بوابة سداد الرسوم المدرسية' : 'School Fee Payment Portal'}
             </h1>
-            <Badge variant="outline" className="text-xs font-semibold px-2.5 py-0.5 border-emerald-500/20 text-emerald-600 bg-emerald-500/5">
-              Instant Settlement
+            <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 gap-1 flex items-center">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Automated Bank Transfer
             </Badge>
           </div>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            Secure electronic payments for tuition, departmental levies, hostel accommodation, and sundry charges.
+          <p className="text-sm text-muted-foreground mt-1">
+            {language === 'ar'
+              ? 'سداد الرسوم مباشرة إلى حساب المدرسة عبر التحويل البنكي الفوري مع التأكيد الآلي.'
+              : 'Direct bank transfer to the school with automated confirmation and instant receipt issuance.'}
           </p>
         </div>
 
-        <Link href="/dashboard/tertiary/payments">
-          <Button variant="outline" className="rounded-xl text-xs sm:text-sm h-10 border-border">
-            Tertiary Invoices <ArrowRight className="w-4 h-4 ml-1.5" />
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="px-3 py-1 text-xs gap-1.5 flex items-center">
+            <Lock className="h-3 w-3 text-muted-foreground" />
+            GTBank & Betastack Infrastructure
+          </Badge>
+        </div>
+      </div>
+
+      {/* Ward Selector Pills */}
+      {wards.length > 1 && (
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <Button
+            type="button"
+            variant={selectedWardId === 'ALL' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSelectedWardId('ALL')}
+            className="rounded-xl text-xs gap-1.5"
+          >
+            <Users className="h-3.5 w-3.5" />
+            All Children ({wards.length})
           </Button>
-        </Link>
-      </div>
-
-      {/* Quick Pay Card */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="rounded-2xl border-border bg-card p-5 space-y-3">
-          <div className="p-3 bg-blue-500/10 rounded-xl w-fit text-blue-600">
-            <CreditCard className="w-6 h-6" />
-          </div>
-          <h3 className="font-bold text-base text-foreground">Paystack Gateway</h3>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            Pay instantly with Mastercard, Visa, Verve debit cards, USSD code (*737#, *919#), or mobile banking transfer.
-          </p>
-        </Card>
-
-        <Card className="rounded-2xl border-border bg-card p-5 space-y-3">
-          <div className="p-3 bg-amber-500/10 rounded-xl w-fit text-amber-600">
-            <QrCode className="w-6 h-6" />
-          </div>
-          <h3 className="font-bold text-base text-foreground">Remita e-Collection</h3>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            Generate an official 12-digit RRR for institutional TSA compliance. Pay directly online or at any commercial bank branch.
-          </p>
-        </Card>
-
-        <Card className="rounded-2xl border-border bg-card p-5 space-y-3">
-          <div className="p-3 bg-emerald-500/10 rounded-xl w-fit text-emerald-600">
-            <Landmark className="w-6 h-6" />
-          </div>
-          <h3 className="font-bold text-base text-foreground">Bursary Wire Transfer</h3>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            Direct bank transfer to the university revenue collection account with automatic reference tracking.
-          </p>
-        </Card>
-      </div>
-
-      {/* Fee Bill Simulator / Quick Payment Launcher */}
-      <Card className="rounded-2xl border-border bg-card shadow-sm p-6">
-        <div className="max-w-xl space-y-4">
-          <div>
-            <h3 className="text-lg font-bold text-foreground">Make an Ad-Hoc Fee Settlement</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Specify the payment amount or bill purpose to initiate checkout immediately.
-            </p>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">Payment Amount (₦)</Label>
-            <Input 
-              type="number" 
-              value={payAmount} 
-              onChange={e => setPayAmount(Number(e.target.value))} 
-              className="font-mono font-bold text-base h-11"
-            />
-          </div>
-
-          <div className="pt-2">
-            <Button 
-              onClick={() => handleOpenPay({ id: 'adhoc-invoice', balance: payAmount })}
-              className="rounded-xl h-11 px-6 font-semibold shadow-sm"
+          {wards.map((w: any) => (
+            <Button
+              key={w.id}
+              type="button"
+              variant={selectedWardId === w.id ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedWardId(w.id)}
+              className="rounded-xl text-xs gap-1.5"
             >
-              <CreditCard className="w-4 h-4 mr-2" />
-              Launch Secure Payment Gateway
+              {w.firstName} {w.lastName} ({w.class?.name || 'Student'})
             </Button>
-          </div>
+          ))}
         </div>
+      )}
+
+      {/* KPI Stats Overview */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card className="rounded-2xl border-border bg-card shadow-sm">
+          <CardContent className="p-5 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">Total Invoiced</p>
+              <p className="text-2xl font-bold font-mono mt-1">
+                ₦{stats.totalBilled.toLocaleString()}
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{invoices.length} billing statements</p>
+            </div>
+            <Receipt className="h-8 w-8 text-muted-foreground opacity-50 shrink-0" />
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl border-border bg-card shadow-sm">
+          <CardContent className="p-5 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Total Settled</p>
+              <p className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-1">
+                ₦{stats.totalPaid.toLocaleString()}
+              </p>
+              <p className="text-[11px] text-emerald-600/80 mt-0.5">Verified receipts generated</p>
+            </div>
+            <CheckCircle2 className="h-8 w-8 text-emerald-500 shrink-0" />
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl border-border bg-card shadow-sm">
+          <CardContent className="p-5 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-rose-600 dark:text-rose-400">Outstanding Balance</p>
+              <p className="text-2xl font-bold font-mono text-rose-600 dark:text-rose-400 mt-1">
+                ₦{stats.outstanding.toLocaleString()}
+              </p>
+              <p className="text-[11px] text-rose-600/80 mt-0.5">
+                {stats.outstanding > 0 ? 'Payment required' : 'All accounts settled'}
+              </p>
+            </div>
+            <Wallet className="h-8 w-8 text-rose-500 shrink-0" />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Invoices List */}
+      <Card className="rounded-2xl border-border bg-card shadow-sm overflow-hidden">
+        <CardHeader className="border-b border-border p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg font-bold">Tuition & Fee Statements</CardTitle>
+              <CardDescription>
+                Transfer directly to the dedicated school account below for automated instant confirmation.
+              </CardDescription>
+            </div>
+            <Badge variant="outline" className="text-xs">
+              {invoices.length} Statement(s)
+            </Badge>
+          </div>
+        </CardHeader>
+
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="p-12 text-center text-muted-foreground">
+              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-sm">Retrieving fee statements...</p>
+            </div>
+          ) : invoices.length === 0 ? (
+            <div className="p-12 text-center text-muted-foreground">
+              <CheckCircle2 className="h-10 w-10 text-emerald-500 mx-auto mb-2 opacity-80" />
+              <p className="text-base font-semibold text-foreground">No Outstanding Invoices</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                All school fees for your registered wards have been fully settled.
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {invoices.map((inv: any) => {
+                const isPaid = inv.status === 'PAID';
+                const isPartial = inv.status === 'PARTIALLY_PAID' || inv.status === 'PARTIAL';
+                const percentPaid = inv.amount > 0 ? Math.round((inv.amountPaid / inv.amount) * 100) : 100;
+
+                return (
+                  <div key={inv.id} className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-muted/10 transition-colors">
+                    {/* Invoice Info */}
+                    <div className="space-y-1.5 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-base text-foreground">{inv.description}</span>
+                        <Badge variant="secondary" className="text-[11px] font-mono">
+                          {inv.term?.name || 'Current Term'}
+                        </Badge>
+                        {isPaid ? (
+                          <Badge className="bg-emerald-600 text-white text-[11px] gap-1">
+                            <CheckCircle2 className="h-3 w-3" /> Fully Paid
+                          </Badge>
+                        ) : isPartial ? (
+                          <Badge className="bg-amber-600 text-white text-[11px] gap-1">
+                            <Clock className="h-3 w-3" /> Partially Paid ({percentPaid}%)
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-rose-600 text-white text-[11px] gap-1">
+                            <AlertCircle className="h-3 w-3" /> Unpaid
+                          </Badge>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
+                        <span>Student: <strong className="text-foreground">{inv.student?.firstName} {inv.student?.lastName}</strong></span>
+                        <span>Class: <strong className="text-foreground">{inv.student?.class?.name || 'General'}</strong></span>
+                        <span>Due Date: <strong>{new Date(inv.dueDate).toLocaleDateString()}</strong></span>
+                      </div>
+
+                      {!isPaid && (
+                        <div className="max-w-md pt-1">
+                          <div className="flex justify-between text-[11px] text-muted-foreground mb-1">
+                            <span>Paid: ₦{inv.amountPaid.toLocaleString()}</span>
+                            <span>Remaining: ₦{inv.balance.toLocaleString()}</span>
+                          </div>
+                          <Progress value={percentPaid} className="h-1.5" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Amount & Actions */}
+                    <div className="flex flex-row md:flex-col items-end justify-between md:justify-center gap-2 shrink-0">
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground">Amount Due</p>
+                        <p className="text-lg font-bold font-mono text-foreground">
+                          ₦{inv.balance.toLocaleString()}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {isPaid ? (
+                          <Button asChild variant="outline" size="sm" className="rounded-xl text-xs gap-1.5">
+                            <Link href={`/dashboard/finance/invoices/${inv.id}`}>
+                              <Printer className="h-3.5 w-3.5" /> View Receipt
+                            </Link>
+                          </Button>
+                        ) : (
+                          <Button 
+                            onClick={() => handleOpenCheckout(inv)} 
+                            className="rounded-xl text-xs px-4 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                          >
+                            <Landmark className="h-3.5 w-3.5" />
+                            Pay via Bank Transfer
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
       </Card>
 
-      {/* Payment Gateway Modal */}
-      <Dialog open={isPayOpen} onOpenChange={setIsPayOpen}>
-        <DialogContent className="max-w-md">
-          {paymentStep === 'SELECT_GATEWAY' && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="text-lg font-bold flex items-center gap-2">
-                  <CreditCard className="w-5 h-5 text-primary" /> Select Payment Channel
-                </DialogTitle>
-                <DialogDescription>
-                  Choose how you want to pay ₦{Number(payAmount).toLocaleString()}.
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="space-y-3 py-2">
-                <div
-                  onClick={() => setSelectedGateway('PAYSTACK')}
-                  className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
-                    selectedGateway === 'PAYSTACK'
-                      ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                      : 'border-border hover:bg-muted/40'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600 font-bold text-xs">
-                      <CreditCard className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-xs text-foreground">Paystack Online Checkout</p>
-                      <p className="text-[11px] text-muted-foreground">Debit Cards, Bank Transfer, USSD</p>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className="text-[10px]">Instant</Badge>
-                </div>
-
-                <div
-                  onClick={() => setSelectedGateway('REMITA')}
-                  className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
-                    selectedGateway === 'REMITA'
-                      ? 'border-amber-600 bg-amber-500/5 ring-1 ring-amber-600'
-                      : 'border-border hover:bg-muted/40'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 font-bold text-xs">
-                      <QrCode className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-xs text-foreground">Remita e-Collection (RRR)</p>
-                      <p className="text-[11px] text-muted-foreground">Generate 12-digit RRR for Bank Branch or Online</p>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className="text-[10px] text-amber-700">Official RRR</Badge>
-                </div>
-
-                <div
-                  onClick={() => setSelectedGateway('BANK_TRANSFER')}
-                  className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
-                    selectedGateway === 'BANK_TRANSFER'
-                      ? 'border-emerald-600 bg-emerald-500/5 ring-1 ring-emerald-600'
-                      : 'border-border hover:bg-muted/40'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 font-bold text-xs">
-                      <Landmark className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-xs text-foreground">Direct University Bank Wire</p>
-                      <p className="text-[11px] text-muted-foreground">Deposit to Institution Revenue Account</p>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className="text-[10px]">Bursary Audit</Badge>
-                </div>
+      {/* Main Payment Dialog */}
+      <Dialog open={!!activeInvoice} onOpenChange={(open) => !open && setActiveInvoice(null)}>
+        <DialogContent className="sm:max-w-[540px] rounded-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="h-8 w-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+                <Landmark className="h-4 w-4" />
               </div>
+              <DialogTitle className="text-lg font-bold">School Fee Settlement</DialogTitle>
+            </div>
+            <DialogDescription className="text-xs">
+              Direct transfer to the school's account for {activeInvoice?.student?.firstName} {activeInvoice?.student?.lastName}.
+            </DialogDescription>
+          </DialogHeader>
 
-              <DialogFooter className="pt-2">
-                <Button variant="outline" onClick={() => setIsPayOpen(false)}>Cancel</Button>
-                <Button onClick={handleProceedPayment} disabled={isPending} className="font-semibold">
-                  {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
-                  Proceed (₦{Number(payAmount).toLocaleString()})
-                </Button>
-              </DialogFooter>
-            </>
-          )}
-
-          {paymentStep === 'REMITA_RRR_DISPLAY' && paymentInitData && (
-            <div className="space-y-4 py-2 text-center">
-              <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 flex items-center justify-center mx-auto">
-                <QrCode className="w-6 h-6" />
-              </div>
-
-              <div>
-                <h3 className="text-lg font-bold text-foreground">Remita Retrieval Reference (RRR)</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Pay with this code at any commercial bank branch or on Remita.net.
-                </p>
-              </div>
-
-              <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl space-y-2">
-                <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">
-                  Official Remita RRR
-                </span>
-                <div className="flex items-center justify-center gap-2">
-                  <span className="font-mono text-2xl font-extrabold text-foreground tracking-widest">
-                    {paymentInitData.rrrCode}
+          {activeInvoice && (
+            <div className="space-y-4 py-1">
+              {/* Invoice Summary */}
+              <div className="p-3.5 rounded-xl bg-muted/40 border border-border space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Fee Item:</span>
+                  <span className="font-semibold text-foreground">{activeInvoice.description}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Outstanding Balance:</span>
+                  <span className="font-bold font-mono text-rose-600 dark:text-rose-400">
+                    ₦{activeInvoice.balance.toLocaleString()}
                   </span>
-                  <Button size="sm" variant="ghost" onClick={() => copyToClipboard(paymentInitData.rrrCode)} className="h-8 w-8 p-0">
-                    {isCopied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                </div>
+              </div>
+
+              {/* Payment Type Selection */}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPaymentType('FULL');
+                    setCustomAmount(activeInvoice.balance.toString());
+                  }}
+                  className={`p-2.5 rounded-xl border text-left transition-all ${
+                    paymentType === 'FULL'
+                      ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 ring-2 ring-emerald-600/20'
+                      : 'border-border bg-card'
+                  }`}
+                >
+                  <p className="text-[11px] font-semibold text-muted-foreground">Pay Full Balance</p>
+                  <p className="text-sm font-bold font-mono text-emerald-600 mt-0.5">
+                    ₦{activeInvoice.balance.toLocaleString()}
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPaymentType('CUSTOM');
+                    setCustomAmount(Math.min(activeInvoice.balance, 25000).toString());
+                  }}
+                  className={`p-2.5 rounded-xl border text-left transition-all ${
+                    paymentType === 'CUSTOM'
+                      ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 ring-2 ring-emerald-600/20'
+                      : 'border-border bg-card'
+                  }`}
+                >
+                  <p className="text-[11px] font-semibold text-muted-foreground">Pay Installment</p>
+                  <p className="text-xs text-foreground mt-0.5">Custom Amount</p>
+                </button>
+              </div>
+
+              {paymentType === 'CUSTOM' && (
+                <div className="space-y-1 animate-in fade-in">
+                  <Label className="text-xs">Amount to Pay (₦)</Label>
+                  <Input
+                    type="number"
+                    min="1000"
+                    max={activeInvoice.balance}
+                    value={customAmount}
+                    onChange={(e) => setCustomAmount(e.target.value)}
+                    className="h-9 font-mono text-sm font-bold rounded-xl"
+                  />
+                </div>
+              )}
+
+              {/* Multi-Channel Tabs */}
+              <Tabs value={checkoutTab} onValueChange={setCheckoutTab} className="w-full">
+                <TabsList className="grid grid-cols-4 h-10 rounded-xl bg-muted p-1">
+                  <TabsTrigger value="WALLET" className="text-xs rounded-lg gap-1.5">
+                    <Wallet className="h-3.5 w-3.5" />
+                    Wallet
+                  </TabsTrigger>
+                  <TabsTrigger value="TRANSFER" className="text-xs rounded-lg gap-1.5">
+                    <Landmark className="h-3.5 w-3.5" />
+                    Auto-Transfer
+                  </TabsTrigger>
+                  <TabsTrigger value="CARD" className="text-xs rounded-lg gap-1.5">
+                    <CreditCard className="h-3.5 w-3.5" />
+                    Card / Online
+                  </TabsTrigger>
+                  <TabsTrigger value="OFFLINE" className="text-xs rounded-lg gap-1.5">
+                    <Building2 className="h-3.5 w-3.5" />
+                    School Bank
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* TAB 0: SCHOOL TUITION WALLET 1-CLICK PAY */}
+                <TabsContent value="WALLET" className="space-y-4 pt-2">
+                  <div className="p-4 rounded-xl bg-slate-900 text-white space-y-2 border border-primary/20">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[11px] text-slate-400 uppercase font-semibold">Available School Wallet</span>
+                      <Badge className="bg-emerald-600 text-white text-[10px]">Instant 1-Click</Badge>
+                    </div>
+                    <div className="text-3xl font-extrabold font-mono text-emerald-400">
+                      ₦{(walletBalance ?? 0).toLocaleString('en-NG', { minimumFractionDigits: 2 })}
+                    </div>
+                    <p className="text-[11px] text-slate-300">
+                      Instant settlement directly from your tuition wallet reserve.
+                    </p>
+                  </div>
+
+                  {(walletBalance ?? 0) >= (paymentType === 'FULL' ? activeInvoice.balance : (parseFloat(customAmount) || 0)) ? (
+                    <Button
+                      type="button"
+                      onClick={handlePayWithWallet}
+                      disabled={isWalletPaying}
+                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-10 rounded-xl flex items-center justify-center gap-2 shadow-md shadow-emerald-950/20"
+                    >
+                      {isWalletPaying ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+                      Pay ₦{(paymentType === 'FULL' ? activeInvoice.balance : (parseFloat(customAmount) || 0)).toLocaleString()} from Wallet
+                    </Button>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs">
+                        Insufficient wallet balance. You need an additional ₦{Math.max(0, (paymentType === 'FULL' ? activeInvoice.balance : (parseFloat(customAmount) || 0)) - (walletBalance ?? 0)).toLocaleString()} to pay this fee.
+                      </div>
+                      <Button asChild variant="outline" className="w-full text-xs rounded-xl">
+                        <Link href="/dashboard/parent/wallet">
+                          <ArrowRight className="h-3.5 w-3.5 mr-1" />
+                          Top Up School Wallet First
+                        </Link>
+                      </Button>
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* TAB 1: DEDICATED VIRTUAL ACCOUNT AUTO-CONFIRMATION */}
+                <TabsContent value="TRANSFER" className="space-y-3 pt-2">
+                  {loadingAccount ? (
+                    <div className="p-8 text-center text-muted-foreground">
+                      <div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                      <p className="text-xs">Generating dedicated GTBank virtual account...</p>
+                    </div>
+                  ) : virtualAccount ? (
+                    <div className="space-y-3">
+                      {/* Virtual Account Box */}
+                      <div className="p-4 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-500/30 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+                            Dedicated Transfer Account
+                          </span>
+                          <Badge className="bg-emerald-600 text-white text-[10px] h-5">
+                            Auto-Confirmed
+                          </Badge>
+                        </div>
+
+                        {/* Account Number with Copy Button */}
+                        <div className="flex items-center justify-between bg-card p-3 rounded-xl border border-emerald-500/20">
+                          <div>
+                            <p className="text-[10px] text-muted-foreground uppercase font-semibold">Account Number</p>
+                            <p className="text-2xl font-black font-mono tracking-widest text-foreground">
+                              {virtualAccount.accountNumber}
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => copyToClipboard(virtualAccount.accountNumber)}
+                            className="rounded-lg gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                          >
+                            {hasCopiedAccount ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                            {hasCopiedAccount ? 'Copied!' : 'Copy'}
+                          </Button>
+                        </div>
+
+                        {/* Bank & Name Details */}
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <p className="text-muted-foreground text-[11px]">Bank Name:</p>
+                            <p className="font-bold text-foreground">{virtualAccount.bankName}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground text-[11px]">Account Name:</p>
+                            <p className="font-bold text-foreground truncate">{virtualAccount.accountName}</p>
+                          </div>
+                        </div>
+
+                        {/* Settlement Destination Info */}
+                        <div className="pt-2 border-t border-emerald-500/20 text-[11px] text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                          <Building2 className="h-3.5 w-3.5 shrink-0" />
+                          <span>
+                            Auto-sweeps directly to: <strong>{virtualAccount.settlementDestination?.bankName} ({virtualAccount.settlementDestination?.accountNumber})</strong>
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Instructions */}
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Open your <strong>GTWorld, Kuda, Zenith, OPay</strong>, or any banking app on your phone and transfer the exact fee amount to the account number above.
+                      </p>
+
+                      {/* Action Button: Check Transfer Arrival */}
+                      <Button
+                        type="button"
+                        onClick={handleConfirmTransfer}
+                        disabled={isVerifyingTransfer}
+                        className="w-full rounded-xl gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+                      >
+                        {isVerifyingTransfer ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 animate-spin" />
+                            Checking with Gateway...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="h-4 w-4" />
+                            I Have Sent the Transfer — Verify Now
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  ) : null}
+                </TabsContent>
+
+                {/* TAB 2: PAYSTACK CARD / USSD */}
+                <TabsContent value="CARD" className="space-y-3 pt-2">
+                  <div className="space-y-2">
+                    <Label className="text-xs">Receipt Email</Label>
+                    <Input
+                      type="email"
+                      value={payerEmail}
+                      onChange={(e) => setPayerEmail(e.target.value)}
+                      placeholder="parent@example.com"
+                      className="h-9 rounded-xl text-xs"
+                    />
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-muted/40 border border-border text-xs text-muted-foreground space-y-1">
+                    <p className="font-semibold text-foreground">Instant Debit Card / USSD Payment</p>
+                    <p>Supports all Nigerian Mastercard, Visa, Verve, and bank USSD codes (*737#, etc.).</p>
+                  </div>
+
+                  <Button
+                    type="button"
+                    onClick={handlePayWithCard}
+                    disabled={isCardProcessing}
+                    className="w-full rounded-xl gap-2 bg-primary font-semibold"
+                  >
+                    <CreditCard className="h-4 w-4" />
+                    {isCardProcessing ? 'Connecting...' : `Pay Online (₦${(paymentType === 'FULL' ? activeInvoice.balance : parseFloat(customAmount) || 0).toLocaleString()})`}
                   </Button>
-                </div>
-                <div className="text-xs font-mono text-muted-foreground pt-1 border-t border-amber-500/20 flex justify-between">
-                  <span>Amount: ₦{Number(paymentInitData.amount).toLocaleString()}</span>
-                  <span>Ref: {paymentInitData.reference}</span>
-                </div>
-              </div>
+                </TabsContent>
 
-              <div className="flex flex-col gap-2 pt-2">
-                <Button 
-                  onClick={() => handleVerifyCompleted(paymentInitData.rrrCode, 'REMITA')}
-                  disabled={isPending}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
-                >
-                  {isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-                  Confirm Settlement & Clear Bill
-                </Button>
-                <Button variant="outline" onClick={() => setIsPayOpen(false)}>Close</Button>
-              </div>
+                {/* TAB 3: SCHOOL CORPORATE PHYSICAL ACCOUNT */}
+                <TabsContent value="OFFLINE" className="space-y-3 pt-2">
+                  {/* Master Account Info */}
+                  <div className="p-3.5 rounded-xl bg-muted/40 border border-border space-y-2 text-xs">
+                    <p className="font-bold text-foreground flex items-center gap-1.5">
+                      <Building2 className="h-4 w-4 text-primary" />
+                      School Official Corporate Account
+                    </p>
+                    <div className="space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Bank:</span>
+                        <span className="font-semibold text-foreground">{virtualAccount?.settlementDestination?.bankName || 'Guaranty Trust Bank (GTBank)'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Account Number:</span>
+                        <span className="font-mono font-bold text-foreground">{virtualAccount?.settlementDestination?.accountNumber || '0123456789'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Account Name:</span>
+                        <span className="font-semibold text-foreground">{virtualAccount?.settlementDestination?.accountName || 'Proxima International Academy Ltd'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Submit Proof Form */}
+                  <div className="space-y-2 pt-1">
+                    <Label className="text-xs">Sender Account Name</Label>
+                    <Input
+                      placeholder="e.g. Alhaji Ibrahim Mohammed"
+                      value={manualSenderName}
+                      onChange={(e) => setManualSenderName(e.target.value)}
+                      className="h-9 rounded-xl text-xs"
+                    />
+
+                    <Label className="text-xs">Transaction Session ID / Reference</Label>
+                    <Input
+                      placeholder="e.g. 100004240902123456789"
+                      value={manualTxRef}
+                      onChange={(e) => setManualTxRef(e.target.value)}
+                      className="h-9 rounded-xl text-xs font-mono"
+                    />
+                  </div>
+
+                  <Button
+                    type="button"
+                    onClick={handleSubmitManualProof}
+                    disabled={isSubmittingProof}
+                    className="w-full rounded-xl text-xs gap-1.5 bg-slate-800 hover:bg-slate-900 text-white"
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    {isSubmittingProof ? 'Submitting...' : 'Submit Transfer Proof for Bursar Approval'}
+                  </Button>
+                </TabsContent>
+              </Tabs>
             </div>
           )}
 
-          {paymentStep === 'BANK_TRANSFER_DISPLAY' && paymentInitData && (
-            <div className="space-y-4 py-2">
-              <div className="text-center">
-                <h3 className="text-lg font-bold text-foreground">University Collection Account</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Transfer with reference in narration.</p>
-              </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setActiveInvoice(null)}
+              className="rounded-xl text-xs w-full sm:w-auto"
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-              <div className="p-4 bg-muted/40 border border-border rounded-2xl space-y-2 text-xs">
-                <div className="flex justify-between py-1 border-b border-border">
-                  <span className="text-muted-foreground">Bank Name</span>
-                  <strong className="text-foreground">{paymentInitData.bankTransferDetails.bankName}</strong>
-                </div>
-                <div className="flex justify-between py-1 border-b border-border">
-                  <span className="text-muted-foreground">Account Number</span>
-                  <strong className="text-foreground font-mono text-sm">{paymentInitData.bankTransferDetails.accountNumber}</strong>
-                </div>
-                <div className="flex justify-between py-1 border-b border-border">
-                  <span className="text-muted-foreground">Account Name</span>
-                  <strong className="text-foreground text-right">{paymentInitData.bankTransferDetails.accountName}</strong>
-                </div>
-                <div className="flex justify-between py-1 bg-primary/5 p-2 rounded-lg">
-                  <span className="font-bold text-primary">Narration Reference</span>
-                  <strong className="font-mono text-primary font-bold">{paymentInitData.reference}</strong>
-                </div>
-              </div>
-
-              <DialogFooter className="pt-2">
-                <Button variant="outline" onClick={() => setIsPayOpen(false)}>Close</Button>
-                <Button 
-                  onClick={() => handleVerifyCompleted(paymentInitData.reference, 'BANK_TRANSFER')}
-                  disabled={isPending}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                >
-                  {isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-                  I Have Completed Transfer
-                </Button>
-              </DialogFooter>
+      {/* Payment Success Confirmation Modal */}
+      <Dialog open={!!verificationResult} onOpenChange={() => setVerificationResult(null)}>
+        <DialogContent className="sm:max-w-[460px] rounded-2xl text-center">
+          <div className="py-4 space-y-4">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="h-10 w-10 animate-in zoom-in" />
             </div>
-          )}
+
+            <div>
+              <DialogTitle className="text-xl font-bold">Payment Verified Successfully!</DialogTitle>
+              <DialogDescription className="text-xs mt-1">
+                Your bank transfer has been confirmed and settled into the school corporate account.
+              </DialogDescription>
+            </div>
+
+            {verificationResult?.receipt && (
+              <div className="p-4 rounded-xl bg-muted/30 border border-border text-left space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Payment Reference:</span>
+                  <span className="font-mono font-bold text-foreground">{verificationResult.receipt.reference}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Amount Paid:</span>
+                  <span className="font-mono font-bold text-emerald-600">
+                    ₦{verificationResult.receipt.amount?.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Payment Channel:</span>
+                  <span className="font-semibold text-foreground">{verificationResult.receipt.method}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Date:</span>
+                  <span>{new Date(verificationResult.receipt.date).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between border-t border-border pt-2 mt-2">
+                  <span className="text-muted-foreground">Remaining Balance:</span>
+                  <span className="font-mono font-bold text-foreground">
+                    ₦{verificationResult.invoice?.balance?.toLocaleString() || 0}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-2 justify-center pt-2">
+              {verificationResult?.receipt?.invoiceId && (
+                <Button asChild className="rounded-xl text-xs gap-1.5 bg-primary">
+                  <Link href={`/dashboard/finance/invoices/${verificationResult.receipt.invoiceId}`}>
+                    <Printer className="h-3.5 w-3.5" /> Print Official Receipt
+                  </Link>
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                onClick={() => setVerificationResult(null)}
+                className="rounded-xl text-xs"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function ParentPaymentsPage() {
+  return (
+    <Suspense fallback={
+      <div className="p-12 text-center text-muted-foreground">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-sm">Loading fee portal...</p>
+      </div>
+    }>
+      <ParentPaymentsContent />
+    </Suspense>
   );
 }

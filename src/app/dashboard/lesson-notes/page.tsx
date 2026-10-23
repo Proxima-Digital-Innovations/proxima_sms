@@ -16,8 +16,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import {
   createLessonNote,
@@ -32,7 +39,6 @@ import {
   Upload,
   MoreVertical,
   Search,
-  FileSignature,
   Loader2,
   BookOpen,
   Trash2,
@@ -43,8 +49,15 @@ import {
   Layers,
   CheckSquare,
   Square,
-  Link as LinkIcon,
+  Paperclip,
   X,
+  Eye,
+  LayoutGrid,
+  List,
+  Filter,
+  FileEdit,
+  ArrowUpRight,
+  ShieldAlert,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
@@ -55,6 +68,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { motion, AnimatePresence } from 'framer-motion';
+import { DocumentUploadZone } from '@/components/academics/document-upload-zone';
 
 const REVIEW_ROLES = ['HOD', 'SLT', 'ADMIN', 'SUPER_ADMIN'];
 
@@ -71,6 +85,9 @@ export default function LessonPlansPage() {
   const [classes, setClasses] = useState<any[]>([]);
   const [terms, setTerms] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // View Mode: Table (default high-density) or Cards
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
 
   // Creation dialogs
   const [createOpen, setCreateOpen] = useState(false);
@@ -89,6 +106,8 @@ export default function LessonPlansPage() {
   // Search & Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED'>('ALL');
+  const [selectedSubject, setSelectedSubject] = useState<string>('ALL');
+  const [selectedClass, setSelectedClass] = useState<string>('ALL');
 
   // Bulk Review State
   const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(new Set());
@@ -136,6 +155,14 @@ export default function LessonPlansPage() {
       });
       return;
     }
+    if (withAttachment && !form.fileUrl) {
+      toast({
+        variant: 'destructive',
+        title: 'File Required',
+        description: 'Please upload an outside document or paste a document URL.',
+      });
+      return;
+    }
     setIsSaving(true);
     try {
       const res = await createLessonNote({
@@ -148,7 +175,7 @@ export default function LessonPlansPage() {
         fileUrl: withAttachment && form.fileUrl ? form.fileUrl : undefined,
       });
       if (res.success && res.note) {
-        toast({ title: 'Created', description: 'Opening document...' });
+        toast({ title: 'Created', description: 'Opening lesson plan...' });
         setCreateOpen(false);
         setUploadOpen(false);
         router.push(`/dashboard/lesson-notes/${res.note.id}`);
@@ -259,9 +286,29 @@ export default function LessonPlansPage() {
         n.class?.name?.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesStatus = statusFilter === 'ALL' || n.status === statusFilter;
-      return matchesSearch && matchesStatus;
+      const matchesSubject = selectedSubject === 'ALL' || n.subjectId === selectedSubject;
+      const matchesClass = selectedClass === 'ALL' || n.classId === selectedClass;
+
+      return matchesSearch && matchesStatus && matchesSubject && matchesClass;
     });
-  }, [notes, searchQuery, statusFilter]);
+  }, [notes, searchQuery, statusFilter, selectedSubject, selectedClass]);
+
+  // Filtered notes for review queue
+  const filteredPendingNotes = useMemo(() => {
+    return pendingNotes.filter(n => {
+      const matchesSearch =
+        n.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        n.subject?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        n.class?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        n.teacher?.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        n.teacher?.lastName?.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesSubject = selectedSubject === 'ALL' || n.subjectId === selectedSubject;
+      const matchesClass = selectedClass === 'ALL' || n.classId === selectedClass;
+
+      return matchesSearch && matchesSubject && matchesClass;
+    });
+  }, [pendingNotes, searchQuery, selectedSubject, selectedClass]);
 
   // Counts for workflow pills
   const statusCounts = useMemo(() => {
@@ -274,650 +321,921 @@ export default function LessonPlansPage() {
     };
   }, [notes]);
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    show: { opacity: 1, transition: { staggerChildren: 0.05 } },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 15 },
-    show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 300, damping: 24 } },
-  };
-
-  const DocumentCard = ({ note, isReviewMode = false }: { note: any; isReviewMode?: boolean }) => {
-    const isSelected = selectedNoteIds.has(note.id);
-
-    return (
-      <motion.div variants={itemVariants}>
-        <Card
-          className={`group cursor-pointer border-border bg-card hover:border-primary/50 hover:shadow-md transition-all duration-300 flex flex-col overflow-hidden h-[290px] relative ${
-            isSelected ? 'ring-2 ring-primary border-primary' : ''
-          }`}
-          onClick={() => router.push(`/dashboard/lesson-notes/${note.id}`)}
-        >
-          {/* Top Selection Box for Reviewers */}
-          {isReviewMode && (
-            <div
-              className="absolute top-2.5 left-2.5 z-20 bg-background/80 backdrop-blur-md rounded-md p-1 cursor-pointer hover:bg-background transition-colors"
-              onClick={e => toggleSelectNote(note.id, e)}
-            >
-              {isSelected ? (
-                <CheckSquare className="w-5 h-5 text-primary" />
-              ) : (
-                <Square className="w-5 h-5 text-muted-foreground hover:text-foreground" />
-              )}
-            </div>
-          )}
-
-          {/* Banner Graphic */}
-          <div className="h-32 bg-gradient-to-br from-slate-900 to-slate-800 border-b border-border flex items-center justify-center p-4 relative overflow-hidden">
-            <div
-              className="absolute inset-0 opacity-10"
-              style={{
-                backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)',
-                backgroundSize: '16px 16px',
-              }}
-            />
-
-            {note.status === 'APPROVED' ? (
-              <FileSignature className="w-12 h-12 text-emerald-400 drop-shadow-[0_0_12px_rgba(52,211,153,0.3)] z-10 transition-transform group-hover:scale-110 duration-300" />
-            ) : note.status === 'SUBMITTED' ? (
-              <Clock className="w-12 h-12 text-amber-400 drop-shadow-[0_0_12px_rgba(251,191,36,0.3)] z-10 transition-transform group-hover:scale-110 duration-300" />
-            ) : note.status === 'REJECTED' ? (
-              <AlertCircle className="w-12 h-12 text-rose-400 drop-shadow-[0_0_12px_rgba(244,63,94,0.3)] z-10 transition-transform group-hover:scale-110 duration-300" />
-            ) : (
-              <FileText className="w-12 h-12 text-violet-400 drop-shadow-[0_0_12px_rgba(139,92,246,0.3)] z-10 transition-transform group-hover:scale-110 duration-300" />
-            )}
-
-            {/* Week & Term Badge */}
-            <div className="absolute bottom-2.5 right-2.5 z-10">
-              <span className="text-[10px] font-semibold bg-black/60 text-slate-200 px-2 py-0.5 rounded-md backdrop-blur-sm">
-                Week {note.weekNumber || 1} • {note.term?.name || 'Term'}
-              </span>
-            </div>
-          </div>
-
-          <CardContent className="p-3.5 flex-1 flex flex-col justify-between">
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-start gap-2">
-                <h3 className="font-semibold text-sm text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors">
-                  {note.title || 'Untitled Document'}
-                </h3>
-                {note.status === 'DRAFT' && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>
-                      <Button
-                        variant="ghost"
-                        className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <MoreVertical className="h-3.5 w-3.5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-popover border-border">
-                      <DropdownMenuItem
-                        className="text-destructive focus:text-destructive cursor-pointer text-xs"
-                        onClick={e => handleDelete(note.id, e)}
-                      >
-                        <Trash2 className="w-3.5 h-3.5 mr-2" />
-                        Delete Draft
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-              </div>
-
-              {/* Class & Subject Metadata */}
-              <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                <span className="bg-primary/10 text-primary font-semibold text-[10px] px-1.5 py-0.5 rounded">
-                  {note.subject?.name || 'Subject'}
-                </span>
-                <span className="bg-muted text-muted-foreground font-medium text-[10px] px-1.5 py-0.5 rounded">
-                  {note.class?.name || 'Class'}
-                </span>
-                {note.fileUrl && (
-                  <span className="bg-blue-500/10 text-blue-500 font-medium text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1">
-                    <LinkIcon className="w-2.5 h-2.5" /> Attached
-                  </span>
-                )}
-              </div>
-
-              {/* Rejection Note Warning Snippet */}
-              {note.status === 'REJECTED' && note.reviewNote && (
-                <div className="bg-rose-500/10 border border-rose-500/20 rounded p-1.5 text-[10px] text-rose-600 line-clamp-1">
-                  <strong>Feedback:</strong> {note.reviewNote}
-                </div>
-              )}
-            </div>
-
-            {/* Bottom Status & Date Row */}
-            <div className="flex items-center justify-between text-xs pt-2 border-t border-border/50">
-              <Badge
-                variant="outline"
-                className={`text-[9px] px-1.5 py-0 font-bold border uppercase tracking-wider ${
-                  note.status === 'APPROVED'
-                    ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30'
-                    : note.status === 'SUBMITTED'
-                    ? 'bg-amber-500/10 text-amber-600 border-amber-500/30'
-                    : note.status === 'REJECTED'
-                    ? 'bg-rose-500/10 text-rose-600 border-rose-500/30'
-                    : 'bg-muted text-muted-foreground border-border'
-                }`}
-              >
-                {note.status === 'SUBMITTED' ? 'In Review' : note.status === 'REJECTED' ? 'Returned' : note.status}
-              </Badge>
-
-              <span className="text-[11px] text-muted-foreground font-medium">
-                {isReviewMode && note.teacher
-                  ? `${note.teacher.firstName} ${note.teacher.lastName?.[0]}.`
-                  : format(new Date(note.submissionDate || note.createdAt), 'MMM d, yyyy')}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-    );
+  const renderStatusBadge = (status: string) => {
+    switch (status) {
+      case 'APPROVED':
+        return (
+          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-[11px] font-semibold">
+            <CheckCircle2 className="w-3 h-3 mr-1" /> Approved
+          </Badge>
+        );
+      case 'SUBMITTED':
+        return (
+          <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30 text-[11px] font-semibold">
+            <Clock className="w-3 h-3 mr-1" /> In Review
+          </Badge>
+        );
+      case 'REJECTED':
+        return (
+          <Badge variant="outline" className="bg-rose-500/10 text-rose-600 border-rose-500/30 text-[11px] font-semibold">
+            <AlertCircle className="w-3 h-3 mr-1" /> Returned
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="outline" className="bg-muted text-muted-foreground border-border text-[11px] font-medium">
+            Draft
+          </Badge>
+        );
+    }
   };
 
   return (
-    <div className="min-h-screen bg-background pb-12 -mt-6 -mx-6">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-6 md:px-8 py-5 bg-background backdrop-blur-md border-b border-border sticky top-0 z-20 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-primary/10 border border-primary/20 rounded-xl">
-            <BookOpen className="text-primary w-5 h-5" />
+    <div className="space-y-6 pb-12">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-5">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-primary/10 border border-primary/20 rounded-lg text-primary">
+              <BookOpen className="w-5 h-5" />
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Lesson Plans & Approvals</h1>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-foreground tracking-tight">Lesson Plans & Instructional Materials</h1>
-            <p className="text-xs text-muted-foreground font-medium">Author syllabus notes, submit for HOD review, and track approvals</p>
-          </div>
+          <p className="text-sm text-muted-foreground">
+            Author syllabus lesson notes, submit for HOD departmental review, and monitor approval status.
+          </p>
         </div>
 
-        <div className="flex items-center gap-2 bg-background border border-border rounded-xl px-3 py-2 w-full sm:w-72 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
-          <Search className="w-4 h-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search by title, subject, class..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="bg-transparent border-none outline-none text-xs w-full text-foreground placeholder:text-muted-foreground"
-          />
+        {/* Primary Action Buttons */}
+        <div className="flex items-center gap-2.5">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setForm(p => ({ ...p, title: 'External Document', fileUrl: '' }));
+              setUploadOpen(true);
+            }}
+            className="border-border text-foreground hover:bg-muted font-medium text-xs sm:text-sm"
+          >
+            <Upload className="w-4 h-4 mr-2 text-primary" />
+            Upload Outside Document
+          </Button>
+
+          <Button
+            onClick={() => {
+              setForm(p => ({ ...p, title: 'Untitled Document', fileUrl: '' }));
+              setCreateOpen(true);
+            }}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs sm:text-sm shadow-sm"
+          >
+            <Plus className="w-4 h-4 mr-1.5" />
+            New Lesson Plan
+          </Button>
         </div>
       </div>
 
-      {/* Start New Document Section */}
-      <section className="bg-card px-6 md:px-8 py-8 border-b border-border">
-        <div className="max-w-7xl mx-auto">
-          <p className="text-xs font-bold text-muted-foreground mb-4 uppercase tracking-wider">Start a new document</p>
-          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-            {/* Blank Document Template */}
-            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-              <DialogTrigger asChild>
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="cursor-pointer group flex flex-col gap-2.5 min-w-[150px]"
-                >
-                  <div className="h-44 bg-background border border-border rounded-xl flex items-center justify-center group-hover:border-primary group-hover:bg-primary/5 transition-all shadow-sm relative overflow-hidden">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                      <Plus className="w-6 h-6 text-primary" strokeWidth={2.5} />
-                    </div>
-                  </div>
-                  <p className="text-xs font-bold text-foreground text-center">Blank Document</p>
-                </motion.div>
-              </DialogTrigger>
-              <DialogContent className="bg-card border-border text-foreground shadow-2xl max-w-md">
-                <DialogHeader>
-                  <DialogTitle className="text-foreground">New Lesson Plan</DialogTitle>
-                  <DialogDescription className="text-muted-foreground text-xs">
-                    Initialize a new instructional document for your class cohort.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-2">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-muted-foreground">Document Title</Label>
-                    <Input
-                      className="bg-background border-border text-foreground text-xs rounded-xl"
-                      value={form.title}
-                      onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
-                      placeholder="e.g. Week 1: Introduction to Algebra"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold text-muted-foreground">Subject</Label>
-                      <Select value={form.subjectId} onValueChange={v => setForm(p => ({ ...p, subjectId: v }))}>
-                        <SelectTrigger className="bg-background border-border text-foreground text-xs rounded-xl">
-                          <SelectValue placeholder="Select Subject" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-popover border-border">
-                          {subjects.map(s => (
-                            <SelectItem key={s.id} value={s.id} className="text-xs">
-                              {s.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold text-muted-foreground">Class</Label>
-                      <Select value={form.classId} onValueChange={v => setForm(p => ({ ...p, classId: v }))}>
-                        <SelectTrigger className="bg-background border-border text-foreground text-xs rounded-xl">
-                          <SelectValue placeholder="Select Class" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-popover border-border">
-                          {classes.map(c => (
-                            <SelectItem key={c.id} value={c.id} className="text-xs">
-                              {c.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold text-muted-foreground">Term</Label>
-                      <Select value={form.termId} onValueChange={v => setForm(p => ({ ...p, termId: v }))}>
-                        <SelectTrigger className="bg-background border-border text-foreground text-xs rounded-xl">
-                          <SelectValue placeholder="Select Term" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-popover border-border">
-                          {terms.map(t => (
-                            <SelectItem key={t.id} value={t.id} className="text-xs">
-                              {t.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold text-muted-foreground">Week Number</Label>
-                      <Input
-                        type="number"
-                        min="1"
-                        max="14"
-                        className="bg-background border-border text-foreground text-xs rounded-xl"
-                        value={form.weekNumber}
-                        onChange={e => setForm(p => ({ ...p, weekNumber: Number(e.target.value) }))}
-                      />
-                    </div>
-                  </div>
-                </div>
-                <DialogFooter className="border-t border-border pt-4">
-                  <Button
-                    variant="ghost"
-                    onClick={() => setCreateOpen(false)}
-                    className="text-muted-foreground hover:text-foreground text-xs rounded-xl"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={() => handleCreate(false)}
-                    disabled={isSaving}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs rounded-xl font-semibold min-w-[130px]"
-                  >
-                    {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" /> : null}
-                    {isSaving ? 'Creating...' : 'Create Document'}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+      {/* KPI Metric Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="border-border bg-card shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Plans</p>
+              <p className="text-2xl font-bold text-foreground">{statusCounts.ALL}</p>
+              <p className="text-[11px] text-muted-foreground">Across all subjects</p>
+            </div>
+            <div className="p-3 bg-muted rounded-xl text-muted-foreground">
+              <BookOpen className="w-5 h-5" />
+            </div>
+          </CardContent>
+        </Card>
 
-            {/* Document with File Attachment Dialog */}
-            <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
-              <DialogTrigger asChild>
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="cursor-pointer group flex flex-col gap-2.5 min-w-[150px]"
-                >
-                  <div className="h-44 bg-background border border-border rounded-xl flex items-center justify-center group-hover:border-primary group-hover:bg-primary/5 transition-all shadow-sm relative overflow-hidden">
-                    <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
-                      <Upload className="w-6 h-6 text-blue-500" strokeWidth={2} />
-                    </div>
-                  </div>
-                  <p className="text-xs font-bold text-foreground text-center">Attach Document / PDF</p>
-                </motion.div>
-              </DialogTrigger>
-              <DialogContent className="bg-card border-border text-foreground shadow-2xl max-w-md">
-                <DialogHeader>
-                  <DialogTitle className="text-foreground">Attach Lesson Plan Document</DialogTitle>
-                  <DialogDescription className="text-muted-foreground text-xs">
-                    Link a PDF, Google Docs, Word file, or Drive link to your lesson submission.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-2">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-muted-foreground">Document Title</Label>
-                    <Input
-                      className="bg-background border-border text-foreground text-xs rounded-xl"
-                      value={form.title}
-                      onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
-                      placeholder="e.g. Term 1 Physics Syllabus Notes"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-muted-foreground">Document URL / Attachment Link</Label>
-                    <Input
-                      className="bg-background border-border text-foreground text-xs rounded-xl font-mono"
-                      value={form.fileUrl}
-                      onChange={e => setForm(p => ({ ...p, fileUrl: e.target.value }))}
-                      placeholder="https://docs.google.com/document/... or file URL"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold text-muted-foreground">Subject</Label>
-                      <Select value={form.subjectId} onValueChange={v => setForm(p => ({ ...p, subjectId: v }))}>
-                        <SelectTrigger className="bg-background border-border text-foreground text-xs rounded-xl">
-                          <SelectValue placeholder="Select Subject" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-popover border-border">
-                          {subjects.map(s => (
-                            <SelectItem key={s.id} value={s.id} className="text-xs">
-                              {s.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold text-muted-foreground">Class</Label>
-                      <Select value={form.classId} onValueChange={v => setForm(p => ({ ...p, classId: v }))}>
-                        <SelectTrigger className="bg-background border-border text-foreground text-xs rounded-xl">
-                          <SelectValue placeholder="Select Class" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-popover border-border">
-                          {classes.map(c => (
-                            <SelectItem key={c.id} value={c.id} className="text-xs">
-                              {c.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold text-muted-foreground">Term</Label>
-                      <Select value={form.termId} onValueChange={v => setForm(p => ({ ...p, termId: v }))}>
-                        <SelectTrigger className="bg-background border-border text-foreground text-xs rounded-xl">
-                          <SelectValue placeholder="Select Term" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-popover border-border">
-                          {terms.map(t => (
-                            <SelectItem key={t.id} value={t.id} className="text-xs">
-                              {t.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold text-muted-foreground">Week Number</Label>
-                      <Input
-                        type="number"
-                        min="1"
-                        max="14"
-                        className="bg-background border-border text-foreground text-xs rounded-xl"
-                        value={form.weekNumber}
-                        onChange={e => setForm(p => ({ ...p, weekNumber: Number(e.target.value) }))}
-                      />
-                    </div>
-                  </div>
-                </div>
-                <DialogFooter className="border-t border-border pt-4">
-                  <Button
-                    variant="ghost"
-                    onClick={() => setUploadOpen(false)}
-                    className="text-muted-foreground hover:text-foreground text-xs rounded-xl"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={() => handleCreate(true)}
-                    disabled={isSaving}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs rounded-xl font-semibold min-w-[130px]"
-                  >
-                    {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" /> : null}
-                    {isSaving ? 'Linking...' : 'Save & Open'}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+        <Card className="border-border bg-card shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider">In Review</p>
+              <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{statusCounts.SUBMITTED}</p>
+              <p className="text-[11px] text-muted-foreground">Awaiting HOD signoff</p>
+            </div>
+            <div className="p-3 bg-amber-500/10 rounded-xl text-amber-600">
+              <Clock className="w-5 h-5" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border bg-card shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Approved</p>
+              <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{statusCounts.APPROVED}</p>
+              <p className="text-[11px] text-muted-foreground">Ready for classroom</p>
+            </div>
+            <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-600">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border bg-card shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-rose-600 dark:text-rose-400 uppercase tracking-wider">Returned</p>
+              <p className="text-2xl font-bold text-rose-600 dark:text-rose-400">{statusCounts.REJECTED}</p>
+              <p className="text-[11px] text-muted-foreground">Needs teacher revision</p>
+            </div>
+            <div className="p-3 bg-rose-500/10 rounded-xl text-rose-600">
+              <AlertCircle className="w-5 h-5" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Tabs Container */}
+      <Tabs defaultValue="my-docs" className="w-full space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b border-border pb-3">
+          <TabsList className="bg-muted p-1 rounded-lg h-9">
+            <TabsTrigger
+              value="my-docs"
+              className="rounded-md px-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+            >
+              My Lesson Plans ({notes.length})
+            </TabsTrigger>
+            {isReviewer && (
+              <TabsTrigger
+                value="review"
+                className="rounded-md px-3 text-xs font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground relative"
+              >
+                Awaiting HOD Review
+                {pendingNotes.length > 0 && (
+                  <span className="ml-1.5 bg-primary-foreground/20 text-primary-foreground py-0.5 px-1.5 rounded-full text-[10px] font-bold">
+                    {pendingNotes.length}
+                  </span>
+                )}
+              </TabsTrigger>
+            )}
+          </TabsList>
+
+          {/* View Mode Toggle */}
+          <div className="flex items-center gap-1 bg-muted p-1 rounded-lg border border-border">
+            <Button
+              variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('table')}
+              className="h-7 px-2.5 text-xs gap-1.5"
+            >
+              <List className="w-3.5 h-3.5" /> Table
+            </Button>
+            <Button
+              variant={viewMode === 'cards' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('cards')}
+              className="h-7 px-2.5 text-xs gap-1.5"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" /> Cards
+            </Button>
           </div>
         </div>
-      </section>
 
-      {/* Recent Documents Tabs */}
-      <section className="px-6 md:px-8 py-8 max-w-7xl mx-auto space-y-6">
-        <Tabs defaultValue="my-docs" className="w-full">
-          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-border pb-4">
-            <h2 className="text-lg font-bold text-foreground">Instructional Archive</h2>
-            {isReviewer && (
-              <TabsList className="bg-muted p-1 rounded-xl h-10">
-                <TabsTrigger
-                  value="my-docs"
-                  className="rounded-lg px-4 text-xs font-semibold text-muted-foreground data-[state=active]:bg-background data-[state=active]:text-foreground"
-                >
-                  My Lesson Plans ({notes.length})
-                </TabsTrigger>
-                <TabsTrigger
-                  value="review"
-                  className="rounded-lg px-4 text-xs font-semibold text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground relative"
-                >
-                  Awaiting Review
-                  {pendingNotes.length > 0 && (
-                    <span className="ml-2 bg-primary-foreground/20 text-primary-foreground py-0.5 px-1.5 rounded-full text-[10px] font-black">
-                      {pendingNotes.length}
-                    </span>
-                  )}
-                </TabsTrigger>
-              </TabsList>
-            )}
-          </div>
-
-          {/* TEACHER'S OWN LESSON PLANS TAB */}
-          <TabsContent value="my-docs" className="mt-4 outline-none space-y-5">
-            {/* Workflow Filter Pills */}
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                variant={statusFilter === 'ALL' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setStatusFilter('ALL')}
-                className="rounded-xl text-xs h-8"
-              >
-                All ({statusCounts.ALL})
-              </Button>
-              <Button
-                variant={statusFilter === 'DRAFT' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setStatusFilter('DRAFT')}
-                className="rounded-xl text-xs h-8"
-              >
-                Drafts ({statusCounts.DRAFT})
-              </Button>
-              <Button
-                variant={statusFilter === 'SUBMITTED' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setStatusFilter('SUBMITTED')}
-                className="rounded-xl text-xs h-8"
-              >
-                <Clock className="w-3.5 h-3.5 mr-1 text-amber-500" />
-                In Review ({statusCounts.SUBMITTED})
-              </Button>
-              <Button
-                variant={statusFilter === 'APPROVED' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setStatusFilter('APPROVED')}
-                className="rounded-xl text-xs h-8"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-emerald-500" />
-                Approved ({statusCounts.APPROVED})
-              </Button>
-              <Button
-                variant={statusFilter === 'REJECTED' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setStatusFilter('REJECTED')}
-                className="rounded-xl text-xs h-8"
-              >
-                <AlertCircle className="w-3.5 h-3.5 mr-1 text-rose-500" />
-                Returned ({statusCounts.REJECTED})
-              </Button>
+        {/* Filters Toolbar */}
+        <div className="bg-card border border-border rounded-xl p-3 space-y-3">
+          <div className="flex flex-col lg:flex-row gap-2.5 items-stretch lg:items-center justify-between">
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search by title, subject, or class..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="pl-9 bg-background border-border text-xs rounded-lg h-9"
+              />
             </div>
 
-            {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                <p className="font-medium text-xs">Loading documents...</p>
-              </div>
-            ) : filteredMyNotes.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 border-2 border-dashed border-border rounded-2xl bg-card">
-                <FileText className="w-10 h-10 text-muted-foreground mb-3 opacity-40" />
-                <h3 className="text-base font-semibold text-foreground mb-1">No documents found</h3>
-                <p className="text-xs text-muted-foreground text-center max-w-sm">
-                  {statusFilter !== 'ALL'
-                    ? `You have no documents with status '${statusFilter}'.`
-                    : 'Create a blank document above to begin authoring.'}
-                </p>
-              </div>
-            ) : (
-              <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="show"
-                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5"
-              >
-                <AnimatePresence>
-                  {filteredMyNotes.map(note => (
-                    <DocumentCard key={note.id} note={note} />
+            {/* Dropdown Filters */}
+            <div className="flex flex-wrap items-center gap-2">
+              <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                <SelectTrigger className="w-[150px] bg-background border-border text-xs rounded-lg h-9">
+                  <SelectValue placeholder="All Subjects" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border-border">
+                  <SelectItem value="ALL" className="text-xs">All Subjects</SelectItem>
+                  {subjects.map(s => (
+                    <SelectItem key={s.id} value={s.id} className="text-xs">{s.name}</SelectItem>
                   ))}
-                </AnimatePresence>
-              </motion.div>
+                </SelectContent>
+              </Select>
+
+              <Select value={selectedClass} onValueChange={setSelectedClass}>
+                <SelectTrigger className="w-[140px] bg-background border-border text-xs rounded-lg h-9">
+                  <SelectValue placeholder="All Classes" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border-border">
+                  <SelectItem value="ALL" className="text-xs">All Classes</SelectItem>
+                  {classes.map(c => (
+                    <SelectItem key={c.id} value={c.id} className="text-xs">{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {(searchQuery || selectedSubject !== 'ALL' || selectedClass !== 'ALL' || statusFilter !== 'ALL') && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedSubject('ALL');
+                    setSelectedClass('ALL');
+                    setStatusFilter('ALL');
+                  }}
+                  className="h-9 px-2 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <X className="w-3.5 h-3.5 mr-1" /> Reset
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Status Filter Pills */}
+          <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-border/50 text-xs">
+            <span className="text-muted-foreground text-[11px] font-medium mr-1 flex items-center gap-1">
+              <Filter className="w-3 h-3" /> Status:
+            </span>
+            <Button
+              variant={statusFilter === 'ALL' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusFilter('ALL')}
+              className="rounded-lg text-xs h-7 px-2.5"
+            >
+              All ({statusCounts.ALL})
+            </Button>
+            <Button
+              variant={statusFilter === 'DRAFT' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusFilter('DRAFT')}
+              className="rounded-lg text-xs h-7 px-2.5"
+            >
+              Drafts ({statusCounts.DRAFT})
+            </Button>
+            <Button
+              variant={statusFilter === 'SUBMITTED' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusFilter('SUBMITTED')}
+              className="rounded-lg text-xs h-7 px-2.5"
+            >
+              <Clock className="w-3 h-3 mr-1 text-amber-500" />
+              In Review ({statusCounts.SUBMITTED})
+            </Button>
+            <Button
+              variant={statusFilter === 'APPROVED' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusFilter('APPROVED')}
+              className="rounded-lg text-xs h-7 px-2.5"
+            >
+              <CheckCircle2 className="w-3 h-3 mr-1 text-emerald-500" />
+              Approved ({statusCounts.APPROVED})
+            </Button>
+            <Button
+              variant={statusFilter === 'REJECTED' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusFilter('REJECTED')}
+              className="rounded-lg text-xs h-7 px-2.5"
+            >
+              <AlertCircle className="w-3 h-3 mr-1 text-rose-500" />
+              Returned ({statusCounts.REJECTED})
+            </Button>
+          </div>
+        </div>
+
+        {/* TEACHER'S LESSON PLANS TAB */}
+        <TabsContent value="my-docs" className="outline-none space-y-4">
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
+              <Loader2 className="w-7 h-7 animate-spin text-primary" />
+              <p className="text-xs font-medium">Loading your lesson plans...</p>
+            </div>
+          ) : filteredMyNotes.length === 0 ? (
+            /* Empty State */
+            <Card className="border-border bg-card">
+              <CardContent className="flex flex-col items-center justify-center py-16 px-4 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4 text-primary">
+                  <BookOpen className="w-7 h-7" />
+                </div>
+                <h3 className="text-base font-semibold text-foreground mb-1">No Lesson Plans Found</h3>
+                <p className="text-xs text-muted-foreground max-w-md mb-6">
+                  {statusFilter !== 'ALL' || searchQuery || selectedSubject !== 'ALL' || selectedClass !== 'ALL'
+                    ? 'No lesson plans match your current filters. Try resetting the search or filter conditions.'
+                    : 'You haven’t created any lesson plans for this term yet. Start authoring with the built-in editor or upload outside Word/PDF documents.'}
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <Button
+                    onClick={() => {
+                      setForm(p => ({ ...p, title: 'Untitled Document', fileUrl: '' }));
+                      setCreateOpen(true);
+                    }}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-4 rounded-lg"
+                  >
+                    <Plus className="w-4 h-4 mr-1.5" />
+                    New Lesson Plan
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setForm(p => ({ ...p, title: 'External Document', fileUrl: '' }));
+                      setUploadOpen(true);
+                    }}
+                    className="border-border text-foreground hover:bg-muted text-xs h-9 px-4 rounded-lg font-medium"
+                  >
+                    <Upload className="w-4 h-4 mr-2 text-primary" />
+                    Upload Outside Document
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : viewMode === 'table' ? (
+            /* TABLE VIEW */
+            <Card className="border-border bg-card overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border hover:bg-transparent">
+                    <TableHead className="w-[30%] text-xs font-semibold">Title & Topic</TableHead>
+                    <TableHead className="text-xs font-semibold">Subject</TableHead>
+                    <TableHead className="text-xs font-semibold">Class</TableHead>
+                    <TableHead className="text-xs font-semibold">Week</TableHead>
+                    <TableHead className="text-xs font-semibold">Status</TableHead>
+                    <TableHead className="text-xs font-semibold">Updated</TableHead>
+                    <TableHead className="text-right text-xs font-semibold">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredMyNotes.map(note => (
+                    <TableRow
+                      key={note.id}
+                      className="cursor-pointer border-border hover:bg-muted/50 transition-colors"
+                      onClick={() => router.push(`/dashboard/lesson-notes/${note.id}`)}
+                    >
+                      <TableCell className="font-medium text-xs">
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 rounded-md bg-muted text-foreground">
+                            {note.fileUrl ? <Paperclip className="w-3.5 h-3.5 text-primary" /> : <FileText className="w-3.5 h-3.5" />}
+                          </div>
+                          <div>
+                            <div className="font-semibold text-foreground hover:text-primary transition-colors flex items-center gap-1.5">
+                              {note.title || 'Untitled Document'}
+                              {note.fileUrl && (
+                                <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-primary/5 text-primary border-primary/20">
+                                  Outside Doc
+                                </Badge>
+                              )}
+                            </div>
+                            {note.status === 'REJECTED' && note.reviewNote && (
+                              <p className="text-[10px] text-rose-600 dark:text-rose-400 line-clamp-1 mt-0.5">
+                                Reason: {note.reviewNote}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-xs text-foreground">
+                        <span className="font-medium">{note.subject?.name || '—'}</span>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {note.class?.name || '—'}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        <Badge variant="secondary" className="text-[10px] font-mono">
+                          Wk {note.weekNumber || 1}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {renderStatusBadge(note.status)}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {format(new Date(note.submissionDate || note.createdAt), 'MMM d, yyyy')}
+                      </TableCell>
+                      <TableCell className="text-right text-xs" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2.5 text-xs text-foreground hover:text-primary"
+                            onClick={() => router.push(`/dashboard/lesson-notes/${note.id}`)}
+                          >
+                            <Eye className="w-3.5 h-3.5 mr-1" /> View
+                          </Button>
+
+                          {note.status === 'DRAFT' && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                  <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="bg-popover border-border">
+                                <DropdownMenuItem
+                                  className="text-xs text-rose-600 focus:text-rose-600 cursor-pointer"
+                                  onClick={e => handleDelete(note.id, e)}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete Draft
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          ) : (
+            /* CARDS GRID VIEW */
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {filteredMyNotes.map(note => (
+                <Card
+                  key={note.id}
+                  className="cursor-pointer border-border bg-card hover:border-primary/50 hover:shadow-md transition-all flex flex-col justify-between"
+                  onClick={() => router.push(`/dashboard/lesson-notes/${note.id}`)}
+                >
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="p-2 rounded-lg bg-muted text-primary">
+                        {note.fileUrl ? <Paperclip className="w-4 h-4" /> : <BookOpen className="w-4 h-4" />}
+                      </div>
+                      {renderStatusBadge(note.status)}
+                    </div>
+
+                    <div>
+                      <h4 className="font-semibold text-sm text-foreground line-clamp-2 hover:text-primary transition-colors">
+                        {note.title || 'Untitled Document'}
+                      </h4>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {note.subject?.name} • {note.class?.name}
+                      </p>
+                    </div>
+
+                    {note.status === 'REJECTED' && note.reviewNote && (
+                      <div className="p-2 rounded bg-rose-500/10 border border-rose-500/20 text-[11px] text-rose-600">
+                        <strong>Feedback:</strong> {note.reviewNote}
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-2 border-t border-border/50">
+                      <span>Week {note.weekNumber || 1}</span>
+                      <span>{format(new Date(note.submissionDate || note.createdAt), 'MMM d, yyyy')}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* HOD / SLT / ADMIN REVIEW QUEUE TAB */}
+        {isReviewer && (
+          <TabsContent value="review" className="outline-none space-y-4">
+            {pendingNotes.length > 0 && (
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-card p-3 rounded-xl border border-border">
+                <div className="flex items-center gap-2 text-xs">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={selectedNoteIds.size === pendingNotes.length ? clearSelection : selectAllPending}
+                    className="text-xs h-8 px-2"
+                  >
+                    {selectedNoteIds.size === pendingNotes.length ? (
+                      <>
+                        <CheckSquare className="w-4 h-4 mr-1.5 text-primary" /> Deselect All
+                      </>
+                    ) : (
+                      <>
+                        <Square className="w-4 h-4 mr-1.5" /> Select All ({pendingNotes.length})
+                      </>
+                    )}
+                  </Button>
+                  <span className="text-muted-foreground font-medium">
+                    • {selectedNoteIds.size} of {pendingNotes.length} selected
+                  </span>
+                </div>
+
+                {selectedNoteIds.size > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => setRejectReasonModalOpen(true)}
+                      disabled={isBulkActing}
+                      variant="outline"
+                      className="border-rose-500/30 text-rose-600 hover:bg-rose-500/10 text-xs h-8"
+                    >
+                      Return ({selectedNoteIds.size})
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleBulkApprove}
+                      disabled={isBulkActing}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8 font-semibold"
+                    >
+                      {isBulkActing ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />}
+                      Approve ({selectedNoteIds.size})
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {filteredPendingNotes.length === 0 ? (
+              <Card className="border-border bg-card">
+                <CardContent className="flex flex-col items-center justify-center py-16 px-4 text-center">
+                  <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center mb-3 text-emerald-600">
+                    <CheckCircle2 className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-foreground mb-1">Queue is Clear</h3>
+                  <p className="text-xs text-muted-foreground max-w-sm">
+                    No submitted lesson plans are currently awaiting review in your department.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : viewMode === 'table' ? (
+              <Card className="border-border bg-card overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-border hover:bg-transparent">
+                      <TableHead className="w-[40px]"></TableHead>
+                      <TableHead className="text-xs font-semibold">Title & Topic</TableHead>
+                      <TableHead className="text-xs font-semibold">Teacher</TableHead>
+                      <TableHead className="text-xs font-semibold">Subject</TableHead>
+                      <TableHead className="text-xs font-semibold">Class</TableHead>
+                      <TableHead className="text-xs font-semibold">Week</TableHead>
+                      <TableHead className="text-xs font-semibold">Submitted</TableHead>
+                      <TableHead className="text-right text-xs font-semibold">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredPendingNotes.map(note => {
+                      const isSelected = selectedNoteIds.has(note.id);
+                      return (
+                        <TableRow
+                          key={note.id}
+                          className={`cursor-pointer border-border hover:bg-muted/50 transition-colors ${
+                            isSelected ? 'bg-primary/5' : ''
+                          }`}
+                          onClick={() => router.push(`/dashboard/lesson-notes/${note.id}`)}
+                        >
+                          <TableCell onClick={e => toggleSelectNote(note.id, e)}>
+                            <button type="button" className="text-muted-foreground hover:text-foreground">
+                              {isSelected ? <CheckSquare className="w-4 h-4 text-primary" /> : <Square className="w-4 h-4" />}
+                            </button>
+                          </TableCell>
+                          <TableCell className="font-medium text-xs">
+                            <div className="flex items-center gap-2">
+                              {note.fileUrl ? <Paperclip className="w-3.5 h-3.5 text-primary" /> : <FileText className="w-3.5 h-3.5 text-muted-foreground" />}
+                              <span className="font-semibold text-foreground">{note.title}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-xs text-foreground font-medium">
+                            {note.teacher ? `${note.teacher.firstName} ${note.teacher.lastName}` : '—'}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{note.subject?.name}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{note.class?.name}</TableCell>
+                          <TableCell className="text-xs">
+                            <Badge variant="secondary" className="text-[10px] font-mono">
+                              Wk {note.weekNumber || 1}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {format(new Date(note.submissionDate || note.createdAt), 'MMM d, yyyy')}
+                          </TableCell>
+                          <TableCell className="text-right text-xs" onClick={e => e.stopPropagation()}>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 px-2.5 text-xs text-primary border-primary/30 hover:bg-primary/10"
+                              onClick={() => router.push(`/dashboard/lesson-notes/${note.id}`)}
+                            >
+                              Review <ArrowUpRight className="w-3.5 h-3.5 ml-1" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {filteredPendingNotes.map(note => {
+                  const isSelected = selectedNoteIds.has(note.id);
+                  return (
+                    <Card
+                      key={note.id}
+                      className={`cursor-pointer border-border bg-card hover:border-primary/50 hover:shadow-md transition-all flex flex-col justify-between ${
+                        isSelected ? 'ring-2 ring-primary border-primary' : ''
+                      }`}
+                      onClick={() => router.push(`/dashboard/lesson-notes/${note.id}`)}
+                    >
+                      <CardContent className="p-4 space-y-3">
+                        <div className="flex items-start justify-between">
+                          <button
+                            type="button"
+                            onClick={e => toggleSelectNote(note.id, e)}
+                            className="text-muted-foreground hover:text-foreground"
+                          >
+                            {isSelected ? <CheckSquare className="w-4 h-4 text-primary" /> : <Square className="w-4 h-4" />}
+                          </button>
+                          <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30 text-[10px]">
+                            Awaiting Review
+                          </Badge>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-sm text-foreground line-clamp-2">
+                            {note.title}
+                          </h4>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            By {note.teacher?.firstName} {note.teacher?.lastName}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {note.subject?.name} • {note.class?.name}
+                          </p>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-2 border-t border-border/50">
+                          <span>Week {note.weekNumber || 1}</span>
+                          <span className="text-primary font-semibold flex items-center">
+                            Review <ArrowUpRight className="w-3 h-3 ml-0.5" />
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
             )}
           </TabsContent>
+        )}
+      </Tabs>
 
-          {/* HOD / SLT / ADMIN REVIEW QUEUE TAB */}
-          {isReviewer && (
-            <TabsContent value="review" className="mt-4 outline-none space-y-4">
-              {/* Review Queue Toolbar with Bulk Actions */}
-              {pendingNotes.length > 0 && (
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-card p-3 rounded-xl border border-border">
-                  <div className="flex items-center gap-2 text-xs">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={selectedNoteIds.size === pendingNotes.length ? clearSelection : selectAllPending}
-                      className="text-xs h-8 px-2"
-                    >
-                      {selectedNoteIds.size === pendingNotes.length ? (
-                        <>
-                          <CheckSquare className="w-4 h-4 mr-1.5 text-primary" /> Deselect All
-                        </>
-                      ) : (
-                        <>
-                          <Square className="w-4 h-4 mr-1.5" /> Select All ({pendingNotes.length})
-                        </>
-                      )}
-                    </Button>
-                    <span className="text-muted-foreground font-medium">
-                      • {selectedNoteIds.size} of {pendingNotes.length} selected
-                    </span>
-                  </div>
-
-                  {selectedNoteIds.size > 0 && (
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        onClick={() => setRejectReasonModalOpen(true)}
-                        disabled={isBulkActing}
-                        variant="outline"
-                        className="text-rose-600 border-rose-500/30 hover:bg-rose-500/10 text-xs h-8 rounded-lg"
-                      >
-                        Return Selected ({selectedNoteIds.size})
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={handleBulkApprove}
-                        disabled={isBulkActing}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8 rounded-lg shadow-sm"
-                      >
-                        {isBulkActing ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />}
-                        Approve Selected ({selectedNoteIds.size})
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {pendingNotes.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 border-2 border-dashed border-border rounded-2xl bg-card">
-                  <CheckCircle2 className="w-10 h-10 text-emerald-500 mb-3 opacity-60" />
-                  <h3 className="text-base font-semibold text-foreground mb-1">Queue Clear</h3>
-                  <p className="text-xs text-muted-foreground">All submitted lesson plans have been reviewed.</p>
-                </div>
-              ) : (
-                <motion.div
-                  variants={containerVariants}
-                  initial="hidden"
-                  animate="show"
-                  className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5"
-                >
-                  <AnimatePresence>
-                    {pendingNotes
-                      .filter(
-                        n =>
-                          n.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          n.teacher?.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          n.teacher?.lastName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          n.subject?.name?.toLowerCase().includes(searchQuery.toLowerCase())
-                      )
-                      .map(note => (
-                        <DocumentCard key={note.id} note={note} isReviewMode={true} />
-                      ))}
-                  </AnimatePresence>
-                </motion.div>
-              )}
-            </TabsContent>
-          )}
-        </Tabs>
-      </section>
-
-      {/* Bulk Return Feedback Modal */}
-      <Dialog open={rejectReasonModalOpen} onOpenChange={setRejectReasonModalOpen}>
+      {/* CREATE BLANK LESSON PLAN DIALOG */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="bg-card border-border text-foreground shadow-2xl max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-foreground">Return Lesson Plans for Revision</DialogTitle>
+            <DialogTitle className="text-foreground">New Lesson Plan</DialogTitle>
             <DialogDescription className="text-muted-foreground text-xs">
-              Provide feedback explaining why these {selectedNoteIds.size} lesson plan(s) need changes.
+              Initialize a new instructional document for your class cohort.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 py-2">
-            <Label className="text-xs font-semibold text-muted-foreground">Reviewer Feedback & Instructions</Label>
-            <textarea
-              rows={4}
-              value={bulkRejectReason}
-              onChange={e => setBulkRejectReason(e.target.value)}
-              placeholder="e.g. Please expand on the evaluation strategy and align week 3 activities with current syllabus requirements."
-              className="w-full bg-background border border-border rounded-xl p-3 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
-            />
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground">Document Title</Label>
+              <Input
+                className="bg-background border-border text-foreground text-xs rounded-lg"
+                value={form.title}
+                onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
+                placeholder="e.g. Week 1: Introduction to Algebra"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground">Subject</Label>
+                <Select value={form.subjectId} onValueChange={v => setForm(p => ({ ...p, subjectId: v }))}>
+                  <SelectTrigger className="bg-background border-border text-foreground text-xs rounded-lg">
+                    <SelectValue placeholder="Select Subject" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border">
+                    {subjects.map(s => (
+                      <SelectItem key={s.id} value={s.id} className="text-xs">
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground">Class</Label>
+                <Select value={form.classId} onValueChange={v => setForm(p => ({ ...p, classId: v }))}>
+                  <SelectTrigger className="bg-background border-border text-foreground text-xs rounded-lg">
+                    <SelectValue placeholder="Select Class" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border">
+                    {classes.map(c => (
+                      <SelectItem key={c.id} value={c.id} className="text-xs">
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground">Term</Label>
+                <Select value={form.termId} onValueChange={v => setForm(p => ({ ...p, termId: v }))}>
+                  <SelectTrigger className="bg-background border-border text-foreground text-xs rounded-lg">
+                    <SelectValue placeholder="Select Term" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border">
+                    {terms.map(t => (
+                      <SelectItem key={t.id} value={t.id} className="text-xs">
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground">Week Number</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="14"
+                  className="bg-background border-border text-foreground text-xs rounded-lg"
+                  value={form.weekNumber}
+                  onChange={e => setForm(p => ({ ...p, weekNumber: Number(e.target.value) }))}
+                />
+              </div>
+            </div>
           </div>
           <DialogFooter className="border-t border-border pt-4">
             <Button
               variant="ghost"
-              onClick={() => setRejectReasonModalOpen(false)}
-              className="text-muted-foreground hover:text-foreground text-xs rounded-xl"
+              onClick={() => setCreateOpen(false)}
+              className="text-muted-foreground hover:text-foreground text-xs rounded-lg"
             >
               Cancel
             </Button>
             <Button
+              onClick={() => handleCreate(false)}
+              disabled={isSaving}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs rounded-lg font-semibold min-w-[120px]"
+            >
+              {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" /> : null}
+              {isSaving ? 'Creating...' : 'Create Document'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* UPLOAD OUTSIDE LESSON PLAN DIALOG */}
+      <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
+        <DialogContent className="bg-card border-border text-foreground shadow-2xl max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Upload Outside Lesson Plan</DialogTitle>
+            <DialogDescription className="text-muted-foreground text-xs">
+              Upload an external PDF, Word document (.docx/.doc), PowerPoint, or scanned notes from your device.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground">Document Title</Label>
+              <Input
+                className="bg-background border-border text-foreground text-xs rounded-lg"
+                value={form.title}
+                onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
+                placeholder="e.g. Term 1 Physics Syllabus Notes"
+              />
+            </div>
+
+            {/* Drag and Drop File Upload */}
+            <DocumentUploadZone
+              folder="lessonNotes"
+              label="Attach Outside File"
+              initialUrl={form.fileUrl}
+              onUploaded={(url, fileName) => {
+                setForm(p => ({
+                  ...p,
+                  fileUrl: url,
+                  title: p.title === 'Untitled Document' || !p.title || p.title === 'External Document' ? fileName.replace(/\.[^/.]+$/, '') : p.title
+                }));
+              }}
+            />
+
+            <div className="pt-1">
+              <details className="text-[11px] text-muted-foreground cursor-pointer">
+                <summary className="hover:text-foreground font-medium">Or paste an external web link (Google Docs / Drive)</summary>
+                <div className="mt-2">
+                  <Input
+                    className="bg-background border-border text-foreground text-xs rounded-lg font-mono"
+                    value={form.fileUrl}
+                    onChange={e => setForm(p => ({ ...p, fileUrl: e.target.value }))}
+                    placeholder="https://docs.google.com/document/... or direct link"
+                  />
+                </div>
+              </details>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground">Subject</Label>
+                <Select value={form.subjectId} onValueChange={v => setForm(p => ({ ...p, subjectId: v }))}>
+                  <SelectTrigger className="bg-background border-border text-foreground text-xs rounded-lg">
+                    <SelectValue placeholder="Select Subject" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border">
+                    {subjects.map(s => (
+                      <SelectItem key={s.id} value={s.id} className="text-xs">
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground">Class</Label>
+                <Select value={form.classId} onValueChange={v => setForm(p => ({ ...p, classId: v }))}>
+                  <SelectTrigger className="bg-background border-border text-foreground text-xs rounded-lg">
+                    <SelectValue placeholder="Select Class" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border">
+                    {classes.map(c => (
+                      <SelectItem key={c.id} value={c.id} className="text-xs">
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground">Term</Label>
+                <Select value={form.termId} onValueChange={v => setForm(p => ({ ...p, termId: v }))}>
+                  <SelectTrigger className="bg-background border-border text-foreground text-xs rounded-lg">
+                    <SelectValue placeholder="Select Term" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border">
+                    {terms.map(t => (
+                      <SelectItem key={t.id} value={t.id} className="text-xs">
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground">Week Number</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="14"
+                  className="bg-background border-border text-foreground text-xs rounded-lg"
+                  value={form.weekNumber}
+                  onChange={e => setForm(p => ({ ...p, weekNumber: Number(e.target.value) }))}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="border-t border-border pt-4">
+            <Button
+              variant="ghost"
+              onClick={() => setUploadOpen(false)}
+              className="text-muted-foreground hover:text-foreground text-xs rounded-lg"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => handleCreate(true)}
+              disabled={isSaving}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs rounded-lg font-semibold min-w-[120px]"
+            >
+              {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" /> : null}
+              {isSaving ? 'Uploading...' : 'Save & Open'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* BULK REJECT REASON MODAL */}
+      <Dialog open={rejectReasonModalOpen} onOpenChange={setRejectReasonModalOpen}>
+        <DialogContent className="bg-card border-border text-foreground max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-foreground flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5 text-rose-500" /> Return for Revision
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground text-xs">
+              Provide feedback for the teachers explaining what needs correction before approval.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label className="text-xs font-semibold text-muted-foreground">Reviewer Feedback Notes</Label>
+            <textarea
+              className="w-full h-24 bg-background border border-border rounded-lg p-2.5 text-xs text-foreground focus:ring-1 focus:ring-primary outline-none resize-none"
+              placeholder="e.g. Please align behavioral objectives with Bloom's taxonomy and include practical exercises..."
+              value={bulkRejectReason}
+              onChange={e => setBulkRejectReason(e.target.value)}
+            />
+          </div>
+          <DialogFooter className="border-t border-border pt-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setRejectReasonModalOpen(false)}
+              className="text-xs"
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
               onClick={handleBulkRejectSubmit}
               disabled={isBulkActing}
-              variant="destructive"
-              className="text-xs rounded-xl font-semibold"
+              className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold"
             >
               {isBulkActing ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : null}
-              Return to Teachers
+              Send Feedback & Return
             </Button>
           </DialogFooter>
         </DialogContent>
