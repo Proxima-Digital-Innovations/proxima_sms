@@ -99,14 +99,14 @@ export default function Sidebar() {
             {/* Mobile Backdrop */}
             {openMobile && (
                 <div 
-                    className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-xs lg:hidden" 
+                    className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs lg:hidden" 
                     onClick={() => setOpenMobile(false)} 
                 />
             )}
             <aside 
                 className={cn(
                     "fixed top-0 z-50 h-[100dvh] transition-transform duration-300 ease-in-out flex flex-col",
-                    "bg-[#0F172A] text-slate-200 shadow-2xl border-slate-800/90",
+                    "bg-card text-card-foreground shadow-xl border-border",
                     isRtl ? "right-0 border-l" : "left-0 border-r",
                     collapsed ? "lg:w-[80px] w-[270px] max-w-[85vw]" : "w-[270px] max-w-[85vw]",
                     openMobile
@@ -117,33 +117,33 @@ export default function Sidebar() {
                     "lg:translate-x-0"
                 )}
             >
-                {/* Corporate Institutional Branding Header */}
-                <div className={cn("flex items-center h-16 px-4 border-b border-slate-800/90 bg-slate-950/40 shrink-0", collapsed ? "justify-center" : "justify-between")}>
+                {/* Proxima SMS Branding Header */}
+                <div className={cn("flex items-center h-16 px-4 border-b border-border shrink-0", collapsed ? "justify-center" : "justify-between")}>
                     <Link 
                         href="/dashboard" 
                         onClick={() => setOpenMobile(false)}
                         className="flex items-center gap-3 overflow-hidden"
                     >
-                        <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-slate-900 border border-slate-700/80 p-0.5 shrink-0 overflow-hidden shadow-inner">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-card border border-border/80 p-0.5 shrink-0 overflow-hidden shadow-xs">
                             {schoolLogo ? (
                                 <Image
                                     src={schoolLogo}
                                     alt={schoolName}
-                                    width={36}
-                                    height={36}
+                                    width={32}
+                                    height={32}
                                     className="w-full h-full object-contain"
                                     unoptimized
                                 />
                             ) : (
-                                <div className="flex items-center justify-center w-full h-full bg-gradient-to-br from-indigo-500 to-blue-600 rounded-md text-white shadow-sm">
+                                <div className="flex items-center justify-center w-full h-full bg-primary rounded-md text-primary-foreground">
                                     <Rocket className="w-4 h-4" />
                                 </div>
                             )}
                         </div>
                         {!collapsed && (
                             <div className="flex flex-col min-w-0">
-                                <span className="text-sm font-bold tracking-tight text-white line-clamp-1">{schoolName}</span>
-                                <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-widest">Enterprise ERP</span>
+                                <span className="text-sm font-bold tracking-tight text-foreground truncate">{schoolName}</span>
+                                <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Education Portal</span>
                             </div>
                         )}
                     </Link>
@@ -151,7 +151,7 @@ export default function Sidebar() {
                     <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="shrink-0 hidden lg:flex h-8 w-8 text-slate-400 hover:bg-slate-800 hover:text-white"
+                        className="shrink-0 hidden lg:flex h-8 w-8 text-muted-foreground hover:bg-accent hover:text-foreground"
                         onClick={() => setOpen(collapsed)}
                     >
                         <Menu className="w-4 h-4" />
@@ -160,7 +160,7 @@ export default function Sidebar() {
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="shrink-0 lg:hidden h-9 w-9 text-slate-400 hover:bg-slate-800 hover:text-white"
+                        className="shrink-0 lg:hidden h-9 w-9 text-muted-foreground hover:bg-accent hover:text-foreground"
                         onClick={() => setOpenMobile(false)}
                         aria-label="Close navigation"
                     >
@@ -178,13 +178,13 @@ export default function Sidebar() {
                                 {!collapsed && (
                                     <button
                                         onClick={() => toggleGroup(group.group)}
-                                        className="w-full flex items-center justify-between px-2.5 py-1.5 group-btn rounded-md hover:bg-slate-800/50 transition-colors cursor-pointer"
+                                        className="w-full flex items-center justify-between px-2.5 py-1.5 group-btn rounded-md hover:bg-accent/60 transition-colors cursor-pointer"
                                     >
-                                        <span className="text-[10px] font-bold text-slate-400/90 uppercase tracking-[0.12em]">
+                                        <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                                             {group.group}
                                         </span>
                                         <ChevronDown className={cn(
-                                            "w-3.5 h-3.5 text-slate-500 transition-transform duration-200",
+                                            "w-3.5 h-3.5 text-muted-foreground transition-transform duration-200",
                                             isExpanded ? "rotate-180" : ""
                                         )} />
                                     </button>
@@ -213,26 +213,26 @@ export default function Sidebar() {
                                                             <button
                                                                 onClick={() => toggleGroup(link.label)}
                                                                 className={cn(
-                                                                    "w-full flex items-center gap-3 px-3 py-2 min-h-[40px] rounded-lg transition-all group cursor-pointer",
+                                                                    "w-full flex items-center gap-3 p-2.5 min-h-[42px] rounded-lg transition-colors group cursor-pointer",
                                                                     hasActiveChild
-                                                                        ? "bg-slate-800/90 text-white font-semibold"
-                                                                        : "text-slate-300 hover:bg-slate-800/60 hover:text-white",
-                                                                    collapsed && "justify-center px-2"
+                                                                        ? "bg-accent text-accent-foreground font-semibold"
+                                                                        : "text-foreground hover:bg-accent hover:text-accent-foreground",
+                                                                    collapsed && "justify-center"
                                                                 )}
                                                                 title={collapsed ? link.label : undefined}
                                                             >
                                                                 {IconComponent && (
                                                                     <IconComponent className={cn(
-                                                                        "w-4 h-4 shrink-0 transition-colors",
-                                                                        hasActiveChild ? "text-indigo-400" : "text-slate-400 group-hover:text-slate-200"
+                                                                        "w-5 h-5 shrink-0 transition-colors",
+                                                                        hasActiveChild ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
                                                                     )} />
                                                                 )}
                                                                 {!collapsed && (
                                                                     <>
-                                                                        <span className="text-[13px] font-medium flex-1 text-left rtl:text-right truncate">{link.label}</span>
+                                                                        <span className="text-sm font-medium flex-1 text-left rtl:text-right truncate">{link.label}</span>
                                                                         <ChevronDown className={cn(
-                                                                            "w-3.5 h-3.5 text-slate-400 transition-transform duration-200",
-                                                                            isItemExpanded ? "rotate-180 text-slate-200" : ""
+                                                                            "w-4 h-4 text-muted-foreground transition-transform duration-200",
+                                                                            isItemExpanded ? "rotate-180 text-foreground" : ""
                                                                         )} />
                                                                     </>
                                                                 )}
@@ -244,7 +244,7 @@ export default function Sidebar() {
                                                                         initial={{ height: 0, opacity: 0 }}
                                                                         animate={{ height: "auto", opacity: 1 }}
                                                                         exit={{ height: 0, opacity: 0 }}
-                                                                        className="ms-4 ps-3 border-s border-slate-800 space-y-0.5 my-1 overflow-hidden"
+                                                                        className="ms-4 ps-3 border-s border-border space-y-0.5 my-1 overflow-hidden"
                                                                     >
                                                                         {link.subLinks.filter(subLink => !subLink.requiredModule || activeModules?.includes(subLink.requiredModule)).map(subLink => {
                                                                             const isChildActive = pathname === subLink.path;
@@ -254,16 +254,12 @@ export default function Sidebar() {
                                                                                     href={subLink.path}
                                                                                     onClick={() => setOpenMobile(false)}
                                                                                     className={cn(
-                                                                                        "flex items-center gap-2 px-2.5 py-1.5 min-h-[34px] rounded-md transition-all text-[12.5px]",
+                                                                                        "flex items-center p-2 min-h-[38px] rounded-md transition-all text-sm",
                                                                                         isChildActive 
-                                                                                            ? "text-white font-semibold bg-indigo-600/20 border border-indigo-500/30" 
-                                                                                            : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/50"
+                                                                                            ? "text-primary font-semibold bg-primary/10" 
+                                                                                            : "text-muted-foreground hover:text-foreground hover:bg-accent"
                                                                                     )}
                                                                                 >
-                                                                                    <span className={cn(
-                                                                                        "w-1.5 h-1.5 rounded-full shrink-0",
-                                                                                        isChildActive ? "bg-indigo-400" : "bg-slate-600"
-                                                                                    )} />
                                                                                     <span className="truncate">{subLink.label}</span>
                                                                                 </Link>
                                                                             );
@@ -283,21 +279,21 @@ export default function Sidebar() {
                                                         href={link.path}
                                                         onClick={() => setOpenMobile(false)}
                                                         className={cn(
-                                                            "flex items-center gap-3 px-3 py-2 min-h-[40px] rounded-lg transition-all group relative",
+                                                            "flex items-center gap-3 p-2.5 min-h-[42px] rounded-lg transition-colors group mb-1",
                                                             isActiveExact
-                                                                ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-semibold shadow-sm shadow-indigo-950/50"
-                                                                : "text-slate-300 hover:bg-slate-800/60 hover:text-white",
-                                                            collapsed && "justify-center px-2"
+                                                                ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                                                                : "text-foreground hover:bg-accent hover:text-accent-foreground",
+                                                            collapsed && "justify-center"
                                                         )}
                                                         title={collapsed ? link.label : undefined}
                                                     >
                                                         {IconComponent && (
                                                             <IconComponent className={cn(
-                                                                "w-4 h-4 shrink-0 transition-colors",
-                                                                isActiveExact ? "text-white" : "text-slate-400 group-hover:text-slate-200"
+                                                                "w-5 h-5 shrink-0 transition-colors",
+                                                                isActiveExact ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground"
                                                             )} />
                                                         )}
-                                                        {!collapsed && <span className="text-[13px] font-medium truncate">{link.label}</span>}
+                                                        {!collapsed && <span className="text-sm font-medium truncate">{link.label}</span>}
                                                     </Link>
                                                 );
                                             })}
@@ -309,19 +305,19 @@ export default function Sidebar() {
                     })}
                 </div>
                 
-                {/* Corporate Footer in Sidebar */}
-                <div className={cn("border-t border-slate-800/90 bg-slate-950/40 shrink-0", collapsed ? "p-2.5" : "px-4 py-3")}>
+                {/* Powered By Footer in Sidebar */}
+                <div className={cn("p-4 border-t border-border shrink-0", collapsed ? "p-2" : "p-4")}>
                     {collapsed ? (
                         <div className="flex items-center justify-center w-full" title="Powered by Proxima Digital">
-                            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                            <ShieldCheck className="w-4 h-4 text-primary" />
                         </div>
                     ) : (
-                        <div className="flex items-center justify-between text-[11px] text-slate-400">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
                             <span className="flex items-center gap-1.5">
-                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                                <span>Powered by <strong className="text-slate-200 font-semibold">Proxima</strong></span>
+                                <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0" />
+                                <span>Powered by <strong className="font-semibold text-foreground">Proxima Digital</strong></span>
                             </span>
-                            <span className="text-[10px] font-mono text-slate-500 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">v2.5</span>
+                            <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded border border-border">v2.5</span>
                         </div>
                     )}
                 </div>

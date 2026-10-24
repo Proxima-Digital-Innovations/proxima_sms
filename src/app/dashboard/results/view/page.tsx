@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
+import { PrintableExamResultCard } from '@/components/reports/printable-exam-result-card';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +37,7 @@ import {
   Layers,
   SlidersHorizontal,
   FileSpreadsheet,
+  ExternalLink,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -136,329 +139,29 @@ const WEIGHT_PRESETS = {
   SIMPLE: { ca1: 'CA 1', ca2: 'CA 2', exam: 'Exam', total: 'Total' },
 };
 
-// Reusable Official Report Card Component (used for single & batch print)
+// Reusable Official Report Card Component (delegates to high-fidelity PrintableExamResultCard)
 function ReportCardCanvas({
   card,
-  weightLabels,
   isBatchItem = false,
 }: {
   card: any;
-  weightLabels: { ca1: string; ca2: string; exam: string; total: string };
+  weightLabels?: any;
   isBatchItem?: boolean;
 }) {
   if (!card) return null;
-
-  const schoolName = card.school?.name || 'Proxima SMS';
-  const schoolAddress = card.school?.address || 'Knowledge City, Nigeria';
-  const schoolPhone = card.school?.phone || '+234 800 000 0000';
-  const schoolEmail = card.school?.email || 'admin@proximasms.com';
-  const schoolLogo = card.school?.logoUrl;
-
-  const isOfficial =
-    card.summary?.isPublished ??
-    (card.grades && card.grades.length > 0 && card.grades.every((g: any) => g.isPublished));
-
   return (
-    <div
-      className={`relative bg-white text-slate-900 rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6 md:p-10 space-y-6 overflow-hidden ${
-        isBatchItem ? 'report-card-page' : 'print:shadow-none print:border-none print:w-full print:p-0'
-      }`}
-    >
-      {/* Draft / Unofficial Watermark */}
-      {!isOfficial && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden z-0 select-none">
-          <div className="text-slate-300/35 text-5xl md:text-7xl font-black uppercase tracking-widest rotate-[-30deg] border-4 border-dashed border-slate-300/30 px-10 py-5 rounded-3xl">
-            UNOFFICIAL • DRAFT
-          </div>
-        </div>
-      )}
-
-      {/* Official Header */}
-      <div className="relative z-10 flex flex-col sm:flex-row justify-between items-center border-b-2 border-slate-900 pb-5 gap-4">
-        <div className="flex items-center gap-4 text-center sm:text-left">
-          {schoolLogo ? (
-            <img src={schoolLogo} alt="School Logo" className="w-16 h-16 object-contain rounded-lg" />
-          ) : (
-            <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center border border-slate-300">
-              <School className="w-8 h-8 text-slate-700" />
-            </div>
-          )}
-          <div>
-            <h1 className="text-xl md:text-2xl font-black uppercase tracking-wider text-slate-900 leading-tight">
-              {schoolName}
-            </h1>
-            <p className="text-xs font-semibold text-slate-600 mt-0.5 uppercase tracking-wide">
-              {schoolAddress}
-            </p>
-            <p className="text-[11px] text-slate-500 font-mono mt-0.5">
-              Tel: {schoolPhone} • Email: {schoolEmail}
-            </p>
-          </div>
-        </div>
-        <div className="text-center sm:text-right shrink-0">
-          <div className="border-2 border-slate-900 px-4 py-2 rounded-xl bg-slate-50">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Official Record</div>
-            <div className="text-sm font-black uppercase tracking-wider text-slate-900">Report Card</div>
-            <div className="mt-0.5">
-              {isOfficial ? (
-                <span className="inline-flex items-center text-[9px] font-bold text-emerald-700 uppercase tracking-wider">
-                  <CheckCircle2 className="w-2.5 h-2.5 mr-1" /> Published
-                </span>
-              ) : (
-                <span className="inline-flex items-center text-[9px] font-bold text-amber-700 uppercase tracking-wider">
-                  <AlertTriangle className="w-2.5 h-2.5 mr-1" /> Draft Sheet
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Candidate Metadata Banner */}
-      <div className="relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 text-xs">
-        <div>
-          <span className="font-semibold text-slate-500 uppercase text-[10px] block">Candidate Name</span>
-          <span className="font-bold text-slate-900 text-sm">
-            {card.student?.lastName}, {card.student?.firstName}
-          </span>
-        </div>
-        <div>
-          <span className="font-semibold text-slate-500 uppercase text-[10px] block">Student ID / Reg</span>
-          <span className="font-mono font-bold text-slate-900 text-sm">
-            {card.student?.studentId || '-'}
-          </span>
-        </div>
-        <div>
-          <span className="font-semibold text-slate-500 uppercase text-[10px] block">Class</span>
-          <span className="font-bold text-slate-900 text-sm">{card.student?.class?.name || card.class?.name || '-'}</span>
-        </div>
-        <div>
-          <span className="font-semibold text-slate-500 uppercase text-[10px] block">Term & Session</span>
-          <span className="font-bold text-slate-900 text-sm">
-            {card.term?.name} • {card.term?.session?.name || 'Academic Year'}
-          </span>
-        </div>
-      </div>
-
-      {/* Academic Performance Table */}
-      <div className="relative z-10 space-y-2">
-        <div className="flex items-center gap-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">Academic Subject Performance</h3>
-          <div className="h-px flex-1 bg-slate-200" />
-        </div>
-        <div className="border border-slate-300 rounded-xl overflow-x-auto">
-          <table className="w-full text-xs text-left border-collapse min-w-[580px] sm:min-w-0">
-            <thead>
-              <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-300">
-                <th className="p-2.5">Subject</th>
-                <th className="p-2.5 text-center w-20 border-l border-slate-300">{weightLabels.ca1}</th>
-                <th className="p-2.5 text-center w-20 border-l border-slate-300">{weightLabels.ca2}</th>
-                <th className="p-2.5 text-center w-20 border-l border-slate-300">{weightLabels.exam}</th>
-                <th className="p-2.5 text-center w-24 border-l border-slate-300 bg-slate-200">{weightLabels.total}</th>
-                <th className="p-2.5 text-center w-16 border-l border-slate-300">Grade</th>
-                <th className="p-2.5 text-left w-32 border-l border-slate-300">Remarks</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {card.grades?.map((g: any) => (
-                <tr key={g.id} className="hover:bg-slate-50/50">
-                  <td className="p-2.5 font-semibold text-slate-900">{g.subject?.name}</td>
-                  <td className="p-2.5 text-center font-medium border-l border-slate-200">{g.ca1 ?? '-'}</td>
-                  <td className="p-2.5 text-center font-medium border-l border-slate-200">{g.ca2 ?? '-'}</td>
-                  <td className="p-2.5 text-center font-medium border-l border-slate-200">{g.exam ?? '-'}</td>
-                  <td className="p-2.5 text-center font-bold border-l border-slate-300 bg-slate-50 text-slate-900">
-                    {g.total ?? '-'}
-                  </td>
-                  <td className="p-2.5 text-center font-bold border-l border-slate-200">{g.grade ?? '-'}</td>
-                  <td className="p-2.5 text-slate-600 border-l border-slate-200">{g.remarks || '-'}</td>
-                </tr>
-              ))}
-              {(!card.grades || card.grades.length === 0) && (
-                <tr>
-                  <td colSpan={7} className="p-8 text-center text-slate-500 italic">
-                    No grades recorded for this student in this term.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Performance Summary & Behavioural Grid */}
-      <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-5">
-        {/* Term Summary KPIs */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">Term Summary</h3>
-            <div className="h-px flex-1 bg-slate-200" />
-          </div>
-          <div className="p-4 rounded-xl border border-slate-300 bg-slate-50 space-y-2.5 text-xs">
-            <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-              <span className="font-semibold text-slate-600 uppercase text-[11px]">Cumulative Marks</span>
-              <span className="text-base font-bold text-slate-900">{card.summary?.totalScore ?? '-'}</span>
-            </div>
-            <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-              <span className="font-semibold text-slate-600 uppercase text-[11px]">Overall Average</span>
-              <span className="text-base font-bold text-slate-900">
-                {card.summary?.overallAverage != null ? `${card.summary.overallAverage.toFixed(1)}%` : '-'}
-              </span>
-            </div>
-            <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-              <span className="font-semibold text-slate-600 uppercase text-[11px]">Class Position</span>
-              <span className="text-base font-bold text-slate-900">
-                {card.summary?.classRank ? `${card.summary.classRank} of ${card.summary.classSize || '-'}` : '-'}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="font-semibold text-slate-600 uppercase text-[11px]">Overall Grade</span>
-              <span className="text-base font-black text-slate-900">{card.summary?.overallGrade || '-'}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Behavioural Assessment */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">Behavioural Assessment (1-5)</h3>
-            <div className="h-px flex-1 bg-slate-200" />
-          </div>
-          {card.behaviouralScores && card.behaviouralScores.length > 0 ? (
-            <div className="grid grid-cols-2 gap-2 p-3.5 rounded-xl border border-slate-300 bg-slate-50 text-xs">
-              {card.behaviouralScores.map((b: any) => (
-                <div key={b.id} className="flex justify-between border-b border-slate-200 pb-1 text-[11px]">
-                  <span className="text-slate-600 font-medium">{b.trait?.name || 'Trait'}</span>
-                  <span className="font-bold text-slate-900">{b.score} / 5</span>
-                </div>
-              ))}
-            </div>
-          ) : card.behaviouralAssessment ? (
-            <div className="grid grid-cols-2 gap-2 p-3.5 rounded-xl border border-slate-300 bg-slate-50 text-xs">
-              <div className="flex justify-between border-b border-slate-200 pb-1 text-[11px]">
-                <span className="text-slate-600 font-medium">Conduct</span>
-                <span className="font-bold text-slate-900">{card.behaviouralAssessment.conduct} / 5</span>
-              </div>
-              <div className="flex justify-between border-b border-slate-200 pb-1 text-[11px]">
-                <span className="text-slate-600 font-medium">Punctuality</span>
-                <span className="font-bold text-slate-900">{card.behaviouralAssessment.punctuality} / 5</span>
-              </div>
-              <div className="flex justify-between border-b border-slate-200 pb-1 text-[11px]">
-                <span className="text-slate-600 font-medium">Dedication</span>
-                <span className="font-bold text-slate-900">{card.behaviouralAssessment.dedication} / 5</span>
-              </div>
-              <div className="flex justify-between border-b border-slate-200 pb-1 text-[11px]">
-                <span className="text-slate-600 font-medium">Participation</span>
-                <span className="font-bold text-slate-900">{card.behaviouralAssessment.participation} / 5</span>
-              </div>
-              <div className="flex justify-between border-b border-slate-200 pb-1 text-[11px]">
-                <span className="text-slate-600 font-medium">Hospitality</span>
-                <span className="font-bold text-slate-900">{card.behaviouralAssessment.hospitality} / 5</span>
-              </div>
-              <div className="flex justify-between border-b border-slate-200 pb-1 text-[11px]">
-                <span className="text-slate-600 font-medium">Neatness</span>
-                <span className="font-bold text-slate-900">{card.behaviouralAssessment.neatness} / 5</span>
-              </div>
-              <div className="flex justify-between col-span-2 pt-0.5 text-[11px]">
-                <span className="text-slate-600 font-medium">Physical Dev.</span>
-                <span className="font-bold text-slate-900">{card.behaviouralAssessment.physical} / 5</span>
-              </div>
-            </div>
-          ) : (
-            <div className="p-5 rounded-xl border border-slate-300 bg-slate-50 text-center text-xs text-slate-500 italic">
-              No behavioural assessment recorded for this term.
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Official Grading Scale Key */}
-      <div className="relative z-10 space-y-1.5 pt-1">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-black uppercase tracking-wider text-slate-800">
-            Grading System Key & Performance Scale
-          </span>
-          <div className="h-px flex-1 bg-slate-200" />
-        </div>
-        <div className="border border-slate-300 rounded-lg overflow-hidden">
-          <table className="w-full text-center text-[10px] border-collapse">
-            <thead>
-              <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-300">
-                <th className="py-1 px-1.5 border-r border-slate-300">Grade</th>
-                <th className="py-1 px-1.5 border-r border-slate-300">Range</th>
-                <th className="py-1 px-1.5 border-r border-slate-300">Remark</th>
-                <th className="py-1 px-1.5 border-r border-slate-300">Grade</th>
-                <th className="py-1 px-1.5 border-r border-slate-300">Range</th>
-                <th className="py-1 px-1.5 border-r border-slate-300">Remark</th>
-                <th className="py-1 px-1.5 border-r border-slate-300">Grade</th>
-                <th className="py-1 px-1.5 border-r border-slate-300">Range</th>
-                <th className="py-1 px-1.5">Remark</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 font-medium text-slate-800">
-              <tr>
-                <td className="py-0.5 font-black text-emerald-800 border-r border-slate-200">A1</td>
-                <td className="py-0.5 border-r border-slate-200">75 - 100%</td>
-                <td className="py-0.5 border-r border-slate-200 text-slate-600">Excellent</td>
-                <td className="py-0.5 font-black text-blue-800 border-r border-slate-200">B2</td>
-                <td className="py-0.5 border-r border-slate-200">70 - 74%</td>
-                <td className="py-0.5 border-r border-slate-200 text-slate-600">Very Good</td>
-                <td className="py-0.5 font-black text-blue-800 border-r border-slate-200">B3</td>
-                <td className="py-0.5 border-r border-slate-200">65 - 69%</td>
-                <td className="py-0.5 text-slate-600">Good</td>
-              </tr>
-              <tr>
-                <td className="py-0.5 font-black text-cyan-800 border-r border-slate-200">C4</td>
-                <td className="py-0.5 border-r border-slate-200">60 - 64%</td>
-                <td className="py-0.5 border-r border-slate-200 text-slate-600">Credit</td>
-                <td className="py-0.5 font-black text-cyan-800 border-r border-slate-200">C5</td>
-                <td className="py-0.5 border-r border-slate-200">55 - 59%</td>
-                <td className="py-0.5 border-r border-slate-200 text-slate-600">Credit</td>
-                <td className="py-0.5 font-black text-cyan-800 border-r border-slate-200">C6</td>
-                <td className="py-0.5 border-r border-slate-200">50 - 54%</td>
-                <td className="py-0.5 text-slate-600">Credit</td>
-              </tr>
-              <tr>
-                <td className="py-0.5 font-black text-amber-800 border-r border-slate-200">D7</td>
-                <td className="py-0.5 border-r border-slate-200">45 - 49%</td>
-                <td className="py-0.5 border-r border-slate-200 text-slate-600">Pass</td>
-                <td className="py-0.5 font-black text-amber-800 border-r border-slate-200">E8</td>
-                <td className="py-0.5 border-r border-slate-200">40 - 44%</td>
-                <td className="py-0.5 border-r border-slate-200 text-slate-600">Pass</td>
-                <td className="py-0.5 font-black text-rose-800 border-r border-slate-200">F9</td>
-                <td className="py-0.5 border-r border-slate-200">0 - 39%</td>
-                <td className="py-0.5 text-rose-700">Fail</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Remarks Section */}
-      <div className="relative z-10 space-y-3 pt-3 border-t border-slate-200 text-xs">
-        <div className="flex flex-col sm:flex-row gap-1.5 sm:items-baseline">
-          <span className="font-bold uppercase tracking-wider text-slate-700 w-44 shrink-0 text-[11px]">
-            Form Teacher&apos;s Remark:
-          </span>
-          <span className="italic text-slate-900 font-medium">
-            {card.summary?.teacherRemark || 'No remark recorded.'}
-          </span>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-1.5 sm:items-baseline">
-          <span className="font-bold uppercase tracking-wider text-slate-700 w-44 shrink-0 text-[11px]">
-            Principal&apos;s Remark:
-          </span>
-          <span className="italic text-slate-900 font-medium">
-            {card.summary?.principalRemark || 'No remark recorded.'}
-          </span>
-        </div>
-      </div>
-
-      {/* Signatures & Seal */}
-      <div className="relative z-10 grid grid-cols-1 sm:grid-cols-3 print:grid-cols-3 gap-6 pt-10 text-center text-[11px] font-bold uppercase tracking-wider text-slate-600">
-        <div className="border-t border-slate-400 pt-2">Form Teacher Signature</div>
-        <div className="border-t border-slate-400 pt-2">Principal Signature</div>
-        <div className="border-t border-slate-400 pt-2">Official Stamp & Date</div>
-      </div>
+    <div className={isBatchItem ? 'report-card-page print:break-after-page' : ''}>
+      <PrintableExamResultCard
+        student={card.student}
+        results={card.grades || card.results || []}
+        term={card.term?.name || card.term || 'Term'}
+        session={card.term?.session?.name || card.session || '2024/2025'}
+        summary={card.summary}
+        behaviouralAssessment={card.behaviouralAssessment}
+        behaviouralScores={card.behaviouralScores}
+        school={card.school}
+        feeInfo={card.feeInfo}
+      />
     </div>
   );
 }
@@ -779,6 +482,14 @@ export default function ViewResultsPage() {
               >
                 {isLoadingBatch ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Layers className="h-4 w-4 mr-2" />}
                 Print All Class Cards
+              </Button>
+              <Button variant="outline" size="sm" asChild className="rounded-xl border-border">
+                <Link
+                  href={`/dashboard/results/print?studentId=${reportCard?.student?.id}&classId=${selectedClass}&term=${encodeURIComponent(reportCard?.term?.name || '')}&session=${encodeURIComponent(reportCard?.term?.session?.name || '')}`}
+                  target="_blank"
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" /> Dedicated A4 Tab
+                </Link>
               </Button>
               <Button size="sm" onClick={() => window.print()} className="rounded-xl shadow-sm">
                 <Printer className="h-4 w-4 mr-2" /> Print Report Card
