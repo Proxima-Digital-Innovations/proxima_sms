@@ -103,11 +103,9 @@ export class ParentWalletService {
   }) {
     const { userId, amount, reference, category = 'WALLET_FUNDING', description, metadata } = params;
 
-    // Financial Security Amount Validation
     const validAmount = FinancialSecurity.validateMonetaryAmount(amount, 100);
 
     return await prisma.$transaction(async (tx) => {
-      // 1. Check idempotency on reference
       const existingTx = await tx.walletTransaction.findUnique({
         where: { reference },
       });
@@ -120,7 +118,6 @@ export class ParentWalletService {
         };
       }
 
-      // 2. Ensure wallet exists
       let wallet = await tx.parentWallet.findUnique({ where: { userId } });
       if (!wallet) {
         wallet = await tx.parentWallet.create({
@@ -134,14 +131,12 @@ export class ParentWalletService {
         });
       }
 
-      // 3. Increment balance
       const newBalance = wallet.balance + validAmount;
       const updatedWallet = await tx.parentWallet.update({
         where: { id: wallet.id },
         data: { balance: newBalance },
       });
 
-      // 4. Record transaction log
       const walletTx = await tx.walletTransaction.create({
         data: {
           walletId: wallet.id,
@@ -164,7 +159,7 @@ export class ParentWalletService {
   }
 
   /**
-   * Debits a parent's wallet to pay a student invoice
+   * Debits a parent's wallet to pay a student invoice (supports both Secondary Invoice & Tertiary Tuition Invoice)
    */
   async payInvoiceFromWallet(params: {
     userId: string;
@@ -183,7 +178,117 @@ export class ParentWalletService {
       where: { id: invoiceId },
       include: { student: true },
     });
-    if (!invoice) throw new Error('Invoice not found.');
+
+    if (!invoice) {
+      // Check if it is a Tertiary (University) Tuition Invoice
+      const tertiaryInvoice = await prisma.tertiaryInvoice.findUnique({
+        where: { id: invoiceId },
+        include: {
+          student: { include: { user: true } },
+        },
+      });
+      if (!tertiaryInvoice) throw new Error('Invoice not found.');
+      if (tertiaryInvoice.status === 'PAID') throw new Error('Tertiary tuition invoice is already fully settled.');
+
+      const wallet = await prisma.parentWallet.findUnique({
+        where: { userId },
+      });
+      if (!wallet) throw new Error('Parent wallet not found. Please fund your wallet first.');
+
+      if (amount && amount > tertiaryInvoice.balanceDue) {
+        throw new Error(`Payment amount (₦${amount.toLocaleString()}) exceeds the invoice balance due (₦${tertiaryInvoice.balanceDue.toLocaleString()}).`);
+      }
+
+      const rawPaymentAmount = amount && amount > 0 ? amount : tertiaryInvoice.balanceDue;
+      const validPaymentAmount = FinancialSecurity.validateMonetaryAmount(rawPaymentAmount, 1);
+
+      if (wallet.balance < validPaymentAmount) {
+        throw new Error(`Insufficient wallet balance. Available: ₦${wallet.balance.toLocaleString()}, Required: ₦${validPaymentAmount.toLocaleString()}`);
+      }
+
+      const txnRef = `WAL_TPAY_${tertiaryInvoice.id.slice(-6)}_${Date.now()}`;
+      const studentFullName = `${tertiaryInvoice.student.user.firstName} ${tertiaryInvoice.student.user.lastName}`.trim();
+
+      return await prisma.$transaction(async (tx) => {
+        const liveWallet = await tx.parentWallet.findUnique({
+          where: { id: wallet.id },
+        });
+
+        if (!liveWallet || liveWallet.balance < validPaymentAmount) {
+          throw new Error(`Concurrent modification detected or insufficient funds. Available: ₦${(liveWallet?.balance || 0).toLocaleString()}`);
+        }
+
+        const newWalletBalance = liveWallet.balance - validPaymentAmount;
+        const newInvoiceAmountPaid = tertiaryInvoice.amountPaid + validPaymentAmount;
+        const newInvoiceBalance = Math.max(0, tertiaryInvoice.totalAmount - newInvoiceAmountPaid);
+        const newStatus = newInvoiceBalance <= 0 ? 'PAID' : 'PARTIALLY_PAID';
+
+        await tx.parentWallet.update({
+          where: { id: wallet.id },
+          data: { balance: newWalletBalance },
+        });
+
+        const walletTx = await tx.walletTransaction.create({
+          data: {
+            walletId: wallet.id,
+            amount: validPaymentAmount,
+            type: 'DEBIT',
+            category: 'TUITION_PAYMENT',
+            description: `University tuition payment for ${studentFullName} (${tertiaryInvoice.student.matricNumber})`,
+            reference: txnRef,
+            invoiceId: tertiaryInvoice.id,
+            status: 'SUCCESS',
+          },
+        });
+
+        await tx.tertiaryInvoice.update({
+          where: { id: tertiaryInvoice.id },
+          data: {
+            amountPaid: newInvoiceAmountPaid,
+            balanceDue: newInvoiceBalance,
+            status: newStatus,
+            paymentReference: txnRef,
+            paymentMethod: 'SCHOOL_WALLET',
+            paymentDate: new Date(),
+          },
+        });
+
+        // Automatically unlock Bursary Exam Clearance when >= 50% of sessional tuition is settled
+        if (newInvoiceAmountPaid >= tertiaryInvoice.totalAmount * 0.5) {
+          await tx.semesterRegistration.updateMany({
+            where: {
+              studentId: tertiaryInvoice.studentId,
+              academicSession: tertiaryInvoice.academicSession,
+              semester: tertiaryInvoice.semester,
+            },
+            data: {
+              isBursaryCleared: true,
+              bursaryClearedAt: new Date(),
+              bursaryReference: txnRef,
+            },
+          });
+        }
+
+        await ledgerService.recordPaymentGlEntry(tx, {
+          amount: validPaymentAmount,
+          reference: txnRef,
+          description: `University tuition settlement via Parent Wallet for ${studentFullName} (${tertiaryInvoice.student.matricNumber})`,
+          recordedById: userId,
+          method: 'Parent School Wallet',
+          date: new Date(),
+        });
+
+        return {
+          success: true,
+          receipt: { reference: txnRef, amount: validPaymentAmount, date: new Date() },
+          walletTransaction: walletTx,
+          newWalletBalance,
+          newInvoiceBalance,
+          newStatus,
+        };
+      });
+    }
+
     if (invoice.status === 'PAID') throw new Error('Invoice is already fully settled.');
 
     const wallet = await prisma.parentWallet.findUnique({
@@ -195,7 +300,6 @@ export class ParentWalletService {
       throw new Error(`Payment amount (₦${amount.toLocaleString()}) exceeds the invoice balance due (₦${invoice.balance.toLocaleString()}).`);
     }
 
-    // Calculate effective amount & validate
     const rawPaymentAmount = amount && amount > 0 
       ? amount
       : invoice.balance;
@@ -209,7 +313,6 @@ export class ParentWalletService {
     const txnRef = `WAL_PAY_${invoice.id.slice(-6)}_${Date.now()}`;
 
     return await prisma.$transaction(async (tx) => {
-      // 1. Strict concurrency check inside transaction
       const liveWallet = await tx.parentWallet.findUnique({
         where: { id: wallet.id },
       });
@@ -223,13 +326,11 @@ export class ParentWalletService {
       const newInvoiceBalance = Math.max(0, invoice.amount - newInvoiceAmountPaid);
       const newStatus = newInvoiceBalance <= 0 ? 'PAID' : 'PARTIALLY_PAID';
 
-      // 2. Deduct wallet
       await tx.parentWallet.update({
         where: { id: wallet.id },
         data: { balance: newWalletBalance },
       });
 
-      // 3. Create debit transaction
       const walletTx = await tx.walletTransaction.create({
         data: {
           walletId: wallet.id,
@@ -243,7 +344,6 @@ export class ParentWalletService {
         },
       });
 
-      // 4. Update invoice
       await tx.invoice.update({
         where: { id: invoice.id },
         data: {
@@ -253,7 +353,6 @@ export class ParentWalletService {
         },
       });
 
-      // 5. Create official PaymentReceipt
       const receipt = await tx.paymentReceipt.create({
         data: {
           invoice: { connect: { id: invoice.id } },
@@ -267,7 +366,6 @@ export class ParentWalletService {
         },
       });
 
-      // 6. Record Double-Entry Journal Entry in General Ledger
       await ledgerService.recordPaymentGlEntry(tx, {
         amount: validPaymentAmount,
         reference: txnRef,

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PlusCircle, Upload, GraduationCap, Loader2 } from 'lucide-react';
+import { PlusCircle, Upload, GraduationCap, Loader2, Users } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -39,6 +39,12 @@ export function StudentHeaderActions() {
   const [matricNumber, setMatricNumber] = useState('');
   const [programId, setProgramId] = useState('');
   const [currentLevel, setCurrentLevel] = useState(100);
+
+  // Optional Parent / Sponsor Linking Fields for Tertiary Undergraduate
+  const [guardianName, setGuardianName] = useState('');
+  const [guardianEmail, setGuardianEmail] = useState('');
+  const [guardianPhone, setGuardianPhone] = useState('');
+  const [guardianRelationship, setGuardianRelationship] = useState('Father / Sponsor');
 
   useEffect(() => {
     if (isTertiaryOpen && programs.length === 0) {
@@ -73,18 +79,25 @@ export function StudentHeaderActions() {
         matricNumber,
         programId,
         currentLevel,
+        guardianName: guardianName.trim() || undefined,
+        guardianEmail: guardianEmail.trim() || undefined,
+        guardianPhone: guardianPhone.trim() || undefined,
+        guardianRelationship: guardianRelationship.trim() || 'Parent / Sponsor',
       });
 
       if (res.success) {
         toast({
           title: 'Undergraduate Matriculated',
-          description: `${firstName} ${lastName} (${matricNumber}) enrolled successfully. Default password: student123`,
+          description: `${firstName} ${lastName} (${matricNumber}) enrolled${guardianEmail ? ` & linked to parent (${guardianEmail})` : ''}. Default password: student123`,
         });
         setIsTertiaryOpen(false);
         setFirstName('');
         setLastName('');
         setEmail('');
         setMatricNumber('');
+        setGuardianName('');
+        setGuardianEmail('');
+        setGuardianPhone('');
         handleRefresh();
       } else {
         toast({
@@ -128,14 +141,14 @@ export function StudentHeaderActions() {
             <span>Enroll Undergraduate</span>
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-w-lg rounded-2xl">
+        <DialogContent className="max-w-lg rounded-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <GraduationCap className="h-5 w-5 text-indigo-500" />
               Matriculate Tertiary Undergraduate (TIMS)
             </DialogTitle>
             <DialogDescription>
-              Provision a university/college student account with Matriculation Number and Degree Program.
+              Provision a university/college student account with Matriculation Number, Degree Program, and linked Parent/Sponsor Portal access.
             </DialogDescription>
           </DialogHeader>
 
@@ -191,6 +204,56 @@ export function StudentHeaderActions() {
                     <SelectItem value="400">400L</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+
+            {/* Parent / Sponsor Portal Linking Section */}
+            <div className="pt-3 border-t border-border space-y-3">
+              <div className="flex items-center gap-2 text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                <Users className="h-4 w-4" />
+                <span>Parent / Sponsor Portal Linking (Optional)</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Link this undergraduate to an existing or new Parent account so their parent can monitor CGPA, course grades, and pay university tuition online.
+              </p>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Parent / Sponsor Full Name</Label>
+                  <Input
+                    placeholder="e.g. Alhaji Musa Ibrahim"
+                    value={guardianName}
+                    onChange={(e) => setGuardianName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Parent Login Email</Label>
+                  <Input
+                    type="email"
+                    placeholder="e.g. parent@proximahub.com"
+                    value={guardianEmail}
+                    onChange={(e) => setGuardianEmail(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Parent Phone Number</Label>
+                  <Input
+                    placeholder="e.g. +234 803 000 0001"
+                    value={guardianPhone}
+                    onChange={(e) => setGuardianPhone(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Relationship</Label>
+                  <Input
+                    placeholder="e.g. Father / Sponsor"
+                    value={guardianRelationship}
+                    onChange={(e) => setGuardianRelationship(e.target.value)}
+                  />
+                </div>
               </div>
             </div>
           </div>

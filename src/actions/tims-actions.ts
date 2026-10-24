@@ -642,18 +642,50 @@ export async function enrollTertiaryStudentAction(data: {
   programId: string;
   currentLevel?: number;
   password?: string;
+  guardianName?: string;
+  guardianEmail?: string;
+  guardianPhone?: string;
+  guardianRelationship?: string;
 }) {
   try {
     const bcrypt = await import('bcryptjs');
     const hashedPassword = await bcrypt.hash(data.password || 'student123', 10);
 
     const result = await prisma.$transaction(async (tx) => {
+      let guardianUserId: string | null = null;
+
+      // Handle optional Parent / Sponsor provisioning & linking
+      if (data.guardianEmail) {
+        const cleanGuardianEmail = data.guardianEmail.trim().toLowerCase();
+        let parentUser = await tx.user.findUnique({
+          where: { email: cleanGuardianEmail },
+        });
+
+        if (!parentUser) {
+          const parentHash = await bcrypt.hash('Parent@123', 10);
+          const nameParts = (data.guardianName || 'Parent Guardian').trim().split(' ');
+          parentUser = await tx.user.create({
+            data: {
+              firstName: nameParts[0] || 'Parent',
+              lastName: nameParts.slice(1).join(' ') || 'Guardian',
+              email: cleanGuardianEmail,
+              phone: data.guardianPhone || '+234 800 000 0000',
+              passwordHash: parentHash,
+              role: 'PARENT',
+              status: 'active',
+              requiresPasswordChange: false,
+            },
+          });
+        }
+        guardianUserId = parentUser.id;
+      }
+
       const user = await tx.user.create({
         data: {
           firstName: data.firstName.trim(),
           lastName: data.lastName.trim(),
           email: data.email.trim().toLowerCase(),
-          password: hashedPassword,
+          passwordHash: hashedPassword,
           role: 'STUDENT',
         },
       });
@@ -664,7 +696,11 @@ export async function enrollTertiaryStudentAction(data: {
           matricNumber: data.matricNumber.trim().toUpperCase(),
           programId: data.programId,
           currentLevel: data.currentLevel || 100,
-          academicStatus: 'GOOD_STANDING',
+          guardianUserId: guardianUserId,
+          guardianName: data.guardianName?.trim() || null,
+          guardianEmail: data.guardianEmail?.trim().toLowerCase() || null,
+          guardianPhone: data.guardianPhone?.trim() || null,
+          guardianRelationship: data.guardianRelationship?.trim() || 'Parent / Sponsor',
         },
       });
 
@@ -673,6 +709,7 @@ export async function enrollTertiaryStudentAction(data: {
 
     revalidatePath('/dashboard/students');
     revalidatePath('/dashboard/tertiary/registration');
+    revalidatePath('/dashboard');
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error.message };

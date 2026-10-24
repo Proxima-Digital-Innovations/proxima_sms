@@ -1665,6 +1665,11 @@ model StudentProfile {
   programId            String
   program              AcademicProgram              @relation(fields: [programId], references: [id])
   currentLevel         Int                          @default(100) // 100, 200, 300, 400, 500
+  guardianUserId       String?
+  guardianName         String?
+  guardianEmail        String?
+  guardianPhone        String?
+  guardianRelationship String?                      @default("Parent / Guardian")
   registrations        SemesterRegistration[]
   grades               StudentGrade[]
   candidateTokens      ExamCandidateToken[]

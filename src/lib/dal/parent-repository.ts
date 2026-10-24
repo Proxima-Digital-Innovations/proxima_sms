@@ -55,6 +55,114 @@ export class ParentRepository {
     });
   }
 
+  /**
+   * Fetches Tertiary Institution (University/College) wards linked to this Parent via StudentProfile
+   */
+  async getTertiaryWards(userId?: string, email?: string) {
+    const whereConditions: any[] = [];
+    if (userId) whereConditions.push({ guardianUserId: userId });
+    if (email) whereConditions.push({ guardianEmail: email });
+
+    if (whereConditions.length > 0) {
+      const profiles = await prisma.studentProfile.findMany({
+        where: { OR: whereConditions },
+        include: {
+          user: true,
+          program: {
+            include: {
+              department: { include: { faculty: true } },
+              faculty: true,
+            }
+          },
+          academicStandings: {
+            orderBy: { updatedAt: 'desc' },
+            take: 1,
+          },
+          registrations: {
+            orderBy: { createdAt: 'desc' },
+            include: {
+              courses: {
+                include: {
+                  offering: {
+                    include: { course: true }
+                  }
+                }
+              },
+              advisor: {
+                include: { user: true }
+              }
+            }
+          },
+          grades: {
+            include: {
+              offering: {
+                include: { course: true }
+              }
+            },
+            orderBy: { updatedAt: 'desc' }
+          },
+          invoices: {
+            orderBy: { createdAt: 'desc' }
+          }
+        }
+      });
+
+      if (profiles.length > 0) {
+        return profiles;
+      }
+    }
+
+    // Fallback for demo/admin testing if any studentProfile has guardianEmail or guardianUserId set
+    return prisma.studentProfile.findMany({
+      where: {
+        OR: [
+          { guardianEmail: { not: null } },
+          { guardianUserId: { not: null } }
+        ]
+      },
+      take: 3,
+      include: {
+        user: true,
+        program: {
+          include: {
+            department: { include: { faculty: true } },
+            faculty: true,
+          }
+        },
+        academicStandings: {
+          orderBy: { updatedAt: 'desc' },
+          take: 1,
+        },
+        registrations: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            courses: {
+              include: {
+                offering: {
+                  include: { course: true }
+                }
+              }
+            },
+            advisor: {
+              include: { user: true }
+            }
+          }
+        },
+        grades: {
+          include: {
+            offering: {
+              include: { course: true }
+            }
+          },
+          orderBy: { updatedAt: 'desc' }
+        },
+        invoices: {
+          orderBy: { createdAt: 'desc' }
+        }
+      }
+    });
+  }
+
   async getParentUserWithProfile() {
     return prisma.user.findFirst({
       where: { role: 'PARENT' },

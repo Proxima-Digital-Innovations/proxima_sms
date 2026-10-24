@@ -84,6 +84,7 @@ export default async function StudentsPage(props: {
             where: tertiaryWhere,
             include: {
                 user: { select: { firstName: true, lastName: true, email: true } },
+                academicStandings: { orderBy: { updatedAt: 'desc' }, take: 1 },
                 program: {
                     include: {
                         department: { select: { name: true } },

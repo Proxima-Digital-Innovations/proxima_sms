@@ -24,19 +24,21 @@ import {
   ExternalLink,
   RefreshCw,
   Sparkles,
-  Lock
+  Lock,
+  UserPlus,
+  Award,
+  School
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { getParentDashboardData } from '@/actions/parent-actions';
+import { getParentDashboardData, linkChildToParentAction } from '@/actions/parent-actions';
 import { payInvoiceWithWallet, confirmWalletTransferArrival } from '@/actions/wallet-actions';
 import Link from 'next/link';
 
@@ -54,6 +56,12 @@ export function ParentDashboard() {
   const [topupAmount, setTopupAmount] = useState<number>(50000);
   const [customAmount, setCustomAmount] = useState<string>('');
   const [isProcessingTopup, setIsProcessingTopup] = useState(false);
+
+  // Link Child Dialog State (Secondary Admission ID or Tertiary Matric Number)
+  const [linkChildOpen, setLinkChildOpen] = useState(false);
+  const [childIdentifier, setChildIdentifier] = useState('');
+  const [childRelationship, setChildRelationship] = useState('Father / Sponsor');
+  const [isLinkingChild, setIsLinkingChild] = useState(false);
 
   const fetchParentData = useCallback(async (childId?: string) => {
     setIsLoading(true);
@@ -75,6 +83,50 @@ export function ParentDashboard() {
   useEffect(() => {
     fetchParentData(selectedChildId || undefined);
   }, [fetchParentData, selectedChildId]);
+
+  const handleLinkChild = async () => {
+    if (!childIdentifier.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Identifier Required',
+        description: 'Enter your child’s Matriculation Number (e.g. U2025/CSC/001) or Secondary Admission ID (e.g. STU-20001).',
+      });
+      return;
+    }
+
+    setIsLinkingChild(true);
+    try {
+      const res = await linkChildToParentAction(childIdentifier.trim(), childRelationship);
+      if (res.success) {
+        toast({
+          title: 'Child Linked to Parent Profile',
+          description: res.message,
+        });
+        setLinkChildOpen(false);
+        setChildIdentifier('');
+        if (res.wardId) {
+          setSelectedChildId(res.wardId);
+          fetchParentData(res.wardId);
+        } else {
+          fetchParentData();
+        }
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Could Not Link Student',
+          description: res.message || 'Check the Admission ID or Matriculation Number and try again.',
+        });
+      }
+    } catch (err: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: err.message || 'An unexpected error occurred.',
+      });
+    } finally {
+      setIsLinkingChild(false);
+    }
+  };
 
   const handlePayInvoice = async (invoiceId: string) => {
     setPayingInvoiceId(invoiceId);
@@ -146,16 +198,13 @@ export function ParentDashboard() {
 
   const wards = data?.wards || [];
   const currentWard = data?.currentWard;
+  const isTertiaryWard = currentWard?.institutionTier === 'TERTIARY';
   const grades = data?.grades || [];
   const invoices = data?.invoices || [];
   const feeSummary = data?.feeSummary || { totalBilled: 0, totalPaid: 0, outstanding: 0 };
   const attendanceCount = data?.attendanceCount || 0;
   const wallet = data?.wallet || { balance: 0, accountNumber: '', bankName: '', accountName: '' };
   const activeTerm = data?.activeTerm;
-
-  const averageGrade = grades.length > 0
-    ? (grades.reduce((acc: number, g: any) => acc + (g.total || 0), 0) / grades.length)
-    : 0;
 
   const attendanceRate = attendanceCount > 0 ? Math.min(100, Math.round((attendanceCount / 22) * 100)) : 95;
 
@@ -191,19 +240,29 @@ export function ParentDashboard() {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="font-headline text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">
-              School Tuition Wallet
+              Parent & Sponsor Portal
             </h1>
             <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-xs font-semibold px-2.5 py-0.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse mr-1.5 inline-block" />
-              Instant Settlement Active
+              Secondary & Tertiary Linked
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Pre-fund school fees, manage tuition reserves for your children, and enjoy instant 1-click invoice clearance.
+            Monitor academic progress, CGPA, terminal report cards, and settle tuition across Secondary & University tiers in one place.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setLinkChildOpen(true)}
+            className="flex items-center gap-1.5 text-xs h-9 border-primary/40 text-primary hover:bg-primary/5 font-semibold"
+          >
+            <UserPlus className="h-3.5 w-3.5" />
+            Link Child (Matric / ID)
+          </Button>
+
           <Button 
             variant="outline" 
             size="sm" 
@@ -238,7 +297,7 @@ export function ParentDashboard() {
               <div className="space-y-1">
                 <span className="text-xs uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-1.5">
                   <Wallet className="h-3.5 w-3.5 text-primary" />
-                  Available Educational Balance
+                  Available Educational Balance (Secondary & University)
                 </span>
                 <div className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white font-mono mt-1">
                   ₦{(wallet?.balance || 0).toLocaleString('en-NG', { minimumFractionDigits: 2 })}
@@ -357,50 +416,149 @@ export function ParentDashboard() {
 
       </div>
 
-      {/* 3. MULTI-CHILD SELECTION BAR */}
-      <div className="bg-card border border-border p-4 rounded-2xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* 3. MULTI-CHILD SELECTION BAR (Secondary & Tertiary Wards) */}
+      <div className="bg-card border border-border p-4 rounded-2xl shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <h2 className="font-bold text-base text-foreground flex items-center gap-2">
             <GraduationCap className="w-4 h-4 text-primary" />
             Enrolled Children & Academic Overview
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Select a child to view terminal grades, attendance, and settle specific class invoices.
+            Switch seamlessly between your children in Secondary School and University / Tertiary Programs.
           </p>
         </div>
 
-        {/* Multi-Child Selector Chips */}
-        {wards.length > 0 && (
-          <div className="flex items-center gap-2 flex-wrap">
-            {wards.map((ward: any) => {
-              const isSelected = selectedChildId === ward.id;
-              return (
-                <button
-                  key={ward.id}
-                  onClick={() => setSelectedChildId(ward.id)}
-                  className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
-                    isSelected
-                      ? 'bg-primary text-primary-foreground border-primary shadow-sm scale-[1.02]'
-                      : 'bg-muted/40 hover:bg-muted text-foreground border-border/80'
-                  }`}
-                >
-                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-black ${
-                    isSelected ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-primary/10 text-primary'
-                  }`}>
-                    {ward.firstName?.[0]}{ward.lastName?.[0]}
+        {/* Multi-Child Selector Chips + Link Child Button */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {wards.map((ward: any) => {
+            const isSelected = selectedChildId === ward.id;
+            const isTertiary = ward.institutionTier === 'TERTIARY';
+            return (
+              <button
+                key={ward.id}
+                onClick={() => setSelectedChildId(ward.id)}
+                className={`flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ${
+                  isSelected
+                    ? 'bg-primary text-primary-foreground border-primary shadow-sm scale-[1.02]'
+                    : 'bg-muted/40 hover:bg-muted text-foreground border-border/80'
+                }`}
+              >
+                <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-black ${
+                  isSelected ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-primary/10 text-primary'
+                }`}>
+                  {ward.firstName?.[0]}{ward.lastName?.[0]}
+                </div>
+                <div className="text-left">
+                  <div className="flex items-center gap-1.5">
+                    <span>{ward.firstName} {ward.lastName}</span>
+                    <span className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded font-extrabold ${
+                      isSelected
+                        ? 'bg-primary-foreground/20 text-primary-foreground'
+                        : isTertiary
+                        ? 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400'
+                        : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                    }`}>
+                      {isTertiary ? 'University' : 'Secondary'}
+                    </span>
                   </div>
-                  <span>{ward.firstName} {ward.lastName}</span>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${
-                    isSelected ? 'bg-primary-foreground/15 text-primary-foreground' : 'bg-muted text-muted-foreground'
+                  <div className={`text-[10px] font-mono ${
+                    isSelected ? 'text-primary-foreground/80' : 'text-muted-foreground'
                   }`}>
-                    {ward.class?.name || 'Student'}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        )}
+                    {isTertiary
+                      ? `${ward.matricNumber} • ${ward.class?.name}`
+                      : `${ward.studentId} • ${ward.class?.name || 'Student'}`}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setLinkChildOpen(true)}
+            className="rounded-xl text-xs font-bold h-11 border-dashed border-primary/50 text-primary hover:bg-primary/5 px-3.5"
+          >
+            <UserPlus className="w-3.5 h-3.5 mr-1.5" />
+            + Link Another Child
+          </Button>
+        </div>
       </div>
+
+      {/* 3B. TERTIARY ACADEMIC STANDING & CLEARANCE BANNER (Only when a University Ward is selected) */}
+      {isTertiaryWard && currentWard && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="rounded-2xl border-indigo-500/20 bg-gradient-to-br from-indigo-950/40 to-card p-4 shadow-sm">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-semibold uppercase tracking-wider">Degree Program</span>
+              <GraduationCap className="w-4 h-4 text-indigo-400" />
+            </div>
+            <div className="font-bold text-sm text-foreground truncate">
+              {currentWard.program?.name || 'B.Sc. Degree Program'}
+            </div>
+            <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2 font-mono">
+              <Badge variant="outline" className="text-[10px] border-indigo-500/30 text-indigo-400">
+                {currentWard.currentLevel} Level
+              </Badge>
+              <span>{currentWard.matricNumber}</span>
+            </div>
+          </Card>
+
+          <Card className="rounded-2xl border-emerald-500/20 bg-card p-4 shadow-sm">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-semibold uppercase tracking-wider">Cumulative GPA (CGPA)</span>
+              <Award className="w-4 h-4 text-emerald-500" />
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-extrabold font-mono text-foreground">
+                {Number(currentWard.academicStanding?.cgpa || 0).toFixed(2)}
+              </span>
+              <span className="text-xs text-muted-foreground">/ 5.00 NUC Scale</span>
+            </div>
+            <div className="mt-1">
+              <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-[10px] font-bold">
+                {(currentWard.academicStanding?.classification || 'GOOD_STANDING').replace(/_/g, ' ')}
+              </Badge>
+            </div>
+          </Card>
+
+          <Card className="rounded-2xl border-border bg-card p-4 shadow-sm">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-semibold uppercase tracking-wider">Course Registration</span>
+              <BookOpen className="w-4 h-4 text-primary" />
+            </div>
+            <div className="text-xl font-extrabold font-mono text-foreground">
+              {currentWard.currentRegistration?.totalCredits || 0} / {currentWard.currentRegistration?.maxCreditsAllowed || 24} Units
+            </div>
+            <div className="mt-1 flex items-center gap-1.5">
+              {currentWard.currentRegistration?.isAdvisorSigned ? (
+                <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-0 text-[10px]">
+                  <CheckCircle2 className="w-3 h-3 mr-1" /> Advisor Signed
+                </Badge>
+              ) : (
+                <Badge variant="secondary" className="text-[10px]">
+                  Awaiting Advisor Sign-Off
+                </Badge>
+              )}
+            </div>
+          </Card>
+
+          <Card className="rounded-2xl border-border bg-card p-4 shadow-sm">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-semibold uppercase tracking-wider">Bursary Exam Clearance</span>
+              <ShieldCheck className="w-4 h-4 text-emerald-500" />
+            </div>
+            <div className="font-bold text-sm text-foreground">
+              {currentWard.currentRegistration?.isBursaryCleared || feeSummary.outstanding <= 0
+                ? 'Cleared for Semester Exams'
+                : 'Bursary Hold (Pay ≥50% Tuition)'}
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {currentWard.program?.departmentName} • {currentWard.program?.facultyName}
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* 4. FEE DUE ALERT BANNER (Only shows when current ward has balance) */}
       {feeSummary.outstanding > 0 ? (
@@ -410,15 +568,17 @@ export function ParentDashboard() {
               <AlertCircle className="w-5 h-5" />
             </div>
             <div>
-              <div className="font-bold text-base text-foreground flex items-center gap-2">
-                <span>Tuition Payment Due for {currentWard?.firstName || 'your child'}</span>
+              <div className="font-bold text-base text-foreground flex items-center gap-2 flex-wrap">
+                <span>
+                  {isTertiaryWard ? 'University Sessional Tuition Due' : 'Tuition Payment Due'} for {currentWard?.firstName || 'your child'}
+                </span>
                 <Badge variant="destructive" className="text-xs font-mono">
                   ₦{feeSummary.outstanding.toLocaleString()}
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {wallet.balance >= feeSummary.outstanding
-                  ? `You have ₦${wallet.balance.toLocaleString()} in your Tuition Wallet ready for 1-click settlement.`
+                  ? `You have ₦${wallet.balance.toLocaleString()} in your Tuition Wallet ready for 1-click settlement${isTertiaryWard ? ' & instant Bursary Exam Clearance' : ''}.`
                   : `Your wallet balance is ₦${wallet.balance.toLocaleString()}. Please add funds to settle this bill.`}
               </p>
             </div>
@@ -443,7 +603,7 @@ export function ParentDashboard() {
               variant="outline"
               className="text-xs h-9 px-3"
             >
-              <Link href="/dashboard/parent/invoices">
+              <Link href={`/dashboard/parent/invoices?studentId=${currentWard?.id || ''}`}>
                 View Invoices <ArrowRight className="w-3.5 h-3.5 ml-1" />
               </Link>
             </Button>
@@ -457,27 +617,27 @@ export function ParentDashboard() {
             </div>
             <div>
               <div className="font-bold text-sm text-foreground">
-                All School Fees Up to Date
+                All {isTertiaryWard ? 'University Sessional Fees' : 'School Fees'} Up to Date
               </div>
               <p className="text-xs text-muted-foreground">
-                All term invoices for {currentWard?.firstName || 'student'} have been settled in full.
+                All invoices for {currentWard?.firstName || 'student'} have been settled in full.
               </p>
             </div>
           </div>
           <Button asChild size="sm" variant="outline" className="text-xs h-8">
-            <Link href="/dashboard/parent/invoices">
+            <Link href={`/dashboard/parent/invoices?studentId=${currentWard?.id || ''}`}>
               View Receipts
             </Link>
           </Button>
         </div>
       )}
 
-      {/* 5. THREE SIMPLE CONTENT TABS */}
+      {/* 5. THREE CONTENT TABS (Tailored for Secondary vs Tertiary) */}
       <Tabs defaultValue="academics" value={activeTab} onValueChange={setActiveTab} className="w-full space-y-4">
         <TabsList className="bg-card border border-border p-1 rounded-2xl h-12 w-full sm:w-auto grid grid-cols-3 sm:inline-flex">
           <TabsTrigger value="academics" className="rounded-xl font-bold text-xs gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <BookOpen className="w-4 h-4" />
-            <span className="hidden sm:inline">Subject</span> Grades
+            {isTertiaryWard ? 'University Course Grades' : 'Subject Grades'}
           </TabsTrigger>
           <TabsTrigger value="invoices" className="rounded-xl font-bold text-xs gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Receipt className="w-4 h-4" />
@@ -485,11 +645,11 @@ export function ParentDashboard() {
           </TabsTrigger>
           <TabsTrigger value="attendance" className="rounded-xl font-bold text-xs gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Clock className="w-4 h-4" />
-            Attendance & Schedule
+            {isTertiaryWard ? 'Registered Courses & Advisor' : 'Attendance & Schedule'}
           </TabsTrigger>
         </TabsList>
 
-        {/* Tab 1: Subject Grades Table */}
+        {/* Tab 1: Subject / Course Grades Table */}
         <TabsContent value="academics" className="m-0">
           <Card className="rounded-2xl border-border bg-card shadow-sm overflow-hidden">
             <CardHeader className="border-b border-border/80 pb-4 bg-muted/20">
@@ -497,16 +657,20 @@ export function ParentDashboard() {
                 <div>
                   <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
                     <BookOpen className="w-4 h-4 text-primary" />
-                    Academic Evaluation — {currentWard?.firstName} {currentWard?.lastName}
+                    {isTertiaryWard
+                      ? `University Course Transcript — ${currentWard?.firstName} ${currentWard?.lastName} (${currentWard?.matricNumber})`
+                      : `Academic Evaluation — ${currentWard?.firstName} ${currentWard?.lastName}`}
                   </CardTitle>
                   <CardDescription className="text-xs">
-                    Continuous Assessments (CA1 & CA2) and Terminal Examination scores for {activeTerm?.name || 'Active Term'}.
+                    {isTertiaryWard
+                      ? `${currentWard?.program?.name} (${currentWard?.currentLevel}L) • Continuous Assessment (40) & Semester Examination (60).`
+                      : `Continuous Assessments (CA1 & CA2) and Terminal Examination scores for ${activeTerm?.name || 'Active Term'}.`}
                   </CardDescription>
                 </div>
                 <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold rounded-xl">
-                  <Link href="/dashboard/parent/results">
+                  <Link href={`/dashboard/parent/results?studentId=${currentWard?.id || ''}`}>
                     <Printer className="w-3.5 h-3.5 mr-1.5" />
-                    Print Official Report Card
+                    {isTertiaryWard ? 'Print Statement of Result' : 'Print Official Report Card'}
                   </Link>
                 </Button>
               </div>
@@ -515,8 +679,52 @@ export function ParentDashboard() {
               {grades.length === 0 ? (
                 <div className="p-12 text-center text-muted-foreground">
                   <GraduationCap className="w-12 h-12 mx-auto mb-2 opacity-30" />
-                  <p className="text-sm font-semibold">Scores are currently being uploaded by teachers.</p>
-                  <p className="text-xs mt-1">Check back once the examination committee publishes this term’s grades.</p>
+                  <p className="text-sm font-semibold">
+                    {isTertiaryWard
+                      ? 'Semester course grades are awaiting Senate ratification or lecturer upload.'
+                      : 'Scores are currently being uploaded by teachers.'}
+                  </p>
+                  <p className="text-xs mt-1">
+                    Check back once the examination committee publishes this semester’s results.
+                  </p>
+                </div>
+              ) : isTertiaryWard ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/40 border-b border-border text-xs text-muted-foreground uppercase font-semibold">
+                      <tr>
+                        <th className="py-3 px-4 text-left">Course Code & Title</th>
+                        <th className="py-3 px-4 text-center">Units</th>
+                        <th className="py-3 px-4 text-center">CA (40)</th>
+                        <th className="py-3 px-4 text-center">Exam (60)</th>
+                        <th className="py-3 px-4 text-center">Total (100)</th>
+                        <th className="py-3 px-4 text-center">Grade</th>
+                        <th className="py-3 px-4 text-center">GP (5.0)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {grades.map((g: any) => (
+                        <tr key={g.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="py-3 px-4 font-semibold text-foreground">
+                            <span className="font-mono text-xs text-primary mr-2">{g.courseCode}</span>
+                            {g.courseTitle || g.subject?.name}
+                          </td>
+                          <td className="py-3 px-4 text-center font-mono text-xs">{g.creditUnits ?? 3}</td>
+                          <td className="py-3 px-4 text-center font-mono text-xs">{g.ca1 ?? '-'}</td>
+                          <td className="py-3 px-4 text-center font-mono text-xs">{g.exam ?? '-'}</td>
+                          <td className="py-3 px-4 text-center font-mono font-bold text-base text-foreground">
+                            {g.total ?? '-'}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            {getGradeBadge(g.grade)}
+                          </td>
+                          <td className="py-3 px-4 text-center font-mono font-bold text-xs">
+                            {Number(g.gradePoint ?? 0).toFixed(1)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -564,10 +772,10 @@ export function ParentDashboard() {
                 <div>
                   <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
                     <Receipt className="w-4 h-4 text-indigo-500" />
-                    School Billing Invoices — {currentWard?.firstName} {currentWard?.lastName}
+                    {isTertiaryWard ? 'University Tuition & Sessional Bills' : 'School Billing Invoices'} — {currentWard?.firstName} {currentWard?.lastName}
                   </CardTitle>
                   <CardDescription className="text-xs">
-                    Settle tuition instantly with 1 click using your school wallet.
+                    Settle tuition instantly with 1 click using your Parent Tuition Wallet.
                   </CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
@@ -614,7 +822,7 @@ export function ParentDashboard() {
                           <div className="text-xs text-muted-foreground mt-1 flex items-center gap-3">
                             <span>Total Billed: <strong>₦{inv.amount.toLocaleString()}</strong></span>
                             <span>•</span>
-                            <span>Term: {inv.term?.name || 'Academic Term'}</span>
+                            <span>{inv.term?.name || 'Academic Session'}</span>
                           </div>
                         </div>
 
@@ -643,7 +851,7 @@ export function ParentDashboard() {
                             </>
                           ) : (
                             <Button asChild size="sm" variant="outline" className="text-xs h-9 rounded-xl">
-                              <Link href="/dashboard/parent/invoices">
+                              <Link href={`/dashboard/parent/invoices?studentId=${currentWard?.id || ''}`}>
                                 View Official Receipt
                               </Link>
                             </Button>
@@ -658,73 +866,179 @@ export function ParentDashboard() {
           </Card>
         </TabsContent>
 
-        {/* Tab 3: Daily Attendance & Schedule */}
+        {/* Tab 3: Registered Courses & Advisor (Tertiary) OR Daily Attendance & Schedule (Secondary) */}
         <TabsContent value="attendance" className="m-0 space-y-4">
-          <Card className="rounded-2xl border-border bg-card shadow-sm p-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-              <div>
-                <h3 className="font-bold text-base text-foreground flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-emerald-500" />
-                  Presence & Classroom Schedule
-                </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Verified school presence and weekly timetable for {currentWard?.firstName} ({currentWard?.class?.name || 'Student'}).
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button asChild size="sm" variant="outline" className="text-xs rounded-xl">
-                  <Link href="/dashboard/parent/attendance">
-                    Full Attendance Log
-                  </Link>
-                </Button>
-                <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs rounded-xl">
-                  <Link href="/dashboard/parent/timetable">
-                    Weekly Timetable
-                  </Link>
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-              <div className="p-4 rounded-xl bg-muted/40 border border-border/80 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-muted-foreground">Classroom Teacher:</span>
-                  <span className="text-xs font-bold text-foreground">
-                    {currentWard?.classTeacher
-                      ? `${currentWard.classTeacher.firstName} ${currentWard.classTeacher.lastName}`
-                      : 'Assigned Form Tutor'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-muted-foreground">Term Attendance Rate:</span>
-                  <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">{attendanceRate}%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-muted-foreground">Verified Days Present:</span>
-                  <span className="text-xs font-mono font-bold text-foreground">{attendanceCount} Days</span>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-muted/40 border border-border/80 flex flex-col justify-between">
+          {isTertiaryWard ? (
+            <Card className="rounded-2xl border-border bg-card shadow-sm p-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                 <div>
-                  <div className="text-xs font-semibold text-muted-foreground mb-1">Weekly Timetable Schedule</div>
-                  <p className="text-xs text-muted-foreground">
-                    View subject periods, class timings, and subject teachers for each school day.
+                  <h3 className="font-bold text-base text-foreground flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4 text-indigo-500" />
+                    Semester Course Registration & Level Advisor
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Registered courses for {currentWard?.firstName} {currentWard?.lastName} ({currentWard?.currentRegistration?.session || '2024/2025'} • {currentWard?.currentRegistration?.semester || 'FIRST'} Semester).
                   </p>
                 </div>
-                <Button asChild size="sm" variant="outline" className="w-full text-xs mt-3 rounded-lg">
-                  <Link href="/dashboard/parent/timetable">
-                    Open Weekly Timetable <ArrowRight className="w-3.5 h-3.5 ml-1" />
-                  </Link>
-                </Button>
+                <Badge variant="outline" className="font-mono text-xs">
+                  {currentWard?.currentRegistration?.totalCredits || 0} Total Credit Units
+                </Badge>
               </div>
-            </div>
-          </Card>
+
+              {(currentWard?.currentRegistration?.courses || []).length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground border border-dashed rounded-xl">
+                  No semester courses registered yet for this session.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {currentWard.currentRegistration.courses.map((c: any) => (
+                    <div key={c.id} className="p-3.5 rounded-xl bg-muted/40 border border-border/80 flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs font-bold text-primary">{c.code}</span>
+                          <span className="text-xs font-semibold text-foreground">{c.title}</span>
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-0.5">
+                          {c.creditUnits} Credit Units • {c.semester} Semester
+                        </div>
+                      </div>
+                      {c.grade ? (
+                        <Badge className="bg-emerald-600 text-white font-mono text-xs">
+                          {c.grade.letterGrade} ({c.grade.totalScore}%)
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-[10px]">
+                          In Progress
+                        </Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          ) : (
+            <Card className="rounded-2xl border-border bg-card shadow-sm p-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                <div>
+                  <h3 className="font-bold text-base text-foreground flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-emerald-500" />
+                    Presence & Classroom Schedule
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Verified school presence and weekly timetable for {currentWard?.firstName} ({currentWard?.class?.name || 'Student'}).
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button asChild size="sm" variant="outline" className="text-xs rounded-xl">
+                    <Link href="/dashboard/parent/attendance">
+                      Full Attendance Log
+                    </Link>
+                  </Button>
+                  <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs rounded-xl">
+                    <Link href="/dashboard/parent/timetable">
+                      Weekly Timetable
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                <div className="p-4 rounded-xl bg-muted/40 border border-border/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-muted-foreground">Classroom Teacher:</span>
+                    <span className="text-xs font-bold text-foreground">
+                      {currentWard?.classTeacher
+                        ? `${currentWard.classTeacher.firstName} ${currentWard.classTeacher.lastName}`
+                        : 'Assigned Form Tutor'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-muted-foreground">Term Attendance Rate:</span>
+                    <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">{attendanceRate}%</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-muted-foreground">Verified Days Present:</span>
+                    <span className="text-xs font-mono font-bold text-foreground">{attendanceCount} Days</span>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl bg-muted/40 border border-border/80 flex flex-col justify-between">
+                  <div>
+                    <div className="text-xs font-semibold text-muted-foreground mb-1">Weekly Timetable Schedule</div>
+                    <p className="text-xs text-muted-foreground">
+                      View subject periods, class timings, and subject teachers for each school day.
+                    </p>
+                  </div>
+                  <Button asChild size="sm" variant="outline" className="w-full text-xs mt-3 rounded-lg">
+                    <Link href="/dashboard/parent/timetable">
+                      Open Weekly Timetable <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          )}
         </TabsContent>
 
       </Tabs>
 
-      {/* 6. FUND WALLET DIALOG (Modal directly on Dashboard) */}
+      {/* 6. LINK CHILD (SECONDARY OR TERTIARY) DIALOG */}
+      <Dialog open={linkChildOpen} onOpenChange={setLinkChildOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+              <UserPlus className="h-5 w-5 text-primary" />
+              Link Child to Parent Profile
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Link a child in either <strong>Secondary School</strong> (using their Admission ID e.g. <code>STU-20001</code>) or <strong>University / Tertiary Institution</strong> (using their Matriculation Number e.g. <code>U2025/CSC/001</code>).
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="childIdentifier" className="text-xs font-semibold">
+                Student Admission ID or University Matric Number
+              </Label>
+              <Input
+                id="childIdentifier"
+                placeholder="e.g. U2025/CSC/001 or STU-20001"
+                value={childIdentifier}
+                onChange={(e) => setChildIdentifier(e.target.value)}
+                className="font-mono"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="childRel" className="text-xs font-semibold">
+                Relationship to Student
+              </Label>
+              <Input
+                id="childRel"
+                placeholder="e.g. Father / Sponsor, Mother, Guardian"
+                value={childRelationship}
+                onChange={(e) => setChildRelationship(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setLinkChildOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleLinkChild}
+              disabled={isLinkingChild}
+              className="bg-primary text-primary-foreground font-semibold"
+            >
+              {isLinkingChild ? 'Linking...' : 'Link Child Now'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 7. FUND WALLET DIALOG (Modal directly on Dashboard) */}
       <Dialog open={topupDialogOpen} onOpenChange={setTopupDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
