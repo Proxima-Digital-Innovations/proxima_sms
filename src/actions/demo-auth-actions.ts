@@ -54,7 +54,7 @@ export async function getDemoPersonas(): Promise<{ success: boolean; personas: D
     {
       role: 'SECONDARY_STUDENT',
       label: 'Secondary School Student',
-      email: 'student@proximahub.com',
+      email: 'student1@school.edu',
       passwordDescription: 'password123',
       description: 'High school terminal results, class timetable, LMS assignments, quizzes & e-Library.',
       badgeColor: 'bg-teal-100 text-teal-800 border-teal-300',

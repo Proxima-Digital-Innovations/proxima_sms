@@ -43,7 +43,15 @@ export default function Sidebar() {
         fetchSchool();
     }, []);
 
-    const baseNavConfig = getFilteredNavConfig(role as string, activeModules || [], (user as any)?.institutionTier);
+    const userEmail = ((user as any)?.email || '').toLowerCase();
+    const effectiveInstitutionTier =
+        userEmail === 'student@proximahub.com' || userEmail.endsWith('@tims.edu.ng')
+            ? 'TERTIARY'
+            : userEmail === 'student1@school.edu'
+              ? 'SECONDARY'
+              : (user as any)?.institutionTier;
+
+    const baseNavConfig = getFilteredNavConfig(role as string, activeModules || [], effectiveInstitutionTier);
     
     // Compute dynamic nav config from RBAC permissions
     const dynamicNavConfig = [...baseNavConfig];

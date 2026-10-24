@@ -58,11 +58,15 @@ export async function getStudentDashboardData(targetStudentId?: string) {
             const session = await auth();
             const sessionUser = session?.user as any;
             if (sessionUser) {
+                const nameParts = (sessionUser.name || '').trim().split(/\s+/);
+                const firstName = nameParts[0] || '';
+                const lastName = nameParts.slice(1).join(' ') || '';
                 const matchedStudent = await prisma.student.findFirst({
                     where: {
                         OR: [
-                            { studentId: sessionUser.staffId || sessionUser.username || '' },
+                            { studentId: sessionUser.staffId || sessionUser.username || '__none__' },
                             { id: sessionUser.id },
+                            ...(firstName && lastName ? [{ firstName, lastName }] : []),
                         ]
                     }
                 });
@@ -90,11 +94,12 @@ export async function getStudentDashboardData(targetStudentId?: string) {
                     upcomingAssignments: [],
                     availableQuizzes: [],
                     recentModules: [],
+                    recentGrades: [],
                 }
             };
         }
 
-        const [totalAtt, presentAtt, unpaidInvoices, upcomingAssignments, availableQuizzes, recentModules] = await Promise.all([
+        const [totalAtt, presentAtt, unpaidInvoices, upcomingAssignments, availableQuizzes, recentModules, recentGrades] = await Promise.all([
             prisma.attendance.count({ where: { studentId: student.id } }),
             prisma.attendance.count({ where: { studentId: student.id, status: { in: ['PRESENT', 'Present'] } } }),
             prisma.invoice.findMany({
@@ -123,7 +128,13 @@ export async function getStudentDashboardData(targetStudentId?: string) {
                     take: 4,
                     orderBy: { updatedAt: 'desc' }
                 })
-                : Promise.resolve([])
+                : Promise.resolve([]),
+            prisma.termGrade.findMany({
+                where: { studentId: student.id },
+                include: { subject: true },
+                orderBy: { total: 'desc' },
+                take: 6,
+            }),
         ]);
 
         const attendanceRate = totalAtt > 0 ? Math.round((presentAtt / totalAtt) * 100) : 95;
@@ -140,6 +151,7 @@ export async function getStudentDashboardData(targetStudentId?: string) {
                 upcomingAssignments,
                 availableQuizzes,
                 recentModules,
+                recentGrades,
             }
         };
     } catch (error: any) {

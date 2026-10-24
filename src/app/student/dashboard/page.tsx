@@ -4,12 +4,13 @@ import { useState, useEffect } from 'react';
 import { getStudentDashboardData } from '@/actions/student-actions';
 import { 
   BookOpen, Calendar, Clock, CreditCard, CheckCircle, 
-  ChevronRight, Layout, Star, Zap, User, AlertCircle,
-  FileText, TrendingUp, Wallet
+  ChevronRight, Layout, Zap, AlertCircle,
+  FileText, TrendingUp, Wallet, GraduationCap, Award
 } from 'lucide-react';
 import Link from 'next/link';
-
-import { motion } from 'framer-motion';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 export default function StudentDashboard() {
   const [loading, setLoading] = useState(true);
@@ -31,226 +32,250 @@ export default function StudentDashboard() {
 
   if (loading) {
     return (
-        <div className="min-h-screen bg-neutral-950 flex justify-center items-center">
-            <div className="flex flex-col items-center gap-4">
-                <div className="w-12 h-12 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
-                <p className="text-neutral-400 font-medium animate-pulse">Loading portal...</p>
-            </div>
+      <div className="flex justify-center items-center py-24">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+          <p className="text-muted-foreground text-sm font-medium">Loading student portal...</p>
         </div>
+      </div>
     );
   }
 
   if (!data) {
-      return (
-          <div className="min-h-screen bg-neutral-950 flex justify-center items-center text-white">
-              <div className="text-center space-y-4">
-                  <AlertCircle className="w-12 h-12 text-rose-500 mx-auto" />
-                  <h2 className="text-xl font-bold">Failed to load data</h2>
-                  <p className="text-neutral-400">Please refresh the page to try again.</p>
-              </div>
-          </div>
-      )
+    return (
+      <div className="flex justify-center items-center py-20">
+        <div className="text-center space-y-3">
+          <AlertCircle className="w-10 h-10 text-destructive mx-auto" />
+          <h2 className="text-lg font-bold text-foreground">Unable to load student profile</h2>
+          <p className="text-muted-foreground text-sm">Please refresh the page to try again.</p>
+        </div>
+      </div>
+    );
   }
 
-  const { profile, stats, upcomingAssignments = [], availableQuizzes = [], recentModules = [] } = data;
+  const {
+    profile,
+    stats,
+    upcomingAssignments = [],
+    availableQuizzes = [],
+    recentModules = [],
+    recentGrades = [],
+  } = data;
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 p-4 md:p-8 font-sans selection:bg-indigo-500/30">
-      <div className="max-w-7xl mx-auto space-y-8">
-        
-        {/* Welcome Section */}
-        <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col md:flex-row md:items-center justify-between gap-6"
-        >
+    <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Student Profile Welcome Banner */}
+      <Card className="border-border bg-card shadow-sm rounded-2xl overflow-hidden">
+        <CardContent className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <h1 className="text-4xl md:text-5xl font-black tracking-tight bg-gradient-to-br from-white to-neutral-500 bg-clip-text text-transparent">
-                Good Morning, {profile?.firstName || 'Student'}!
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 font-semibold">
+                <GraduationCap className="w-3.5 h-3.5 mr-1" /> Secondary Student Portal
+              </Badge>
+              <Badge variant="secondary" className="font-mono text-xs">
+                {profile?.class?.name || 'Assigned Class'}
+              </Badge>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+              Welcome back, {profile?.firstName} {profile?.lastName}!
             </h1>
-            <div className="flex items-center gap-3 text-neutral-500 font-bold text-sm">
-               <span className="bg-indigo-500/10 text-indigo-400 px-3 py-1 rounded-full border border-indigo-500/20">{profile?.class?.name || 'Class'}</span>
-               <span>Student ID: {profile?.studentId || 'N/A'}</span>
+            <p className="text-xs sm:text-sm text-muted-foreground font-mono">
+              Admission / Student ID: <strong className="text-foreground">{profile?.studentId || 'N/A'}</strong>
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <div className="bg-muted/40 border border-border p-3.5 px-5 rounded-xl flex items-center gap-3">
+              <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center border border-emerald-500/20">
+                <CheckCircle className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Attendance</div>
+                <div className="text-xl font-black text-foreground font-mono">{Math.round(stats?.attendanceRate || 100)}%</div>
+              </div>
+            </div>
+            <div className="bg-muted/40 border border-border p-3.5 px-5 rounded-xl flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center border border-amber-500/20">
+                <Wallet className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Fees Balance</div>
+                <div className="text-xl font-black text-foreground font-mono">₦{Number(stats?.totalBalance || 0).toLocaleString()}</div>
+              </div>
             </div>
           </div>
-          
-          <div className="flex gap-4">
-             <div className="bg-neutral-900 border border-white/5 p-4 px-6 rounded-2xl flex items-center gap-4 hover:border-emerald-500/30 transition-colors">
-                <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center border border-emerald-500/30">
-                   <CheckCircle className="w-5 h-5 text-emerald-400" />
-                </div>
-                <div>
-                   <div className="text-[10px] font-black text-neutral-500 uppercase tracking-wider">Attendance</div>
-                   <div className="text-xl font-black">{Math.round(stats?.attendanceRate || 0)}%</div>
-                </div>
-             </div>
-             <div className="bg-neutral-900 border border-white/5 p-4 px-6 rounded-2xl flex items-center gap-4 hover:border-rose-500/30 transition-colors">
-                <div className="w-10 h-10 bg-rose-500/20 rounded-xl flex items-center justify-center border border-rose-500/30">
-                   <Wallet className="w-5 h-5 text-rose-400" />
-                </div>
-                <div>
-                   <div className="text-[10px] font-black text-neutral-500 uppercase tracking-wider">Fees Due</div>
-                   <div className="text-xl font-black">${stats?.totalBalance || 0}</div>
-                </div>
-             </div>
-          </div>
-        </motion.div>
+        </CardContent>
+      </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-           
-           {/* MAIN FEED (LMS) */}
-           <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="lg:col-span-8 space-y-8"
-           >
-              
-              {/* TO-DO LIST */}
-              <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-3xl p-8 shadow-[0_0_60px_rgba(79,70,229,0.2)] relative overflow-hidden group">
-                 <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:scale-110 transition-transform duration-700 pointer-events-none"><BookOpen className="w-48 h-48" /></div>
-                 <div className="relative z-10">
-                    <h2 className="text-2xl font-black mb-6 flex items-center gap-3"><Clock className="w-6 h-6" /> Upcoming Tasks</h2>
-                    <div className="space-y-3">
-                       {upcomingAssignments.map((as: any) => (
-                         <Link key={as.id} href="/student/lms/assignments" className="flex items-center justify-between p-4 bg-white/10 hover:bg-white/20 rounded-2xl transition-all border border-white/5 group/item">
-                            <div className="flex items-center gap-4">
-                               <div className="p-2 bg-white/10 rounded-lg">
-                                 <FileText className="w-5 h-5 opacity-80" />
-                               </div>
-                               <div>
-                                  <div className="font-bold text-white">{as.title}</div>
-                                  <div className="text-[10px] font-black uppercase tracking-widest text-indigo-200">Assignment • {as.points} Points</div>
-                               </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                               <div className="text-right">
-                                  <div className="text-[10px] font-black uppercase text-indigo-200">Due In</div>
-                                  <div className="text-xs font-bold text-white">2 Days</div>
-                               </div>
-                               <ChevronRight className="w-4 h-4 group-hover/item:translate-x-1 transition-transform" />
-                            </div>
-                         </Link>
-                       ))}
-
-                       {availableQuizzes.map((q: any) => (
-                         <Link key={q.id} href="/student/lms/quizzes" className="flex items-center justify-between p-4 bg-amber-500/20 hover:bg-amber-500/30 rounded-2xl transition-all border border-amber-500/20 group/item backdrop-blur-sm">
-                            <div className="flex items-center gap-4">
-                               <div className="p-2 bg-amber-500/20 rounded-lg">
-                                  <Zap className="w-5 h-5 text-amber-400" />
-                               </div>
-                               <div>
-                                  <div className="font-bold text-amber-50">{q.title}</div>
-                                  <div className="text-[10px] font-black uppercase tracking-widest text-amber-500/80">Quiz • {q.timeLimit} Min</div>
-                               </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                               <span className="text-xs font-black bg-amber-500 text-black px-3 py-1.5 rounded-lg shadow-sm">START</span>
-                               <ChevronRight className="w-4 h-4 text-amber-400 group-hover/item:translate-x-1 transition-transform" />
-                            </div>
-                         </Link>
-                       ))}
-
-                       {upcomingAssignments.length === 0 && availableQuizzes.length === 0 && (
-                         <div className="py-12 bg-white/5 rounded-2xl text-center border border-white/10 border-dashed">
-                             <CheckCircle className="w-8 h-8 text-indigo-300 mx-auto mb-2 opacity-50" />
-                             <p className="opacity-80 font-medium">No pending tasks. You're all caught up!</p>
-                         </div>
-                       )}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Main Feed: Assignments, Quizzes & Learning Modules */}
+        <div className="lg:col-span-8 space-y-6">
+          <Card className="border-border bg-card rounded-2xl shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-bold flex items-center gap-2">
+                <Clock className="w-5 h-5 text-primary" /> Class Assignments &amp; Assessments
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Active homework, classwork, and CBT quizzes published for {profile?.class?.name || 'your class'}.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {upcomingAssignments.map((as: any) => (
+                <Link
+                  key={as.id}
+                  href="/student/lms/assignments"
+                  className="flex items-center justify-between p-3.5 bg-muted/30 hover:bg-muted/60 rounded-xl transition-all border border-border group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 text-primary rounded-lg">
+                      <FileText className="w-4 h-4" />
                     </div>
-                 </div>
-              </div>
-
-              {/* RECENT MODULES */}
-              <div className="bg-neutral-900/60 border border-white/5 rounded-3xl p-8 backdrop-blur-xl">
-                 <h2 className="text-xl font-bold mb-8 flex items-center gap-3"><Layout className="w-5 h-5 text-indigo-500" /> Recent Learning Modules</h2>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {recentModules.map((mod: any) => (
-                      <div key={mod.id} className="p-6 bg-black/40 border border-white/5 rounded-2xl hover:border-indigo-500/30 hover:bg-black/60 transition-all group">
-                         <div className="flex justify-between items-start mb-4">
-                            <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">{mod.subject.name}</div>
-                            <span className="text-[10px] font-bold text-neutral-500 bg-white/5 px-2 py-0.5 rounded-full">{mod.content.length} Items</span>
-                         </div>
-                         <h3 className="font-bold text-lg mb-4 text-neutral-200 group-hover:text-indigo-300 transition-colors">{mod.title}</h3>
-                         <button className="text-[10px] font-black text-neutral-500 group-hover:text-white uppercase tracking-widest flex items-center gap-1 transition-colors">
-                             Open Module <ChevronRight className="w-3 h-3" />
-                         </button>
+                    <div>
+                      <div className="font-bold text-sm text-foreground">{as.title}</div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {as.subject?.name || 'Subject'} • {as.points || 100} Points
                       </div>
-                    ))}
-                    {recentModules.length === 0 && (
-                        <div className="col-span-1 md:col-span-2 py-10 text-center opacity-50 text-sm font-medium">
-                            No modules accessed recently.
-                        </div>
-                    )}
-                 </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-[10px]">Assignment</Badge>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                </Link>
+              ))}
+
+              {availableQuizzes.map((q: any) => (
+                <Link
+                  key={q.id}
+                  href="/student/lms/quizzes"
+                  className="flex items-center justify-between p-3.5 bg-amber-500/5 hover:bg-amber-500/10 rounded-xl transition-all border border-amber-500/20 group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-amber-500/10 text-amber-600 rounded-lg">
+                      <Zap className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm text-foreground">{q.title}</div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {q.module?.subject?.name || 'Quiz'} • {q.timeLimit || 30} Mins
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-amber-500 text-black text-[10px] font-bold">Start Quiz</Badge>
+                    <ChevronRight className="w-4 h-4 text-amber-600 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                </Link>
+              ))}
+
+              {upcomingAssignments.length === 0 && availableQuizzes.length === 0 && (
+                <div className="py-10 bg-muted/20 rounded-xl text-center border border-dashed border-border">
+                  <CheckCircle className="w-8 h-8 text-emerald-500 mx-auto mb-2 opacity-60" />
+                  <p className="text-sm font-semibold text-foreground">No pending assignments or quizzes</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">You are all caught up for {profile?.class?.name || 'this term'}.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="border-border bg-card rounded-2xl shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-bold flex items-center gap-2">
+                <Layout className="w-5 h-5 text-primary" /> Recent Learning Modules &amp; Notes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {recentModules.map((mod: any) => (
+                  <div
+                    key={mod.id}
+                    className="p-4 bg-muted/20 border border-border rounded-xl hover:border-primary/40 transition-all"
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <Badge variant="outline" className="text-[10px] font-bold text-primary">
+                        {mod.subject?.name || 'Subject'}
+                      </Badge>
+                      <span className="text-[11px] text-muted-foreground">{mod.content?.length || 0} items</span>
+                    </div>
+                    <h3 className="font-bold text-sm text-foreground mb-2">{mod.title}</h3>
+                    <Link
+                      href="/dashboard/elibrary"
+                      className="text-xs font-semibold text-primary inline-flex items-center gap-1 hover:underline"
+                    >
+                      Open Resources <ChevronRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                ))}
+                {recentModules.length === 0 && (
+                  <div className="col-span-2 py-8 text-center text-muted-foreground text-xs border border-dashed rounded-xl">
+                    No learning modules published for your class yet.
+                  </div>
+                )}
               </div>
-
-           </motion.div>
-
-           {/* SIDEBAR (SIS) */}
-           <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="lg:col-span-4 space-y-8"
-           >
-              
-              {/* ACADEMIC SNAPSHOT */}
-              <div className="bg-neutral-900 border border-white/5 rounded-3xl p-6">
-                 <h3 className="text-xs font-black text-neutral-500 uppercase tracking-widest mb-6 flex items-center gap-2"><TrendingUp className="w-3 h-3" /> Term Performance</h3>
-                 <div className="space-y-3">
-                    <div className="flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 transition-colors rounded-2xl cursor-pointer">
-                       <span className="text-sm font-bold text-neutral-200">Mathematics</span>
-                       <span className="text-lg font-black text-emerald-400">A</span>
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 transition-colors rounded-2xl cursor-pointer">
-                       <span className="text-sm font-bold text-neutral-200">Physics</span>
-                       <span className="text-lg font-black text-emerald-400">A-</span>
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 transition-colors rounded-2xl cursor-pointer">
-                       <span className="text-sm font-bold text-neutral-200">Literature</span>
-                       <span className="text-lg font-black text-amber-400">B+</span>
-                    </div>
-                 </div>
-                 <Link href="/result-checker" className="mt-6 w-full py-3 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-xl text-[10px] font-black uppercase text-center block transition-colors border border-indigo-500/20">View Detailed Report Card</Link>
-              </div>
-
-              {/* ANNOUNCEMENTS */}
-              <div className="bg-gradient-to-b from-orange-500/10 to-transparent border border-orange-500/20 rounded-3xl p-6">
-                 <h3 className="text-xs font-black text-orange-500 uppercase tracking-widest mb-4 flex items-center gap-2"><AlertCircle className="w-3 h-3" /> School Notices</h3>
-                 <div className="space-y-4">
-                    <div className="text-sm group cursor-pointer">
-                       <div className="font-bold text-orange-200 group-hover:text-orange-400 transition-colors">Inter-House Sports Day</div>
-                       <p className="text-orange-500/60 text-xs mt-1 leading-relaxed">Scheduled for next Friday. All students must wear their house colors.</p>
-                    </div>
-                    <div className="h-px bg-orange-500/10" />
-                    <div className="text-sm group cursor-pointer">
-                       <div className="font-bold text-orange-200 group-hover:text-orange-400 transition-colors">Library Maintenance</div>
-                       <p className="text-orange-500/60 text-xs mt-1 leading-relaxed">Closed for cataloging until Wednesday morning.</p>
-                    </div>
-                 </div>
-              </div>
-
-              {/* QUICK LINKS */}
-              <div className="grid grid-cols-2 gap-4">
-                 <Link href="/dashboard/timetable" className="p-5 bg-neutral-900 border border-white/5 rounded-2xl hover:border-indigo-500/30 hover:bg-white/5 transition-colors text-center group">
-                    <div className="w-12 h-12 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                        <Calendar className="w-5 h-5 text-indigo-400" />
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-neutral-400 group-hover:text-neutral-200">Schedule</span>
-                 </Link>
-                 <Link href="/dashboard/pay" className="p-5 bg-neutral-900 border border-white/5 rounded-2xl hover:border-rose-500/30 hover:bg-white/5 transition-colors text-center group">
-                     <div className="w-12 h-12 bg-rose-500/10 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                        <CreditCard className="w-5 h-5 text-rose-400" />
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-neutral-400 group-hover:text-neutral-200">Bursary</span>
-                 </Link>
-              </div>
-
-           </motion.div>
-
+            </CardContent>
+          </Card>
         </div>
 
+        {/* Right Column: My Subject Grades & Quick Links */}
+        <div className="lg:col-span-4 space-y-6">
+          <Card className="border-border bg-card rounded-2xl shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <Award className="w-4 h-4 text-primary" /> My Term Performance
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Recorded subject scores for {profile?.firstName} {profile?.lastName}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2.5">
+              {recentGrades.length > 0 ? (
+                recentGrades.map((g: any) => (
+                  <div
+                    key={g.id}
+                    className="flex items-center justify-between p-3 bg-muted/30 rounded-xl border border-border/60"
+                  >
+                    <div>
+                      <span className="text-xs font-bold text-foreground block">{g.subject?.name || 'Subject'}</span>
+                      <span className="text-[10px] text-muted-foreground font-mono">Total: {g.total}%</span>
+                    </div>
+                    <Badge variant="outline" className="font-mono font-bold text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
+                      {g.grade || (g.total >= 70 ? 'A' : g.total >= 60 ? 'B' : g.total >= 50 ? 'C' : 'P')}
+                    </Badge>
+                  </div>
+                ))
+              ) : (
+                <div className="py-6 text-center text-xs text-muted-foreground">
+                  Term scores are currently being compiled by your subject teachers.
+                </div>
+              )}
+
+              <Button asChild variant="outline" className="w-full mt-2 rounded-xl text-xs">
+                <Link href="/dashboard/performance">View My Academic Record</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Link
+              href="/dashboard/timetable"
+              className="p-4 bg-card border border-border rounded-2xl hover:border-primary/40 transition-colors text-center group shadow-sm"
+            >
+              <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-105 transition-transform">
+                <Calendar className="w-4 h-4 text-primary" />
+              </div>
+              <span className="text-xs font-bold text-foreground">Class Timetable</span>
+            </Link>
+            <Link
+              href="/dashboard/elibrary"
+              className="p-4 bg-card border border-border rounded-2xl hover:border-primary/40 transition-colors text-center group shadow-sm"
+            >
+              <div className="w-10 h-10 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-105 transition-transform">
+                <BookOpen className="w-4 h-4 text-emerald-600" />
+              </div>
+              <span className="text-xs font-bold text-foreground">e-Library</span>
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -47,7 +47,7 @@ const DEMO_PERSONAS = [
   { label: 'Tertiary Lecturer', role: 'University Faculty (TIMS)', id: 'aliyu.sani@proxima.edu.ng', pass: 'password123' },
   { label: 'Secondary Teacher', role: 'K-12 / Basic Educator', id: 'teacher@proximahub.com', pass: 'password123' },
   { label: 'Tertiary Student', role: 'University Undergrad', id: 'U2025/CSC/001', pass: 'password123' },
-  { label: 'Secondary Student', role: 'High School Student', id: 'student@proximahub.com', pass: 'password123' },
+  { label: 'Secondary Student', role: 'High School Student', id: 'student1@school.edu', pass: 'password123' },
   { label: 'Bursar / Finance', role: 'Treasury & Clearance', id: 'finance@proximahub.com', pass: 'password123' },
   { label: 'HOD / Senate', role: 'Department & Senate', id: 'hod@proxima.com', pass: 'password123' },
   { label: 'Exam Officer', role: 'Blind Grading & CBT', id: 'exam@proxima.com', pass: 'password123' },
@@ -251,7 +251,7 @@ export function LoginForm({ schoolSlug }: { schoolSlug?: string }) {
             {isSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Verifying Role & Routing...</span>
+                <span>Verifying Role &amp; Routing...</span>
               </>
             ) : (
               <>

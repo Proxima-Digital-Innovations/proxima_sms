@@ -61,15 +61,27 @@ const TertiaryStudentDashboard = dynamic(
   () => import('@/app/dashboard/tertiary/student-hub/page'),
   { loading: () => <DashboardSkeleton />, ssr: false }
 );
+const SecondaryStudentDashboard = dynamic(
+  () => import('@/app/student/dashboard/page'),
+  { loading: () => <DashboardSkeleton />, ssr: false }
+);
 
 export default function DashboardPage() {
   const { user, role, activeModules, isLoading } = useRole();
   const { language } = useLanguage();
   const isTertiaryModuleActive = activeModules?.includes('TERTIARY_INSTITUTION');
+  const userEmail = ((user as any)?.email || '').toLowerCase();
+  const isSecondaryAccount =
+    userEmail === 'student1@school.edu' ||
+    ((user as any)?.institutionTier === 'SECONDARY' && userEmail !== 'student@proximahub.com');
+
   const isTertiaryStudent =
-    (user as any)?.isTertiaryStudent !== undefined
-      ? Boolean((user as any).isTertiaryStudent)
-      : isTertiaryModuleActive;
+    userEmail === 'student@proximahub.com' ||
+    userEmail.endsWith('@tims.edu.ng') ||
+    (!isSecondaryAccount &&
+      ((user as any)?.isTertiaryStudent !== undefined
+        ? Boolean((user as any).isTertiaryStudent)
+        : isTertiaryModuleActive));
 
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -98,7 +110,7 @@ export default function DashboardPage() {
       if (isTertiaryStudent) {
         return <TertiaryStudentDashboard />;
       }
-      return <ParentDashboard />;
+      return <SecondaryStudentDashboard />;
     default:
       return (
         <div className="p-8 text-center text-muted-foreground">
