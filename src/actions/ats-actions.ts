@@ -15,7 +15,7 @@ export async function getAtsData() {
         include: {
           job: true,
         },
-        orderBy: { appliedAt: "desc" },
+        orderBy: { createdAt: "desc" },
       }),
       prisma.interview.findMany({
         include: {

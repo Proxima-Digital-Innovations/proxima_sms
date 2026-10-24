@@ -135,13 +135,6 @@ export interface TranslationDictionary {
   senateApprovals: string;
   tertiaryStudentHub: string;
 
-  // Parent Portal
-  reportCards: string;
-  feeInvoices: string;
-  attendanceLog: string;
-  classTimetable: string;
-  tuitionWallet: string;
-
   // Extended ERP & Management
   staffLoans: string;
   expenses: string;
@@ -291,13 +284,6 @@ export const translations: Record<Language, TranslationDictionary> = {
     senateApprovals: 'Senate Broadsheet & CGPA',
     tertiaryStudentHub: 'Student Portal & Activities',
 
-    // Parent Portal
-    reportCards: 'Student Report Cards',
-    feeInvoices: 'Tuition & Fee Invoices',
-    attendanceLog: 'Student Attendance Log',
-    classTimetable: 'Weekly Class Timetable',
-    tuitionWallet: 'Tuition Wallet',
-
     // Extended ERP & Management
     staffLoans: 'Staff Loans & Advances',
     expenses: 'Operating Expenses',
@@ -444,13 +430,6 @@ export const translations: Record<Language, TranslationDictionary> = {
     courseRegistration: 'تسجيل المقررات',
     senateApprovals: 'اعتماد نتائج مجلس الكلية',
     tertiaryStudentHub: 'بوابة وأنشطة الطالب',
-
-    // Parent Portal
-    reportCards: 'بطاقات درجات وتقارير الطلاب',
-    feeInvoices: 'فواتير الرسوم المدرسية',
-    attendanceLog: 'سجل حضور وغياب الطالب',
-    classTimetable: 'جدول الحصص الأسبوعي',
-    tuitionWallet: 'محفظة الرسوم الدراسية',
 
     // Extended ERP & Management
     staffLoans: 'سلف وقروض الموظفين',

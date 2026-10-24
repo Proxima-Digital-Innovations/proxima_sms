@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getExamResultsForPrint } from '@/actions/results-actions';
 import { PrintableExamResultCard } from '@/components/reports/printable-exam-result-card';
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Printer } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 
-export default function PrintExamResultsPage() {
+function PrintExamResultsContent() {
   const searchParams = useSearchParams();
   const studentId = searchParams.get('studentId');
   const classId = searchParams.get('classId');
@@ -95,5 +95,17 @@ export default function PrintExamResultsPage() {
         ))}
       </div>
     </div>
+  );
+}
+
+export default function PrintExamResultsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    }>
+      <PrintExamResultsContent />
+    </Suspense>
   );
 }
