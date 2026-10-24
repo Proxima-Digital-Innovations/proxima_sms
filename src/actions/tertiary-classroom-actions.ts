@@ -92,8 +92,44 @@ export async function getStudentPortalData(targetStudentId?: string) {
     }
 
     const activeReg = student.registrations[0] || null;
-    // Strictly include ONLY courses the student has registered for
-    const registeredOfferings: any[] = activeReg?.courses.map((rc: any) => rc.offering) || [];
+    const registeredCourseIds = Array.from(new Set(activeReg?.courses.map((rc: any) => rc.offering?.courseId).filter(Boolean)));
+
+    // Fetch all active offerings for the student's registered courses
+    let registeredOfferings: any[] = activeReg?.courses.map((rc: any) => rc.offering) || [];
+    if (registeredCourseIds.length > 0) {
+      const allOfferingsForCourses = await prisma.courseOffering.findMany({
+        where: {
+          courseId: { in: registeredCourseIds as string[] },
+          ...(activeReg?.academicSession ? { academicSession: activeReg.academicSession } : {})
+        },
+        include: {
+          course: true,
+          schedules: { include: { venue: true } },
+          lecturers: { include: { staff: { include: { user: true } } } },
+          materials: {
+            where: { isPublished: true },
+            orderBy: { weekNumber: 'asc' },
+            include: { uploadedBy: { include: { user: true } } }
+          },
+          assignments: {
+            where: { status: { in: ['PUBLISHED', 'CLOSED'] } },
+            orderBy: { dueDate: 'asc' },
+            include: {
+              submissions: {
+                include: { gradedBy: { include: { user: true } } }
+              }
+            }
+          }
+        }
+      });
+      if (allOfferingsForCourses.length > 0) {
+        // Merge without duplicates by offering ID
+        const offeringMap = new Map<string, any>();
+        registeredOfferings.forEach(o => offeringMap.set(o.id, o));
+        allOfferingsForCourses.forEach(o => offeringMap.set(o.id, o));
+        registeredOfferings = Array.from(offeringMap.values());
+      }
+    }
 
     // Aggregate materials across all registered courses
     const allMaterials = registeredOfferings.flatMap(offering =>
@@ -138,7 +174,7 @@ export async function getStudentPortalData(targetStudentId?: string) {
 
     // Financial clearance summary
     const totalInvoiced = student.invoices.reduce((acc: number, inv: any) => acc + inv.totalAmount, 0);
-    const totalPaid = student.invoices.reduce((acc: number, inv: any) => acc + inv.paidAmount, 0);
+    const totalPaid = student.invoices.reduce((acc: number, inv: any) => acc + (inv.amountPaid || 0), 0);
     const paymentPercentage = totalInvoiced > 0 ? (totalPaid / totalInvoiced) * 100 : 100;
     const isBursaryCleared = activeReg?.isBursaryCleared || paymentPercentage >= 50;
 
