@@ -176,7 +176,7 @@ export default function TertiaryTimetablePage() {
                   <Plus className="h-3.5 w-3.5" /> Schedule Lecture Slot
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-md rounded-2xl">
+              <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto rounded-2xl">
                 <DialogHeader>
                   <DialogTitle>Schedule Course Lecture Slot</DialogTitle>
                   <DialogDescription>
@@ -296,17 +296,17 @@ export default function TertiaryTimetablePage() {
 
       {/* Clashes Alert Banner */}
       {clashes.length > 0 && (
-        <Card className="border-red-300 bg-red-50/60 p-4">
+        <Card className="border-destructive/30 bg-destructive/10 p-4">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+            <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <h4 className="font-bold text-sm text-red-900">
+              <h4 className="font-bold text-sm text-destructive dark:text-red-400">
                 Warning: {clashes.length} Timetable Clash(es) Detected!
               </h4>
-              <p className="text-xs text-red-700">
+              <p className="text-xs text-destructive/80 dark:text-red-400/90">
                 The following enrolled courses share overlapping time slots. Please adjust course selections with your academic advisor:
               </p>
-              <ul className="list-disc list-inside text-xs text-red-800 space-y-0.5 pt-1">
+              <ul className="list-disc list-inside text-xs text-destructive/90 dark:text-red-300 space-y-0.5 pt-1">
                 {clashes.map((c, i) => (
                   <li key={i}>
                     <strong>{c.courseA.code}</strong> and <strong>{c.courseB.code}</strong> both scheduled on {c.dayOfWeek} ({c.timeA} vs {c.timeB}) at {c.venue || 'Lecture Hall'}.
@@ -319,7 +319,7 @@ export default function TertiaryTimetablePage() {
       )}
 
       {/* Weekly Grid View */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {DAYS.map((day) => {
           const daySchedules = schedules.filter(
             (s) => s.dayOfWeek.toUpperCase() === day

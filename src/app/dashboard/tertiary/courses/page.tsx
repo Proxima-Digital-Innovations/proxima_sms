@@ -78,7 +78,7 @@ export default function TertiaryCoursesPage() {
               <Plus className="h-4 w-4 mr-2" /> Add Course
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md rounded-2xl">
+          <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto rounded-2xl">
             <DialogHeader>
               <DialogTitle>Add Course to Catalog</DialogTitle>
               <DialogDescription>

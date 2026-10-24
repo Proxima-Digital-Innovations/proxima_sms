@@ -94,19 +94,19 @@ export default function CgpaForecasterPage() {
   const numCgpa = parseFloat(projectedCgpa);
 
   let projectedClassification = 'Third Class Honours';
-  let badgeColor = 'bg-blue-100 text-blue-800 border-blue-300';
+  let badgeColor = 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30';
   if (numCgpa >= 4.50) {
     projectedClassification = 'First Class Honours';
-    badgeColor = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+    badgeColor = 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30';
   } else if (numCgpa >= 3.50) {
     projectedClassification = 'Second Class Honours (Upper Division)';
-    badgeColor = 'bg-blue-100 text-blue-800 border-blue-300';
+    badgeColor = 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30';
   } else if (numCgpa >= 2.40) {
     projectedClassification = 'Second Class Honours (Lower Division)';
-    badgeColor = 'bg-amber-100 text-amber-800 border-amber-300';
+    badgeColor = 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30';
   } else if (numCgpa < 1.50) {
     projectedClassification = 'Academic Probation Warning';
-    badgeColor = 'bg-red-100 text-red-800 border-red-300';
+    badgeColor = 'bg-destructive/15 text-destructive dark:text-red-400 border-destructive/30';
   }
 
   // Target Gap to First Class
@@ -114,7 +114,7 @@ export default function CgpaForecasterPage() {
   const sgpaNeededForFirstClass = currentSemesterCredits > 0 ? (qpNeededForFirstClass / currentSemesterCredits).toFixed(2) : '4.50';
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
+    <div className="space-y-6 max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -138,7 +138,7 @@ export default function CgpaForecasterPage() {
       </div>
 
       {/* KPI Prognosis Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="border shadow-sm p-4 bg-muted/20">
           <span className="text-xs text-muted-foreground uppercase font-semibold">Prior Standing</span>
           <div className="text-2xl font-extrabold text-foreground mt-1">

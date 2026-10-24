@@ -441,7 +441,7 @@ export default function TertiaryPaymentsPage() {
 
       {/* Program Fee Schedule Configuration Dialog */}
       <Dialog open={isFeeConfigOpen} onOpenChange={setIsFeeConfigOpen}>
-        <DialogContent className="max-w-lg rounded-2xl">
+        <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Settings2 className="h-5 w-5 text-primary" /> Configure Program Tuition Schedule
@@ -528,7 +528,7 @@ export default function TertiaryPaymentsPage() {
 
       {/* Payment Gateway Modal */}
       <Dialog open={isPayOpen} onOpenChange={setIsPayOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
           {paymentStep === 'SELECT_GATEWAY' && (
             <>
               <DialogHeader>
@@ -732,7 +732,7 @@ export default function TertiaryPaymentsPage() {
 
       {/* Printable Receipt Modal */}
       <Dialog open={!!selectedReceipt} onOpenChange={open => !open && setSelectedReceipt(null)}>
-        <DialogContent className="max-w-lg p-0 overflow-hidden bg-white text-slate-900 border-none shadow-2xl">
+        <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-0 bg-white text-slate-900 border-none shadow-2xl">
           {selectedReceipt && (
             <div className="p-6 space-y-6">
               {/* Receipt Header */}

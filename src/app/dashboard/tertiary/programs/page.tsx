@@ -118,7 +118,7 @@ export default function TertiaryProgramsPage() {
               <Plus className="h-4 w-4 mr-2" /> Add Degree Program
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md rounded-2xl">
+          <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto rounded-2xl">
             <DialogHeader>
               <DialogTitle>New Academic Program</DialogTitle>
               <DialogDescription>

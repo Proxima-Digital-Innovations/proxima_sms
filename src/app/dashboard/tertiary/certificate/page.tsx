@@ -65,7 +65,7 @@ export default function StudentDegreeCertificatePage() {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-6 max-w-5xl mx-auto p-4 sm:p-6 lg:p-8">
       {/* Top Bar (Hidden on print) */}
       <div className="flex flex-wrap justify-between items-center gap-3 print:hidden bg-card p-4 rounded-xl border shadow-sm">
         <div className="flex items-center gap-2">

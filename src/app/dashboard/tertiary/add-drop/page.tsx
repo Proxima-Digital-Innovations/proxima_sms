@@ -151,7 +151,7 @@ export default function CourseAddDropPage() {
               </SelectContent>
             </Select>
           )}
-          <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 text-xs px-3 py-1 font-mono">
+          <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 text-xs px-3 py-1 font-mono">
             <Clock className="h-3.5 w-3.5 mr-1" /> Revision Window Open: 14 Days Remaining
           </Badge>
         </div>
@@ -320,7 +320,7 @@ export default function CourseAddDropPage() {
 
       {/* Add/Drop Request Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               Confirm Course {requestType === 'ADD' ? 'Addition' : 'Withdrawal (Drop)'}
