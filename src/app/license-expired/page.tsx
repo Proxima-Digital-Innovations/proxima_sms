@@ -70,6 +70,13 @@ function LicenseExpiredContent() {
           </div>
 
           <div className="flex flex-col gap-3">
+              <a 
+                href="/dashboard/system/license"
+                className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-indigo-700 transition-colors"
+              >
+                Go to License Activation Page
+              </a>
+
               <button onClick={handleExport} disabled={isExporting} className="w-full py-3 bg-neutral-800 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-neutral-700 transition-colors disabled:opacity-50">
                 {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} 
                 Export My Data

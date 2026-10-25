@@ -20,6 +20,7 @@ import { ForcePasswordChangeModal } from '@/components/auth/force-password-chang
 import { DynamicPageTitle } from '@/components/dashboard/dynamic-title';
 import { checkLicenseStatus } from '@/actions/license-actions';
 import { LicenseProvider } from '@/components/license/license-provider';
+import type { LicenseValidationResult } from '@/lib/license-utils';
 
 function ModuleDisabledNotice({ moduleName }: { moduleName: string }) {
     const router = useRouter();
@@ -192,15 +193,13 @@ export default function DashboardLayout({
     
   }, [role, rbacPermissions, activeModules, isRoleLoading, router, pathname]);
 
-  const [licenseStatus, setLicenseStatus] = useState<any>('ACTIVE');
-  const [licenseMessage, setLicenseMessage] = useState<string>('');
+  const [licenseResult, setLicenseResult] = useState<LicenseValidationResult | null>(null);
   
   useEffect(() => {
     async function checkLicense() {
       try {
         const res = await checkLicenseStatus();
-        setLicenseStatus(res.status);
-        setLicenseMessage(res.message);
+        setLicenseResult(res);
       } catch (e) {
         console.error('Failed to check license status', e);
       }
@@ -221,7 +220,14 @@ export default function DashboardLayout({
   }
 
   return (
-    <LicenseProvider status={licenseStatus} message={licenseMessage}>
+    <LicenseProvider 
+      status={licenseResult?.status || 'ACTIVE'} 
+      message={licenseResult?.message || ''}
+      isExpiringSoon={licenseResult?.isExpiringSoon}
+      daysUntilExpiry={licenseResult?.daysUntilExpiry}
+      expiryWarningMessage={licenseResult?.expiryWarningMessage}
+      formattedExpiryDate={licenseResult?.formattedExpiryDate}
+    >
       <SidebarProvider>
       <div className="font-body h-[100dvh] flex flex-col print:h-auto print:overflow-visible">
         <style jsx global>{`
