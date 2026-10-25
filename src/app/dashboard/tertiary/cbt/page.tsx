@@ -1,5 +1,7 @@
 'use client';
 
+import { saveExamDraft, loadExamDraft, clearExamDraft } from '@/lib/offline-vault';
+
 import { useState, useEffect, useTransition } from 'react';
 import { useRole } from '@/context/role-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -409,8 +411,27 @@ export default function TertiaryCbtPage() {
     setIsLoading(false);
   };
 
+  const [isNetworkOnline, setIsNetworkOnline] = useState(true);
+
   useEffect(() => {
     loadExams();
+
+    const handleOnline = () => {
+      setIsNetworkOnline(true);
+      toast({ title: 'Connection Restored', description: 'Network connected. Offline exam answers synced with server.' });
+    };
+    const handleOffline = () => {
+      setIsNetworkOnline(false);
+      toast({ variant: 'destructive', title: 'Network Disconnected', description: 'You are working offline. Answers are safely cached in local storage.' });
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
   // Anti-cheat: Tab-switch, window blur & clipboard lockdown
@@ -479,10 +500,21 @@ export default function TertiaryCbtPage() {
       setActiveExam(exam);
       setTimeLeftSeconds(exam.durationMinutes * 60);
       setTabSwitchCount(0);
-      setAnswers({});
       setCurrentQuestionIndex(0);
       setIsExamCompleted(false);
       setExamResult(null);
+
+      // Check for offline vault draft
+      const draft = await loadExamDraft(`cbt_${exam.id}`);
+      if (draft && draft.answers && Object.keys(draft.answers).length > 0) {
+        setAnswers(draft.answers);
+        toast({
+          title: 'Offline Draft Restored',
+          description: `Loaded ${Object.keys(draft.answers).length} saved response(s) from local cache.`,
+        });
+      } else {
+        setAnswers({});
+      }
     }
     setIsLoading(false);
   };
@@ -656,7 +688,17 @@ export default function TertiaryCbtPage() {
   };
 
   const handleSelectAnswer = (questionId: string, optionId: string) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: optionId }));
+    setAnswers((prev) => {
+      const updated = { ...prev, [questionId]: optionId };
+      if (activeExam) {
+        saveExamDraft(`cbt_${activeExam.id}`, {
+          examTitle: activeExam.title,
+          answers: updated,
+          timeLeftSeconds,
+        });
+      }
+      return updated;
+    });
   };
 
   const handleAutoSubmit = () => {
@@ -679,6 +721,7 @@ export default function TertiaryCbtPage() {
       });
 
       if (res.success && res.data) {
+        if (activeExam) clearExamDraft(`cbt_${activeExam.id}`);
         setIsExamCompleted(true);
         setExamResult(res.data);
         loadExams();
@@ -842,6 +885,16 @@ export default function TertiaryCbtPage() {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* Offline Vault & Network Status Indicator */}
+            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border ${
+              isNetworkOnline 
+                ? 'bg-emerald-950/60 border-emerald-800/60 text-emerald-300' 
+                : 'bg-amber-950/80 border-amber-800/80 text-amber-300 animate-pulse'
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${isNetworkOnline ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+              <span>{isNetworkOnline ? 'Offline Vault Synced' : 'Working Offline (Cached)'}</span>
+            </div>
+
             {/* Anti-cheat strike counter */}
             <div className="flex items-center gap-1.5 bg-red-950/80 border border-red-800/60 px-3 py-1.5 rounded-xl text-xs text-red-300 font-medium">
               <ShieldAlert className="h-4 w-4 text-red-400" />

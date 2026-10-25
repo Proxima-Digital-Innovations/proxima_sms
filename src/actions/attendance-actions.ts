@@ -1,5 +1,7 @@
 'use server';
 
+import { CommEngine } from '@/lib/services/comm-engine';
+
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
@@ -322,6 +324,30 @@ export async function submitClassAttendance(data: {
   try {
     const targetDate = new Date(data.date);
     await AttendanceService.saveAttendance(targetDate, data.classId, data.records);
+
+    // Asynchronously dispatch automated SMS / WhatsApp / Email alerts for absent students
+    const absentStudentIds = data.records.filter(r => r.status === 'Absent').map(r => r.studentId);
+    if (absentStudentIds.length > 0) {
+      prisma.student.findMany({
+        where: { id: { in: absentStudentIds } },
+        include: { guardians: true, class: true },
+      }).then(students => {
+        for (const st of students) {
+          const guardian = st.guardians[0];
+          if (guardian) {
+            CommEngine.sendAttendanceAbsenceAlert({
+              guardianName: guardian.fullName || 'Parent / Guardian',
+              guardianEmail: guardian.email,
+              guardianPhone: guardian.phone,
+              studentName: `${st.firstName} ${st.lastName}`,
+              className: st.class?.name || 'Class',
+              date: targetDate,
+            }).catch(e => console.error('Automated absence alert error:', e));
+          }
+        }
+      }).catch(err => console.error('Error querying absent students for notification:', err));
+    }
+
     revalidatePath('/dashboard/teacher/attendance');
     revalidatePath('/dashboard/attendance');
     return { success: true, count: data.records.length };

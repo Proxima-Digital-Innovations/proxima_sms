@@ -5,7 +5,7 @@ import { getLmsCourses, createLmsModule, addLmsContent, deleteLmsModule } from '
 import { getScheduleResources } from '@/actions/schedule-actions'; // Reuse resources fetcher
 import { 
   BookOpen, Plus, MoreVertical, FileText, Link as LinkIcon, 
-  Video, Eye, LayoutGrid, List, ChevronRight, ChevronDown, 
+  Video, Eye, LayoutGrid, Globe, ExternalLink, MonitorPlay, List, ChevronRight, ChevronDown, 
   Trash2, GripVertical, CheckCircle2, CloudUpload
 } from 'lucide-react';
 
@@ -195,6 +195,7 @@ export default function LmsCourseBuilder() {
                             {item.type === 'LINK' && <LinkIcon className="w-4 h-4 text-emerald-400" />}
                             {item.type === 'VIDEO' && <Video className="w-4 h-4 text-rose-400" />}
                             {item.type === 'PAGE' && <LayoutGrid className="w-4 h-4 text-amber-400" />}
+                            {item.type === 'LTI_TOOL' && <Globe className="w-4 h-4 text-indigo-400" />}
                             <span className="text-sm font-medium text-neutral-300">{item.title}</span>
                           </div>
                           <div className="flex items-center gap-4 opacity-0 group-item-hover:opacity-100 transition-opacity">
@@ -218,6 +219,19 @@ export default function LmsCourseBuilder() {
                       </button>
                       <button onClick={() => handleAddContent(mod.id, 'VIDEO')} className="flex items-center justify-center gap-2 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase text-neutral-400 transition-colors">
                         <Video className="w-3 h-3" /> Video
+                      </button>
+                      <button 
+                        onClick={() => {
+                          const toolName = prompt('Enter External Tool / Simulation Name (e.g., PhET Interactive Lab, Zoom Class):', 'PhET Interactive Simulation');
+                          if (!toolName) return;
+                          const toolUrl = prompt('Enter LTI 1.3 Launch URL or Simulation Embed Link:', 'https://phet.colorado.edu/sims/html/circuit-construction-kit-dc/latest/circuit-construction-kit-dc_en.html');
+                          if (toolUrl) {
+                            handleAddContent(mod.id, 'LTI_TOOL', toolName, toolUrl);
+                          }
+                        }}
+                        className="flex items-center justify-center gap-2 py-2 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-[10px] font-black uppercase text-indigo-400 border border-indigo-500/30 transition-colors col-span-2 sm:col-span-4"
+                      >
+                        <Globe className="w-3 h-3" /> Add LTI 1.3 / External Interactive Tool (PhET / Zoom)
                       </button>
                     </div>
                   </div>

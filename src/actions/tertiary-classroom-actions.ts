@@ -1,5 +1,7 @@
 'use server';
 
+import { CommEngine } from '@/lib/services/comm-engine';
+
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
@@ -812,8 +814,48 @@ export async function gradeAssignmentSubmissionAction(
         status: 'GRADED',
         gradedById: graderStaffId || null,
         gradedAt: new Date()
+      },
+      include: {
+        student: { include: { user: true } },
+        assignment: { include: { courseOffering: { include: { course: true } } } }
       }
     });
+
+    // Asynchronously dispatch automated grade published alert to student & linked parent
+    if (updated.student) {
+      const studentName = `${updated.student.user.firstName || ''} ${updated.student.user.lastName || ''}`.trim() || updated.student.matricNumber;
+      const courseName = updated.assignment.courseOffering?.course ? `${updated.assignment.courseOffering.course.code} - ${updated.assignment.courseOffering.course.title}` : 'Coursework';
+      
+      // Alert Student
+      if (updated.student.user.email) {
+        CommEngine.sendGradeAlert({
+          recipientName: studentName,
+          recipientEmail: updated.student.user.email,
+          recipientPhone: updated.student.user.phone,
+          studentName,
+          courseOrSubject: courseName,
+          assessmentTitle: updated.assignment.title,
+          score,
+          maxScore: updated.assignment.maxScore,
+          feedback: feedback?.trim() || null,
+        }).catch(err => console.error('Student grade alert error:', err));
+      }
+
+      // Alert Linked Guardian / Sponsor
+      if (updated.student.guardianEmail || updated.student.guardianPhone) {
+        CommEngine.sendGradeAlert({
+          recipientName: updated.student.guardianName || 'Parent / Sponsor',
+          recipientEmail: updated.student.guardianEmail,
+          recipientPhone: updated.student.guardianPhone,
+          studentName,
+          courseOrSubject: courseName,
+          assessmentTitle: updated.assignment.title,
+          score,
+          maxScore: updated.assignment.maxScore,
+          feedback: feedback?.trim() || null,
+        }).catch(err => console.error('Parent grade alert error:', err));
+      }
+    }
 
     revalidatePath('/dashboard/tertiary/student-hub');
     revalidatePath('/dashboard/tertiary/lecturer-studio');

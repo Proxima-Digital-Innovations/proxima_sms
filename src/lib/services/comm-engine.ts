@@ -822,4 +822,157 @@ export class CommEngine {
       return { emailSent: false };
     }
   }
+
+  /**
+   * Transactional: Dispatch real-time absence alert to parent/guardian
+   */
+  static async sendAttendanceAbsenceAlert(data: {
+    guardianName: string;
+    guardianEmail?: string | null;
+    guardianPhone?: string | null;
+    studentName: string;
+    className: string;
+    date: Date;
+    reason?: string;
+  }): Promise<{ emailSent: boolean; whatsappSent: boolean }> {
+    const config = await this.getConfig();
+    const schoolName = config.smtp?.fromName || 'Proxima SMS Academy';
+    const formattedDate = data.date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+    let emailSent = false;
+    let whatsappSent = false;
+
+    // 1. Email Alert
+    if (data.guardianEmail && data.guardianEmail.includes('@')) {
+      const emailHtml = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 580px; margin: 0 auto; background-color: #ffffff; border: 1px solid #fee2e2; border-radius: 12px; overflow: hidden;">
+          <div style="background-color: #991b1b; padding: 24px; text-align: center; color: #ffffff;">
+            <h1 style="margin: 0; font-size: 18px; font-weight: 700;">${schoolName}</h1>
+            <p style="margin: 6px 0 0 0; font-size: 13px; color: #fecaca;">Attendance Alert: Student Absent</p>
+          </div>
+          <div style="padding: 24px;">
+            <p style="font-size: 15px; color: #334155; margin-top: 0;">Dear <strong>${data.guardianName}</strong>,</p>
+            <p style="font-size: 14px; color: #475569; line-height: 1.6;">
+              Please be informed that <strong>${data.studentName}</strong> was marked <strong>ABSENT</strong> from roll call for <strong>${data.className}</strong> on <strong>${formattedDate}</strong>.
+            </p>
+            <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 14px; margin: 16px 0; font-size: 13px; color: #991b1b;">
+              If this absence was unexpected, kindly contact the school administration or class supervisor immediately.
+            </div>
+            <p style="font-size: 12px; color: #64748b; margin-bottom: 0;">Automated Academic Safety & Roll Call Service.</p>
+          </div>
+        </div>
+      `;
+
+      try {
+        const res = await this.sendEmail({
+          to: data.guardianEmail,
+          subject: `Attendance Alert: ${data.studentName} Marked Absent (${formattedDate})`,
+          html: emailHtml,
+          text: `Attendance Notice: ${data.studentName} was marked absent for ${data.className} on ${formattedDate}. Contact the school if this was unexpected.`,
+        });
+        emailSent = res.success;
+      } catch (err) {
+        console.error('[CommEngine] Absence email error:', err);
+      }
+    }
+
+    // 2. WhatsApp Alert
+    if (data.guardianPhone && config.whatsapp?.enabled) {
+      const waText = `*🚨 ${schoolName.toUpperCase()} - ATTENDANCE NOTICE*\n\n` +
+        `Dear ${data.guardianName},\n` +
+        `Please be notified that *${data.studentName}* was marked *ABSENT* for *${data.className}* on *${formattedDate}*.\n\n` +
+        `If this absence was unplanned, please contact the school administration immediately.`;
+
+      try {
+        const res = await this.sendWhatsApp(data.guardianPhone, waText);
+        whatsappSent = res.success;
+      } catch (err) {
+        console.error('[CommEngine] Absence WhatsApp error:', err);
+      }
+    }
+
+    return { emailSent, whatsappSent };
+  }
+
+  /**
+   * Transactional: Dispatch newly graded assessment notification to student / parent
+   */
+  static async sendGradeAlert(data: {
+    recipientName: string;
+    recipientEmail?: string | null;
+    recipientPhone?: string | null;
+    studentName: string;
+    courseOrSubject: string;
+    assessmentTitle: string;
+    score: number;
+    maxScore: number;
+    feedback?: string | null;
+  }): Promise<{ emailSent: boolean; whatsappSent: boolean }> {
+    const config = await this.getConfig();
+    const schoolName = config.smtp?.fromName || 'Proxima SMS Academy';
+    const percent = Math.round((data.score / (data.maxScore || 100)) * 100);
+
+    let emailSent = false;
+    let whatsappSent = false;
+
+    // 1. Email Alert
+    if (data.recipientEmail && data.recipientEmail.includes('@')) {
+      const emailHtml = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 580px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+          <div style="background-color: #0f172a; padding: 24px; text-align: center; color: #ffffff;">
+            <h1 style="margin: 0; font-size: 18px; font-weight: 700;">${schoolName}</h1>
+            <p style="margin: 6px 0 0 0; font-size: 13px; color: #94a3b8;">Academic Assessment Result Published</p>
+          </div>
+          <div style="padding: 24px;">
+            <p style="font-size: 15px; color: #334155; margin-top: 0;">Dear <strong>${data.recipientName}</strong>,</p>
+            <p style="font-size: 14px; color: #475569; line-height: 1.6;">
+              A new assessment has been evaluated for <strong>${data.studentName}</strong> in <strong>${data.courseOrSubject}</strong>:
+            </p>
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; margin: 16px 0;">
+              <table style="width: 100%; font-size: 13px;">
+                <tr><td style="color: #64748b; font-weight: 600;">Assessment:</td><td style="text-align: right; font-weight: 700;">${data.assessmentTitle}</td></tr>
+                <tr><td style="color: #64748b; font-weight: 600;">Score:</td><td style="text-align: right; font-weight: 800; font-size: 16px; color: #16a34a;">${data.score} / ${data.maxScore} (${percent}%)</td></tr>
+                ${data.feedback ? `<tr><td style="color: #64748b; font-weight: 600; vertical-align: top; padding-top: 6px;">Feedback:</td><td style="text-align: right; color: #334155; padding-top: 6px; font-style: italic;">"${data.feedback}"</td></tr>` : ''}
+              </table>
+            </div>
+            <p style="font-size: 12px; color: #64748b; margin-bottom: 0;">Log into the student / parent portal to review the comprehensive gradebook.</p>
+          </div>
+        </div>
+      `;
+
+      try {
+        const res = await this.sendEmail({
+          to: data.recipientEmail,
+          subject: `Grade Published: ${data.assessmentTitle} - ${data.studentName} (${data.score}/${data.maxScore})`,
+          html: emailHtml,
+          text: `Grade Released: ${data.studentName} received ${data.score}/${data.maxScore} in ${data.courseOrSubject} for "${data.assessmentTitle}".`,
+        });
+        emailSent = res.success;
+      } catch (err) {
+        console.error('[CommEngine] Grade email error:', err);
+      }
+    }
+
+    // 2. WhatsApp Alert
+    if (data.recipientPhone && config.whatsapp?.enabled) {
+      const waText = `*📝 ${schoolName.toUpperCase()} - GRADE RELEASED*\n\n` +
+        `Dear ${data.recipientName},\n` +
+        `The assessment results for *${data.studentName}* have been posted:\n\n` +
+        `*Course/Subject:* ${data.courseOrSubject}\n` +
+        `*Assessment:* ${data.assessmentTitle}\n` +
+        `*Score:* ${data.score} / ${data.maxScore} (${percent}%)\n` +
+        (data.feedback ? `*Lecturer Feedback:* "${data.feedback}"\n\n` : '\n') +
+        `Review complete academic progress on the parent portal.`;
+
+      try {
+        const res = await this.sendWhatsApp(data.recipientPhone, waText);
+        whatsappSent = res.success;
+      } catch (err) {
+        console.error('[CommEngine] Grade WhatsApp error:', err);
+      }
+    }
+
+    return { emailSent, whatsappSent };
+  }
+
 }

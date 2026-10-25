@@ -1,5 +1,7 @@
 'use client';
 
+import { saveExamDraft, loadExamDraft, clearExamDraft } from '@/lib/offline-vault';
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
   UserCheck,
@@ -237,6 +239,7 @@ export default function StudentHubPage() {
       if (res.success) {
         setSubmitMessage({ type: 'success', text: res.message || 'Assignment submitted successfully!' });
         setTimeout(() => {
+          if (submittingAssignmentId) clearExamDraft(`essay_${submittingAssignmentId}`);
           setSubmittingAssignmentId(null);
           setSubmissionText('');
           setSubmissionFile(null);
@@ -720,7 +723,8 @@ export default function StudentHubPage() {
                         <button
                           onClick={async () => {
                             setSubmittingAssignmentId(asgn.id);
-                            setSubmissionText(sub?.submissionText || '');
+                            const draft = await loadExamDraft(`essay_${asgn.id}`);
+                            setSubmissionText(draft?.essayText || sub?.submissionText || '');
                             if (asgn.assessmentType === 'ESSAY_EXAM' && asgn.durationMinutes) {
                               setIsExamMode(true);
                               // Activate exam session on backend to timestamp startedAt
@@ -915,7 +919,16 @@ export default function StudentHubPage() {
                 </label>
                 <textarea
                   value={submissionText}
-                  onChange={(e) => setSubmissionText(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSubmissionText(val);
+                    if (submittingAssignmentId) {
+                      saveExamDraft(`essay_${submittingAssignmentId}`, {
+                        essayText: val,
+                        timeLeftSeconds: activeExamTimerSeconds || undefined,
+                      });
+                    }
+                  }}
                   onPaste={handleTextareaPaste}
                   rows={5}
                   placeholder="Type your solution, code, GitHub repo URL, or executive summary here..."

@@ -1,5 +1,7 @@
 'use client';
 
+import { DocumentAnnotationStudio } from '@/components/dashboard/grading/document-annotation-studio';
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useRole } from '@/context/role-context';
@@ -84,6 +86,37 @@ export default function LecturerStudioPage() {
   const [gradeFeedback, setGradeFeedback] = useState('');
   const [isGrading, setIsGrading] = useState(false);
   const [gradeMessage, setGradeMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Interactive Rubric State (Accreditation & Structured Scoring)
+  const [showRubric, setShowRubric] = useState(false);
+  const [showAnnotationStudio, setShowAnnotationStudio] = useState(false);
+  const [rubricScores, setRubricScores] = useState<{
+    comprehension: number; // 0-4
+    accuracy: number;      // 0-4
+    methodology: number;   // 0-4
+    presentation: number;  // 0-4
+  }>({ comprehension: 3, accuracy: 3, methodology: 3, presentation: 3 });
+
+
+  // Calculate weighted score based on selected rubric dimensions
+  const applyRubricScore = (updated: typeof rubricScores) => {
+    setRubricScores(updated);
+    if (!gradingSubmission) return;
+    const max = gradingSubmission.maxScore || 20;
+    // Total rubric points = 16 (4 dimensions * 4)
+    const totalPoints = updated.comprehension + updated.accuracy + updated.methodology + updated.presentation;
+    const computedScore = Math.round(((totalPoints / 16) * max) * 10) / 10;
+    setGradeScore(computedScore);
+    
+    // Auto-generate accreditation feedback summary
+    const remarks = [
+      updated.comprehension >= 3 ? 'Strong theoretical grasp of core principles.' : 'Needs deeper comprehension of course fundamentals.',
+      updated.accuracy >= 3 ? 'High analytical accuracy demonstrated in calculations/code.' : 'Mathematical or logic errors observed.',
+      updated.methodology >= 3 ? 'Systematic problem-solving methodology.' : 'Methodology lacks structured derivation.',
+      updated.presentation >= 3 ? 'Clear technical documentation and clean structure.' : 'Formatting and structural presentation could be improved.'
+    ].join(' ');
+    setGradeFeedback(remarks);
+  };
 
   // Load Data
   const fetchData = async (staffId?: string) => {
@@ -1067,7 +1100,7 @@ export default function LecturerStudioPage() {
                 <span className="italic text-muted-foreground">No written text provided.</span>
               )}
               {gradingSubmission.fileUrl && (
-                <div className="mt-2 pt-2 border-t border-border">
+                <div className="mt-2 pt-2 border-t border-border flex flex-wrap items-center justify-between gap-2">
                   <a
                     href={gradingSubmission.fileUrl}
                     download
@@ -1076,11 +1109,165 @@ export default function LecturerStudioPage() {
                     <Download className="w-3.5 h-3.5" />
                     Download {gradingSubmission.fileName || 'Student Attachment'}
                   </a>
+                  <button
+                    type="button"
+                    onClick={() => setShowAnnotationStudio(!showAnnotationStudio)}
+                    className="px-2.5 py-1 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-500 text-xs font-bold rounded-lg transition-all"
+                  >
+                    {showAnnotationStudio ? 'Close In-Browser Markup' : 'Open In-Browser Markup & Stylus'}
+                  </button>
+                </div>
+              )}
+
+              {/* In-Browser PDF/Document Markup Studio */}
+              {showAnnotationStudio && gradingSubmission.fileUrl && (
+                <div className="mt-4">
+                  <DocumentAnnotationStudio
+                    documentUrl={gradingSubmission.fileUrl}
+                    documentName={gradingSubmission.fileName || 'Student Submission'}
+                  />
                 </div>
               )}
             </div>
 
             <form onSubmit={handleGradeSubmission} className="space-y-4">
+              {/* Interactive Rubric Toggle */}
+              <div className="border border-border/70 rounded-2xl p-4 bg-muted/20">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Award className="w-4 h-4 text-indigo-500" />
+                    <span className="text-xs font-bold text-foreground">Accreditation Rubric Assistant (NUC/ABET Standard)</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowRubric(!showRubric)}
+                    className="text-xs font-bold text-indigo-500 hover:text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-lg"
+                  >
+                    {showRubric ? 'Hide Rubric Matrix' : 'Open Rubric Matrix'}
+                  </button>
+                </div>
+
+                {showRubric && (
+                  <div className="mt-3 space-y-3 pt-3 border-t border-border/60 text-xs">
+                    {/* Dimension 1: Comprehension */}
+                    <div>
+                      <div className="flex justify-between font-semibold text-muted-foreground mb-1">
+                        <span>1. Conceptual Comprehension (25%)</span>
+                        <span className="font-bold text-foreground">{rubricScores.comprehension} / 4 pts</span>
+                      </div>
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {[
+                          { val: 1, label: 'Unsatisfactory (1)' },
+                          { val: 2, label: 'Developing (2)' },
+                          { val: 3, label: 'Proficient (3)' },
+                          { val: 4, label: 'Mastery (4)' }
+                        ].map(tier => (
+                          <button
+                            key={tier.val}
+                            type="button"
+                            onClick={() => applyRubricScore({ ...rubricScores, comprehension: tier.val })}
+                            className={`py-1.5 px-1 rounded-lg text-[10px] font-bold border transition-all ${
+                              rubricScores.comprehension === tier.val
+                                ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
+                                : 'bg-background hover:bg-muted text-muted-foreground border-border'
+                            }`}
+                          >
+                            {tier.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Dimension 2: Analytical Accuracy */}
+                    <div>
+                      <div className="flex justify-between font-semibold text-muted-foreground mb-1">
+                        <span>2. Technical & Analytical Accuracy (25%)</span>
+                        <span className="font-bold text-foreground">{rubricScores.accuracy} / 4 pts</span>
+                      </div>
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {[
+                          { val: 1, label: 'Unsatisfactory (1)' },
+                          { val: 2, label: 'Developing (2)' },
+                          { val: 3, label: 'Proficient (3)' },
+                          { val: 4, label: 'Mastery (4)' }
+                        ].map(tier => (
+                          <button
+                            key={tier.val}
+                            type="button"
+                            onClick={() => applyRubricScore({ ...rubricScores, accuracy: tier.val })}
+                            className={`py-1.5 px-1 rounded-lg text-[10px] font-bold border transition-all ${
+                              rubricScores.accuracy === tier.val
+                                ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
+                                : 'bg-background hover:bg-muted text-muted-foreground border-border'
+                            }`}
+                          >
+                            {tier.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Dimension 3: Methodology */}
+                    <div>
+                      <div className="flex justify-between font-semibold text-muted-foreground mb-1">
+                        <span>3. Problem Solving & Methodology (25%)</span>
+                        <span className="font-bold text-foreground">{rubricScores.methodology} / 4 pts</span>
+                      </div>
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {[
+                          { val: 1, label: 'Unsatisfactory (1)' },
+                          { val: 2, label: 'Developing (2)' },
+                          { val: 3, label: 'Proficient (3)' },
+                          { val: 4, label: 'Mastery (4)' }
+                        ].map(tier => (
+                          <button
+                            key={tier.val}
+                            type="button"
+                            onClick={() => applyRubricScore({ ...rubricScores, methodology: tier.val })}
+                            className={`py-1.5 px-1 rounded-lg text-[10px] font-bold border transition-all ${
+                              rubricScores.methodology === tier.val
+                                ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
+                                : 'bg-background hover:bg-muted text-muted-foreground border-border'
+                            }`}
+                          >
+                            {tier.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Dimension 4: Presentation & Style */}
+                    <div>
+                      <div className="flex justify-between font-semibold text-muted-foreground mb-1">
+                        <span>4. Structure & Technical Presentation (25%)</span>
+                        <span className="font-bold text-foreground">{rubricScores.presentation} / 4 pts</span>
+                      </div>
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {[
+                          { val: 1, label: 'Unsatisfactory (1)' },
+                          { val: 2, label: 'Developing (2)' },
+                          { val: 3, label: 'Proficient (3)' },
+                          { val: 4, label: 'Mastery (4)' }
+                        ].map(tier => (
+                          <button
+                            key={tier.val}
+                            type="button"
+                            onClick={() => applyRubricScore({ ...rubricScores, presentation: tier.val })}
+                            className={`py-1.5 px-1 rounded-lg text-[10px] font-bold border transition-all ${
+                              rubricScores.presentation === tier.val
+                                ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
+                                : 'bg-background hover:bg-muted text-muted-foreground border-border'
+                            }`}
+                          >
+                            {tier.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-foreground mb-1">
                   Awarded Score (Max: {gradingSubmission.maxScore} pts)
