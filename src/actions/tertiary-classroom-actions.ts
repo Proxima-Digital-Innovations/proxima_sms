@@ -874,3 +874,224 @@ export async function gradeAssignmentSubmissionAction(
     return { success: false, error: error.message || 'Failed to grade submission.' };
   }
 }
+
+
+// ==============================================================================
+// 7. REAL-TIME VIRTUAL CLASSROOM & LIVE Q&A ENGINE (HYBRID DISTANCE LEARNING)
+// ==============================================================================
+
+export interface LiveClassQuestion {
+  id: string;
+  sessionId: string;
+  studentId: string;
+  studentName: string;
+  matricNumber?: string;
+  question: string;
+  upvotes: number;
+  upvotedBy: string[];
+  isAnswered: boolean;
+  createdAt: string;
+}
+
+export interface LiveVirtualClassSession {
+  id: string;
+  courseOfferingId: string;
+  courseCode: string;
+  courseTitle: string;
+  lecturerId: string;
+  lecturerName: string;
+  topic: string;
+  provider: 'JITSI' | 'ZOOM' | 'GOOGLE_MEET';
+  roomName: string;
+  meetingUrl: string;
+  isActive: boolean;
+  startedAt: string;
+  endedAt?: string;
+  questions: LiveClassQuestion[];
+}
+
+// In-memory fast store for active live rooms & real-time question queues
+const globalLiveSessions = (global as any).__PROXIMA_LIVE_SESSIONS__ || new Map<string, LiveVirtualClassSession>();
+(global as any).__PROXIMA_LIVE_SESSIONS__ = globalLiveSessions;
+
+export async function startLiveVirtualClassAction(data: {
+  offeringId: string;
+  topic: string;
+  provider?: 'JITSI' | 'ZOOM' | 'GOOGLE_MEET';
+  externalUrl?: string;
+  lecturerId?: string;
+}) {
+  try {
+    const offering = await prisma.courseOffering.findUnique({
+      where: { id: data.offeringId },
+      include: {
+        course: true,
+        lecturers: { include: { staff: { include: { user: true } } } }
+      }
+    });
+
+    if (!offering) {
+      return { success: false, error: 'Course offering not found.' };
+    }
+
+    const lecturer = offering.lecturers[0]?.staff;
+    const lecturerName = lecturer ? `${lecturer.title || 'Dr.'} ${lecturer.user.lastName}` : 'Course Lecturer';
+    const provider = data.provider || 'JITSI';
+    const cleanOfferingId = data.offeringId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 14);
+    const roomName = `proxima_${cleanOfferingId}_${Date.now().toString(36)}`;
+    const meetingUrl = provider === 'JITSI' 
+      ? `https://meet.jit.si/${roomName}#config.prejoinConfig.enabled=false&userInfo.displayName=${encodeURIComponent(lecturerName)}`
+      : (data.externalUrl?.trim() || `https://meet.jit.si/${roomName}`);
+
+    const sessionId = `live_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+    const newSession: LiveVirtualClassSession = {
+      id: sessionId,
+      courseOfferingId: data.offeringId,
+      courseCode: offering.course.code,
+      courseTitle: offering.course.title,
+      lecturerId: data.lecturerId || lecturer?.id || 'primary_lecturer',
+      lecturerName,
+      topic: data.topic?.trim() || `Live Class: ${offering.course.code} Discussion & Q&A`,
+      provider,
+      roomName,
+      meetingUrl,
+      isActive: true,
+      startedAt: new Date().toISOString(),
+      questions: []
+    };
+
+    globalLiveSessions.set(sessionId, newSession);
+
+    revalidatePath('/dashboard/tertiary/student-hub');
+    revalidatePath('/dashboard/tertiary/lecturer-studio');
+
+    return {
+      success: true,
+      session: newSession,
+      message: `Live virtual classroom opened for ${offering.course.code}. Remote students can now join.`
+    };
+  } catch (error: any) {
+    console.error('Error starting live virtual class:', error);
+    return { success: false, error: error.message || 'Failed to start live virtual class.' };
+  }
+}
+
+export async function endLiveVirtualClassAction(sessionId: string) {
+  try {
+    const session = globalLiveSessions.get(sessionId);
+    if (!session) {
+      return { success: false, error: 'Session not found.' };
+    }
+
+    session.isActive = false;
+    session.endedAt = new Date().toISOString();
+    globalLiveSessions.set(sessionId, session);
+
+    revalidatePath('/dashboard/tertiary/student-hub');
+    revalidatePath('/dashboard/tertiary/lecturer-studio');
+
+    return { success: true, message: 'Live virtual classroom concluded successfully.' };
+  } catch (error: any) {
+    console.error('Error ending live virtual class:', error);
+    return { success: false, error: error.message || 'Failed to end live class.' };
+  }
+}
+
+export async function getActiveLiveClassesAction(offeringIds?: string[]) {
+  try {
+    const activeSessions: LiveVirtualClassSession[] = [];
+    for (const session of globalLiveSessions.values()) {
+      if (session.isActive) {
+        if (!offeringIds || offeringIds.length === 0 || offeringIds.includes(session.courseOfferingId)) {
+          activeSessions.push(session);
+        }
+      }
+    }
+    return { success: true, sessions: activeSessions };
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Failed to load live sessions.', sessions: [] };
+  }
+}
+
+export async function postLiveQuestionAction(data: {
+  sessionId: string;
+  studentId: string;
+  studentName: string;
+  matricNumber?: string;
+  question: string;
+}) {
+  try {
+    const session = globalLiveSessions.get(data.sessionId);
+    if (!session || !session.isActive) {
+      return { success: false, error: 'Live session is no longer active.' };
+    }
+
+    if (!data.question?.trim()) {
+      return { success: false, error: 'Question text is required.' };
+    }
+
+    const questionItem: LiveClassQuestion = {
+      id: `q_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      sessionId: data.sessionId,
+      studentId: data.studentId,
+      studentName: data.studentName,
+      matricNumber: data.matricNumber,
+      question: data.question.trim(),
+      upvotes: 0,
+      upvotedBy: [],
+      isAnswered: false,
+      createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    session.questions.unshift(questionItem);
+    globalLiveSessions.set(data.sessionId, session);
+
+    return { success: true, question: questionItem };
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Failed to post live question.' };
+  }
+}
+
+export async function upvoteLiveQuestionAction(sessionId: string, questionId: string, studentId: string) {
+  try {
+    const session = globalLiveSessions.get(sessionId);
+    if (!session) return { success: false, error: 'Session not found.' };
+
+    const q = session.questions.find(x => x.id === questionId);
+    if (!q) return { success: false, error: 'Question not found.' };
+
+    const idx = q.upvotedBy.indexOf(studentId);
+    if (idx >= 0) {
+      q.upvotedBy.splice(idx, 1);
+    } else {
+      q.upvotedBy.push(studentId);
+    }
+    q.upvotes = q.upvotedBy.length;
+
+    // Sort questions by upvotes descending
+    session.questions.sort((a, b) => b.upvotes - a.upvotes);
+    globalLiveSessions.set(sessionId, session);
+
+    return { success: true, upvotes: q.upvotes, hasUpvoted: idx < 0 };
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Failed to upvote question.' };
+  }
+}
+
+export async function markLiveQuestionAnsweredAction(sessionId: string, questionId: string) {
+  try {
+    const session = globalLiveSessions.get(sessionId);
+    if (!session) return { success: false, error: 'Session not found.' };
+
+    const q = session.questions.find(x => x.id === questionId);
+    if (q) {
+      q.isAnswered = true;
+      globalLiveSessions.set(sessionId, session);
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Failed to update question status.' };
+  }
+}

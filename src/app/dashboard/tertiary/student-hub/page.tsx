@@ -32,8 +32,12 @@ import {
 import {
   getStudentPortalData,
   submitAssignmentOnlineAction,
-  activateTertiaryExamSessionAction
+  activateTertiaryExamSessionAction,
+  getActiveLiveClassesAction,
+  LiveVirtualClassSession
 } from '@/actions/tertiary-classroom-actions';
+import { VirtualClassroomModal } from '@/components/dashboard/virtual-class/virtual-classroom-modal';
+import { Radio, Video } from 'lucide-react';
 
 export default function StudentHubPage() {
   const [loading, setLoading] = useState(true);
@@ -43,6 +47,10 @@ export default function StudentHubPage() {
 
   // Audio Player State
   const [currentAudio, setCurrentAudio] = useState<{ id: string; title: string; url: string; course: string } | null>(null);
+
+  // Live Virtual Classroom State
+  const [activeLiveSessions, setActiveLiveSessions] = useState<LiveVirtualClassSession[]>([]);
+  const [selectedLiveSession, setSelectedLiveSession] = useState<LiveVirtualClassSession | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioProgress, setAudioProgress] = useState(0);
   const [audioDuration, setAudioDuration] = useState(0);
@@ -153,6 +161,13 @@ export default function StudentHubPage() {
         if (!selectedStudentId) {
           setSelectedStudentId(res.student.id);
         }
+
+        // Check active live sessions for registered courses
+        const offeringIds = res.registeredCourses?.map((c: any) => c.offeringId) || [];
+        const liveRes = await getActiveLiveClassesAction(offeringIds);
+        if (liveRes.success && liveRes.sessions) {
+          setActiveLiveSessions(liveRes.sessions);
+        }
       }
     } catch (err) {
       console.error(err);
@@ -163,6 +178,18 @@ export default function StudentHubPage() {
 
   useEffect(() => {
     fetchData();
+
+    // Check for active live sessions every 10 seconds
+    const interval = setInterval(async () => {
+      try {
+        const liveRes = await getActiveLiveClassesAction();
+        if (liveRes.success && liveRes.sessions) {
+          setActiveLiveSessions(liveRes.sessions);
+        }
+      } catch (e) {}
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const handleStudentSwitch = (newId: string) => {
@@ -361,6 +388,53 @@ export default function StudentHubPage() {
           </div>
         </div>
       </div>
+
+      {/* LIVE VIRTUAL CLASS IN PROGRESS BANNER (Remote Students Real-time Interaction) */}
+      {activeLiveSessions.length > 0 && (
+        <div className="bg-gradient-to-r from-rose-950 via-slate-900 to-indigo-950 p-4 sm:p-5 rounded-3xl border border-rose-500/40 text-white shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0">
+              <Radio className="w-6 h-6 animate-ping" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-rose-500 text-white rounded-md flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                  LIVE CLASS IN PROGRESS
+                </span>
+                <span className="text-xs text-rose-300 font-bold">{activeLiveSessions[0].courseCode}</span>
+              </div>
+              <h4 className="text-sm font-black text-white mt-1">{activeLiveSessions[0].topic}</h4>
+              <p className="text-xs text-slate-300">
+                Instructor: <strong className="text-white">{activeLiveSessions[0].lecturerName}</strong> &bull; Remote Students can unmute, raise hand &amp; ask questions live.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setSelectedLiveSession(activeLiveSessions[0])}
+            className="w-full sm:w-auto px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-2xl text-xs font-black shadow-lg transition-all flex items-center justify-center gap-2 shrink-0 active:scale-95"
+          >
+            <Video className="w-4 h-4" />
+            Join Virtual Classroom
+          </button>
+        </div>
+      )}
+
+      {/* MODAL: STUDENT REAL-TIME VIRTUAL CLASSROOM */}
+      {selectedLiveSession && (
+        <VirtualClassroomModal
+          session={selectedLiveSession}
+          currentUser={{
+            id: data?.student?.id || 'student',
+            name: `${data?.student?.user?.firstName || ''} ${data?.student?.user?.lastName || ''}`.trim() || data?.student?.matricNumber || 'Student',
+            matricNumber: data?.student?.matricNumber,
+            role: 'STUDENT'
+          }}
+          onClose={() => setSelectedLiveSession(null)}
+        />
+      )}
 
       {/* 2. PERSISTENT AUDIO PLAYER BAR (If audio selected) */}
       {currentAudio && (

@@ -35,8 +35,14 @@ import {
   getLecturerStudioData,
   uploadLectureMaterialAction,
   createTertiaryAssignmentAction,
-  gradeAssignmentSubmissionAction
+  gradeAssignmentSubmissionAction,
+  startLiveVirtualClassAction,
+  endLiveVirtualClassAction,
+  getActiveLiveClassesAction,
+  LiveVirtualClassSession
 } from '@/actions/tertiary-classroom-actions';
+import { VirtualClassroomModal } from '@/components/dashboard/virtual-class/virtual-classroom-modal';
+import { Radio, Video, PhoneOff, Hand, MessageSquare } from 'lucide-react';
 
 export default function LecturerStudioPage() {
   const { role, isLoading: isRoleLoading } = useRole();
@@ -45,7 +51,17 @@ export default function LecturerStudioPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
   const [selectedStaffId, setSelectedStaffId] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'courses' | 'materials' | 'assignments' | 'grading'>('materials');
+  const [activeTab, setActiveTab] = useState<'courses' | 'materials' | 'assignments' | 'grading' | 'virtual-class'>('materials');
+
+  // Virtual Classroom State
+  const [activeLiveSession, setActiveLiveSession] = useState<LiveVirtualClassSession | null>(null);
+  const [isStartingLive, setIsStartingLive] = useState(false);
+  const [liveOfferingId, setLiveOfferingId] = useState('');
+  const [liveTopic, setLiveTopic] = useState('');
+  const [liveProvider, setLiveProvider] = useState<'JITSI' | 'ZOOM' | 'GOOGLE_MEET'>('JITSI');
+  const [liveExternalUrl, setLiveExternalUrl] = useState('');
+  const [showLiveModal, setShowLiveModal] = useState(false);
+  const [liveMessage, setLiveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     if (!isRoleLoading && (role === 'STUDENT' || role === 'PARENT')) {
@@ -104,6 +120,52 @@ export default function LecturerStudioPage() {
     presentation: number;  // 0-4
   }>({ comprehension: 3, accuracy: 3, methodology: 3, presentation: 3 });
 
+
+  // Virtual Class Actions
+  const handleStartLiveClass = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const offeringId = liveOfferingId || assignedCourses[0]?.offeringId;
+    if (!offeringId || !data?.lecturer) {
+      setLiveMessage({ type: 'error', text: 'Please select a course offering to launch the virtual class.' });
+      return;
+    }
+
+    setIsStartingLive(true);
+    setLiveMessage(null);
+
+    try {
+      const res = await startLiveVirtualClassAction({
+        offeringId,
+        topic: liveTopic.trim() || 'Live Interactive Class & Q&A Discussion',
+        provider: liveProvider,
+        externalUrl: liveExternalUrl,
+        lecturerId: data.lecturer.id
+      });
+
+      if (res.success && res.session) {
+        setActiveLiveSession(res.session);
+        setShowLiveModal(true);
+        setLiveMessage({ type: 'success', text: res.message || 'Live virtual classroom launched!' });
+      } else {
+        setLiveMessage({ type: 'error', text: res.error || 'Failed to start live class.' });
+      }
+    } catch (err: any) {
+      setLiveMessage({ type: 'error', text: err.message || 'Error starting live class.' });
+    } finally {
+      setIsStartingLive(false);
+    }
+  };
+
+  const handleEndLiveClass = async (sessionId: string) => {
+    try {
+      await endLiveVirtualClassAction(sessionId);
+      setActiveLiveSession(null);
+      setShowLiveModal(false);
+      setLiveMessage({ type: 'success', text: 'Live virtual classroom ended for all participants.' });
+    } catch (err: any) {
+      console.error('Error ending live class:', err);
+    }
+  };
 
   // Calculate weighted score based on selected rubric dimensions
   const applyRubricScore = (updated: typeof rubricScores) => {
@@ -493,6 +555,21 @@ export default function LecturerStudioPage() {
           >
             <BookOpen className="w-4 h-4" />
             Assigned Courses &amp; Student Rosters
+          </button>
+
+          <button
+            onClick={() => setActiveTab('virtual-class')}
+            className={`pb-3 px-4 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${
+              activeTab === 'virtual-class'
+                ? 'border-rose-500 text-rose-500 font-bold'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Radio className="w-4 h-4 text-rose-500 animate-pulse" />
+            Live Virtual Class &amp; Real-Time Q&amp;A
+            {activeLiveSession && (
+              <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+            )}
           </button>
         </div>
       </div>
@@ -1161,6 +1238,227 @@ export default function LecturerStudioPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* TAB 5: REAL-TIME VIRTUAL CLASSROOM STUDIO */}
+      {activeTab === 'virtual-class' && (
+        <div className="space-y-6">
+          {/* Active Live Banner */}
+          {activeLiveSession && (
+            <div className="bg-gradient-to-r from-rose-950 via-slate-900 to-indigo-950 p-6 rounded-3xl border border-rose-500/40 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400">
+                  <Radio className="w-7 h-7 animate-ping" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 bg-rose-500 text-white rounded-md">
+                      ROOM ACTIVE NOW
+                    </span>
+                    <span className="text-sm font-black text-rose-300">{activeLiveSession.courseCode}</span>
+                  </div>
+                  <h3 className="text-lg font-bold text-white mt-1">{activeLiveSession.topic}</h3>
+                  <p className="text-xs text-slate-300">
+                    Provider: {activeLiveSession.provider} &bull; Room: <code className="font-mono text-rose-200">{activeLiveSession.roomName}</code>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setShowLiveModal(true)}
+                  className="flex-1 md:flex-none px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-2xl text-xs font-black shadow-lg transition-all flex items-center justify-center gap-2"
+                >
+                  <Video className="w-4 h-4" />
+                  Enter Virtual Hall
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleEndLiveClass(activeLiveSession.id)}
+                  className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                >
+                  <PhoneOff className="w-4 h-4" />
+                  End Class
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Launch Virtual Classroom Form */}
+            <div className="bg-card p-5 sm:p-6 rounded-3xl border border-border shadow-sm text-card-foreground">
+              <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                <Radio className="w-5 h-5 text-rose-500" />
+                Start Live Virtual Session
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1 mb-4">
+                Conduct live interactive video/audio classes. Remote students can raise hands and ask questions real-time.
+              </p>
+
+              {liveMessage && (
+                <div className={`p-3.5 rounded-xl text-xs font-semibold mb-4 flex items-center gap-2 ${
+                  liveMessage.type === 'success'
+                    ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
+                    : 'bg-destructive/15 text-destructive border border-destructive/20'
+                }`}>
+                  {liveMessage.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <AlertCircle className="w-4 h-4 text-destructive" />}
+                  {liveMessage.text}
+                </div>
+              )}
+
+              <form onSubmit={handleStartLiveClass} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-foreground mb-1">Target Course Offering</label>
+                  <select
+                    value={liveOfferingId || (assignedCourses[0]?.offeringId || '')}
+                    onChange={(e) => setLiveOfferingId(e.target.value)}
+                    className="w-full text-xs p-2.5 bg-background text-foreground border border-input rounded-xl focus:ring-2 focus:ring-primary focus:outline-none"
+                  >
+                    {assignedCourses.map((c: any) => (
+                      <option key={c.offeringId} value={c.offeringId}>
+                        {c.courseCode} - {c.courseTitle}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-foreground mb-1">Session Agenda / Topic</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Week 4: Tree Traversals & Live Student Q&A"
+                    value={liveTopic}
+                    onChange={(e) => setLiveTopic(e.target.value)}
+                    className="w-full text-xs p-2.5 bg-background text-foreground border border-input rounded-xl focus:ring-2 focus:ring-primary focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-foreground mb-1">Conferencing Engine</label>
+                  <select
+                    value={liveProvider}
+                    onChange={(e: any) => setLiveProvider(e.target.value)}
+                    className="w-full text-xs p-2.5 bg-background text-foreground border border-input rounded-xl focus:ring-2 focus:ring-primary focus:outline-none"
+                  >
+                    <option value="JITSI">Proxima In-Browser WebRTC Hall (Zero Install / Free / Encrypted)</option>
+                    <option value="ZOOM">External Zoom Meeting Link</option>
+                    <option value="GOOGLE_MEET">External Google Meet Link</option>
+                  </select>
+                </div>
+
+                {liveProvider !== 'JITSI' && (
+                  <div>
+                    <label className="block text-xs font-semibold text-foreground mb-1">External Meeting URL</label>
+                    <input
+                      type="url"
+                      required
+                      placeholder="https://zoom.us/j/123456789 or https://meet.google.com/xyz-abcd"
+                      value={liveExternalUrl}
+                      onChange={(e) => setLiveExternalUrl(e.target.value)}
+                      className="w-full text-xs p-2.5 bg-background text-foreground border border-input rounded-xl focus:ring-2 focus:ring-primary focus:outline-none"
+                    />
+                  </div>
+                )}
+
+                <div className="p-3 bg-muted/40 rounded-xl border border-border text-[11px] text-muted-foreground space-y-1">
+                  <div className="font-bold text-foreground flex items-center gap-1.5">
+                    <Radio className="w-3.5 h-3.5 text-rose-500" />
+                    How Remote Students Participate:
+                  </div>
+                  <div>&bull; Students get an instant alert on their portal &amp; phone.</div>
+                  <div>&bull; They can unmute to talk or click <strong>Raise Hand (✋)</strong>.</div>
+                  <div>&bull; Built-in <strong>Low-Bandwidth Mode</strong> for students on weak 3G/4G connections.</div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isStartingLive}
+                  className="w-full py-3 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isStartingLive ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Broadcasting Room...
+                    </>
+                  ) : (
+                    <>
+                      <Radio className="w-4 h-4" />
+                      🔴 Launch Live Classroom Now
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+
+            {/* Virtual Hall Features & Best Practices */}
+            <div className="lg:col-span-2 space-y-4">
+              <div className="bg-card p-5 sm:p-6 rounded-3xl border border-border shadow-sm text-card-foreground">
+                <h3 className="text-base font-bold text-foreground mb-3 flex items-center gap-2">
+                  <Video className="w-5 h-5 text-primary" />
+                  Remote Student Real-Time Interaction Tools
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 bg-muted/30 rounded-2xl border border-border/60 space-y-2">
+                    <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+                      <Hand className="w-4 h-4 text-amber-500" />
+                      Live Hand-Raising Queue
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Remote students click ✋ to raise their hand without interrupting the lecture. You see a clear queue to call on them one by one.
+                    </p>
+                  </div>
+
+                  <div className="p-4 bg-muted/30 rounded-2xl border border-border/60 space-y-2">
+                    <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+                      <MessageSquare className="w-4 h-4 text-primary" />
+                      Upvotable Question Stream
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Students type questions during the class. Fellow students upvote the best questions so you can answer high-priority queries first.
+                    </p>
+                  </div>
+
+                  <div className="p-4 bg-muted/30 rounded-2xl border border-border/60 space-y-2">
+                    <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+                      <Radio className="w-4 h-4 text-emerald-500" />
+                      Low-Data Audio-Priority Stream
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Students in low-connectivity areas can toggle audio-only mode to consume ~90% less data while staying connected live.
+                    </p>
+                  </div>
+
+                  <div className="p-4 bg-muted/30 rounded-2xl border border-border/60 space-y-2">
+                    <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+                      <Users className="w-4 h-4 text-indigo-500" />
+                      Automated Attendance Logs
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      System automatically marks students present when they join the virtual hall, synchronizing with the master attendance registry.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: LIVE VIRTUAL CLASSROOM HUD */}
+      {showLiveModal && activeLiveSession && (
+        <VirtualClassroomModal
+          session={activeLiveSession}
+          currentUser={{
+            id: data?.lecturer?.id || 'lecturer',
+            name: `${data?.lecturer?.title || 'Dr.'} ${data?.lecturer?.firstName || ''} ${data?.lecturer?.lastName || ''}`.trim(),
+            role: 'LECTURER'
+          }}
+          onClose={() => setShowLiveModal(false)}
+          onEndSession={handleEndLiveClass}
+        />
       )}
 
       {/* TAB 4: ASSIGNED COURSES & ROSTERS */}
