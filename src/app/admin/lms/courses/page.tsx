@@ -58,12 +58,12 @@ export default function LmsCourseBuilder() {
     }
   };
 
-  const handleAddContent = async (moduleId: string, type: string) => {
-    const title = prompt(`Enter ${type} title:`);
+  const handleAddContent = async (moduleId: string, type: string, defaultTitle?: string, defaultUrl?: string) => {
+    const title = defaultTitle || prompt(`Enter ${type} title:`);
     if (!title) return;
     
-    let url = '';
-    if (type !== 'PAGE') {
+    let url = defaultUrl !== undefined ? defaultUrl : '';
+    if (type !== 'PAGE' && defaultUrl === undefined) {
       url = prompt(`Enter ${type} URL:`) || '';
     }
     

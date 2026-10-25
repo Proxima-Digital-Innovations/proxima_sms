@@ -878,7 +878,7 @@ export class CommEngine {
 
     // 2. WhatsApp Alert
     if (data.guardianPhone && config.whatsapp?.enabled) {
-      const waText = `*🚨 ${schoolName.toUpperCase()} - ATTENDANCE NOTICE*\n\n` +
+      const waText = `*${schoolName.toUpperCase()} - ATTENDANCE NOTICE*\n\n` +
         `Dear ${data.guardianName},\n` +
         `Please be notified that *${data.studentName}* was marked *ABSENT* for *${data.className}* on *${formattedDate}*.\n\n` +
         `If this absence was unplanned, please contact the school administration immediately.`;
@@ -955,7 +955,7 @@ export class CommEngine {
 
     // 2. WhatsApp Alert
     if (data.recipientPhone && config.whatsapp?.enabled) {
-      const waText = `*📝 ${schoolName.toUpperCase()} - GRADE RELEASED*\n\n` +
+      const waText = `*${schoolName.toUpperCase()} - GRADE RELEASED*\n\n` +
         `Dear ${data.recipientName},\n` +
         `The assessment results for *${data.studentName}* have been posted:\n\n` +
         `*Course/Subject:* ${data.courseOrSubject}\n` +

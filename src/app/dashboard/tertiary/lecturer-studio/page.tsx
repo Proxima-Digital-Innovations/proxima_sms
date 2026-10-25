@@ -41,7 +41,7 @@ import {
   LiveVirtualClassSession
 } from '@/actions/tertiary-classroom-actions';
 import { VirtualClassroomModal } from '@/components/dashboard/virtual-class/virtual-classroom-modal';
-import { Radio, Video, PhoneOff, Hand, MessageSquare } from 'lucide-react';
+import { Radio, Video, PhoneOff, Hand, MessageSquare, Mic, Square } from 'lucide-react';
 
 export default function LecturerStudioPage() {
   const { role, isLoading: isRoleLoading } = useRole();
@@ -767,8 +767,8 @@ export default function LecturerStudioPage() {
                             onClick={startVoiceRecording}
                             className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm active:scale-95"
                           >
-                            <span className="w-2 h-2 rounded-full bg-white"></span>
-                            <span>🎙️ Record Live Voice Note</span>
+                            <Mic className="w-3.5 h-3.5" />
+                            <span>Record Live Voice Note</span>
                           </button>
                         ) : (
                           <button
@@ -776,8 +776,8 @@ export default function LecturerStudioPage() {
                             onClick={stopVoiceRecording}
                             className="px-3 py-1.5 bg-slate-900 border border-rose-500/50 text-rose-400 rounded-xl text-xs font-bold flex items-center gap-1.5 animate-pulse"
                           >
-                            <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                            <span>⏹ Stop ({voiceSeconds}s)</span>
+                            <Square className="w-3.5 h-3.5 fill-current" />
+                            <span>Stop ({voiceSeconds}s)</span>
                           </button>
                         )}
                         <span className="text-[10px] text-muted-foreground font-semibold">or select audio file:</span>
@@ -1488,7 +1488,7 @@ export default function LecturerStudioPage() {
                     How Remote Students Participate:
                   </div>
                   <div>&bull; Students get an instant alert on their portal &amp; phone.</div>
-                  <div>&bull; They can unmute to talk or click <strong>Raise Hand (✋)</strong>.</div>
+                  <div>&bull; They can unmute to talk or click <strong>Raise Hand</strong>.</div>
                   <div>&bull; Built-in <strong>Low-Bandwidth Mode</strong> for students on weak 3G/4G connections.</div>
                 </div>
 
@@ -1505,7 +1505,7 @@ export default function LecturerStudioPage() {
                   ) : (
                     <>
                       <Radio className="w-4 h-4" />
-                      🔴 Launch Live Classroom Now
+                      Launch Live Classroom Now
                     </>
                   )}
                 </button>
@@ -1527,7 +1527,7 @@ export default function LecturerStudioPage() {
                       Live Hand-Raising Queue
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Remote students click ✋ to raise their hand without interrupting the lecture. You see a clear queue to call on them one by one.
+                      Remote students can raise their hand without interrupting the lecture. You see a clear queue to call on them one by one.
                     </p>
                   </div>
 

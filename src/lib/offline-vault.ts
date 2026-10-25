@@ -76,7 +76,7 @@ export async function loadExamDraft(examKey: string): Promise<CachedExamState | 
   try {
     const db = await openDatabase();
     if (db) {
-      const result: CachedExamState = await new Promise((resolve) => {
+      const result: CachedExamState | null = await new Promise<CachedExamState | null>((resolve) => {
         const tx = db.transaction(STORE_NAME, 'readonly');
         const store = tx.objectStore(STORE_NAME);
         const req = store.get(examKey);

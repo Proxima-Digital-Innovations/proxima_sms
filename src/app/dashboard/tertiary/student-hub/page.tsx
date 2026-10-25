@@ -164,7 +164,7 @@ export default function StudentHubPage() {
         }
 
         // Check active live sessions for registered courses
-        const offeringIds = res.registeredCourses?.map((c: any) => c.offeringId) || [];
+        const offeringIds = (res.student as any)?.registeredCourses?.map((c: any) => c.offeringId) || [];
         const liveRes = await getActiveLiveClassesAction(offeringIds);
         if (liveRes.success && liveRes.sessions) {
           setActiveLiveSessions(liveRes.sessions);

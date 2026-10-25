@@ -17,7 +17,6 @@ import {
   Send,
   Users,
   Hand,
-  Sparkles,
   Monitor,
   Disc,
   Download,
@@ -400,7 +399,7 @@ export function VirtualClassroomModal({
                 }`}
               >
                 <Hand className={`w-3.5 h-3.5 ${isHandRaised ? 'animate-bounce' : ''}`} />
-                <span>{isHandRaised ? 'Hand Raised ✋' : 'Raise Hand'}</span>
+                <span>{isHandRaised ? 'Hand Raised' : 'Raise Hand'}</span>
               </button>
             )}
 
@@ -613,7 +612,7 @@ export function VirtualClassroomModal({
               <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
                 {questions.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center p-6 text-muted-foreground">
-                    <Sparkles className="w-8 h-8 text-muted-foreground/40 mb-2" />
+                    <MessageSquare className="w-8 h-8 text-muted-foreground/40 mb-2" />
                     <p className="text-xs font-semibold">No questions posted yet.</p>
                     <p className="text-[11px] text-muted-foreground mt-1">
                       {isLecturer
