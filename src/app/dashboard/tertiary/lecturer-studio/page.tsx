@@ -454,22 +454,38 @@ export default function LecturerStudioPage() {
             </div>
           </div>
 
-          {/* Quick Demo Switcher */}
-          <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/10 w-full md:w-auto">
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
-              Switch Lecturer Profile (Demo)
-            </label>
-            <select
-              value={lecturer?.id || ''}
-              onChange={(e) => handleStaffSwitch(e.target.value)}
-              className="bg-slate-800 text-white text-xs font-medium rounded-xl px-3 py-2 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-400 w-full sm:w-64"
+          {/* Quick Actions & Demo Switcher */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+            {/* Quick Launch Live Virtual Class Button */}
+            <button
+              onClick={() => setActiveTab('virtual-class')}
+              className="px-5 py-3 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white rounded-2xl text-xs font-black shadow-xl shadow-rose-950/50 border border-rose-400/40 transition-all flex items-center justify-center gap-2 group active:scale-95 shrink-0"
             >
-              {availableLecturers.map((l: any) => (
-                <option key={l.id} value={l.id}>
-                  {l.staffCode} - {l.name}
-                </option>
-              ))}
-            </select>
+              <span className="flex h-2.5 w-2.5 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
+              </span>
+              <Radio className="w-4 h-4 text-white animate-pulse" />
+              <span>Launch Live Virtual Class</span>
+            </button>
+
+            {/* Quick Demo Switcher */}
+            <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/10">
+              <label className="block text-[10px] font-bold text-slate-300 mb-1 uppercase tracking-wider">
+                Switch Lecturer Profile
+              </label>
+              <select
+                value={lecturer?.id || ''}
+                onChange={(e) => handleStaffSwitch(e.target.value)}
+                className="bg-slate-800 text-white text-xs font-medium rounded-xl px-3 py-1.5 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-400 w-full sm:w-56"
+              >
+                {availableLecturers.map((l: any) => (
+                  <option key={l.id} value={l.id}>
+                    {l.staffCode} - {l.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
@@ -503,73 +519,84 @@ export default function LecturerStudioPage() {
         </div>
       </div>
 
-      {/* 2. NAVIGATION TABS */}
-      <div className="w-full overflow-x-auto scrollbar-none border-b border-border">
-        <div className="flex space-x-2 pb-1 min-w-max">
+      {/* 2. NAVIGATION TABS (RESPONSIVE WRAP & PROMINENT LIVE CLASS) */}
+      <div className="w-full border-b border-border pb-1">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* TAB 1: LIVE VIRTUAL CLASS (HIGH-VISIBILITY BADGE) */}
+          <button
+            onClick={() => setActiveTab('virtual-class')}
+            className={`py-2.5 px-4 font-bold text-xs rounded-xl transition-all flex items-center gap-2 border ${
+              activeTab === 'virtual-class'
+                ? 'bg-rose-500 text-white border-rose-600 shadow-md shadow-rose-500/20'
+                : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 hover:bg-rose-500/20'
+            }`}
+          >
+            <span className="flex h-2 w-2 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+            </span>
+            <Radio className="w-3.5 h-3.5" />
+            <span>Live Virtual Class &amp; Real-Time Q&amp;A</span>
+            {activeLiveSession && (
+              <span className="px-1.5 py-0.2 bg-white text-rose-600 font-mono text-[10px] rounded-full font-black">
+                LIVE
+              </span>
+            )}
+          </button>
+
+          {/* TAB 2: NOTES & AUDIO STUDIO */}
           <button
             onClick={() => setActiveTab('materials')}
-            className={`pb-3 px-4 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${
+            className={`py-2.5 px-4 font-semibold text-xs rounded-xl transition-all flex items-center gap-2 border ${
               activeTab === 'materials'
-                ? 'border-primary text-primary font-bold'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
+                ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                : 'bg-card text-muted-foreground hover:text-foreground border-border hover:bg-muted/50'
             }`}
           >
-            <Headphones className="w-4 h-4" />
-            Upload Lecture Notes &amp; Audio Studio
+            <Headphones className="w-3.5 h-3.5" />
+            <span>Lecture Notes &amp; Audio Studio</span>
           </button>
 
+          {/* TAB 3: ASSIGNMENTS & EXAMS */}
           <button
             onClick={() => setActiveTab('assignments')}
-            className={`pb-3 px-4 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${
+            className={`py-2.5 px-4 font-semibold text-xs rounded-xl transition-all flex items-center gap-2 border ${
               activeTab === 'assignments'
-                ? 'border-primary text-primary font-bold'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
+                ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                : 'bg-card text-muted-foreground hover:text-foreground border-border hover:bg-muted/50'
             }`}
           >
-            <PlusCircle className="w-4 h-4" />
-            Create &amp; Manage Assignments
+            <PlusCircle className="w-3.5 h-3.5" />
+            <span>Assignments &amp; Exams</span>
           </button>
 
+          {/* TAB 4: GRADING CONSOLE */}
           <button
             onClick={() => setActiveTab('grading')}
-            className={`pb-3 px-4 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${
+            className={`py-2.5 px-4 font-semibold text-xs rounded-xl transition-all flex items-center gap-2 border ${
               activeTab === 'grading'
-                ? 'border-primary text-primary font-bold'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
+                ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                : 'bg-card text-muted-foreground hover:text-foreground border-border hover:bg-muted/50'
             }`}
           >
-            <CheckSquare className="w-4 h-4" />
-            Submissions &amp; Online Grading Console
-            <span className="px-2 py-0.5 text-xs bg-primary/10 text-primary rounded-full font-bold">
-              {allSubmissions.filter(s => s.status === 'SUBMITTED').length} Pending
+            <CheckSquare className="w-3.5 h-3.5" />
+            <span>Grading Console</span>
+            <span className="px-1.5 py-0.5 text-[10px] bg-primary/20 text-primary rounded-full font-bold">
+              {allSubmissions.filter(s => s.status === 'SUBMITTED').length}
             </span>
           </button>
 
+          {/* TAB 5: STUDENT ROSTERS */}
           <button
             onClick={() => setActiveTab('courses')}
-            className={`pb-3 px-4 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${
+            className={`py-2.5 px-4 font-semibold text-xs rounded-xl transition-all flex items-center gap-2 border ${
               activeTab === 'courses'
-                ? 'border-primary text-primary font-bold'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
+                ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                : 'bg-card text-muted-foreground hover:text-foreground border-border hover:bg-muted/50'
             }`}
           >
-            <BookOpen className="w-4 h-4" />
-            Assigned Courses &amp; Student Rosters
-          </button>
-
-          <button
-            onClick={() => setActiveTab('virtual-class')}
-            className={`pb-3 px-4 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'virtual-class'
-                ? 'border-rose-500 text-rose-500 font-bold'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Radio className="w-4 h-4 text-rose-500 animate-pulse" />
-            Live Virtual Class &amp; Real-Time Q&amp;A
-            {activeLiveSession && (
-              <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
-            )}
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Assigned Courses &amp; Rosters</span>
           </button>
         </div>
       </div>
