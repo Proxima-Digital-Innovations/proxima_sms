@@ -83,6 +83,54 @@ export default function LecturerStudioPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // In-Browser Audio Voice Recorder State
+  const [isVoiceRecording, setIsVoiceRecording] = useState(false);
+  const [voiceSeconds, setVoiceSeconds] = useState(0);
+  const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null);
+  const voiceRecorderRef = useRef<MediaRecorder | null>(null);
+  const voiceChunksRef = useRef<Blob[]>([]);
+  const voiceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const startVoiceRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      voiceChunksRef.current = [];
+      const recorder = new MediaRecorder(stream);
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) voiceChunksRef.current.push(e.data);
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(voiceChunksRef.current, { type: 'audio/webm' });
+        const url = URL.createObjectURL(blob);
+        setRecordedAudioUrl(url);
+        const recordedFile = new File(
+          [blob],
+          `${uploadTitle.trim() || 'Audio_Lecture'}_${Date.now()}.webm`,
+          { type: 'audio/webm' }
+        );
+        setUploadFile(recordedFile);
+        stream.getTracks().forEach((t) => t.stop());
+      };
+      recorder.start(1000);
+      voiceRecorderRef.current = recorder;
+      setIsVoiceRecording(true);
+      setVoiceSeconds(0);
+      voiceTimerRef.current = setInterval(() => {
+        setVoiceSeconds((s) => s + 1);
+      }, 1000);
+    } catch (err) {
+      alert('Microphone access was denied. Please allow microphone permissions.');
+    }
+  };
+
+  const stopVoiceRecording = () => {
+    if (voiceRecorderRef.current && isVoiceRecording) {
+      voiceRecorderRef.current.stop();
+      setIsVoiceRecording(false);
+      if (voiceTimerRef.current) clearInterval(voiceTimerRef.current);
+    }
+  };
+
   // Assignment Creation Form State
   const [asgnOfferingId, setAsgnOfferingId] = useState('');
   const [asgnTitle, setAsgnTitle] = useState('');
@@ -707,13 +755,59 @@ export default function LecturerStudioPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-foreground mb-1">Attach File</label>
-                  <input
-                    type="file"
-                    accept={uploadType === 'AUDIO_RECORDING' ? 'audio/*' : '.pdf,.docx,.pptx'}
-                    onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-                    className="w-full text-[11px] text-muted-foreground file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-[11px] file:font-semibold file:bg-primary/10 file:text-primary cursor-pointer"
-                  />
+                  <label className="block text-xs font-semibold text-foreground mb-1">
+                    {uploadType === 'AUDIO_RECORDING' ? 'Audio Source (Record or Upload)' : 'Attach Document'}
+                  </label>
+                  {uploadType === 'AUDIO_RECORDING' ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        {!isVoiceRecording ? (
+                          <button
+                            type="button"
+                            onClick={startVoiceRecording}
+                            className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm active:scale-95"
+                          >
+                            <span className="w-2 h-2 rounded-full bg-white"></span>
+                            <span>🎙️ Record Live Voice Note</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={stopVoiceRecording}
+                            className="px-3 py-1.5 bg-slate-900 border border-rose-500/50 text-rose-400 rounded-xl text-xs font-bold flex items-center gap-1.5 animate-pulse"
+                          >
+                            <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                            <span>⏹ Stop ({voiceSeconds}s)</span>
+                          </button>
+                        )}
+                        <span className="text-[10px] text-muted-foreground font-semibold">or select audio file:</span>
+                      </div>
+                      {recordedAudioUrl && (
+                        <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-400">
+                          <span className="font-bold flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Voice Recorded ({voiceSeconds}s)
+                          </span>
+                          <audio src={recordedAudioUrl} controls className="h-7 w-40" />
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        accept="audio/*"
+                        onChange={(e) => {
+                          setUploadFile(e.target.files?.[0] || null);
+                          setRecordedAudioUrl(null);
+                        }}
+                        className="w-full text-[11px] text-muted-foreground file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[11px] file:font-semibold file:bg-primary/10 file:text-primary cursor-pointer"
+                      />
+                    </div>
+                  ) : (
+                    <input
+                      type="file"
+                      accept=".pdf,.docx,.pptx"
+                      onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                      className="w-full text-[11px] text-muted-foreground file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-[11px] file:font-semibold file:bg-primary/10 file:text-primary cursor-pointer"
+                    />
+                  )}
                 </div>
               </div>
 
