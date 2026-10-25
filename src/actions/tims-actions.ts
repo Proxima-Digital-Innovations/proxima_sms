@@ -717,3 +717,181 @@ export async function enrollTertiaryStudentAction(data: {
   }
 }
 
+
+
+// ==========================================
+// 12. BULK ENROLL / MIGRATE TERTIARY UNDERGRADUATES
+// ==========================================
+
+export async function bulkEnrollTertiaryStudentsAction(studentsList: any[]): Promise<{
+  success: boolean;
+  error?: string;
+  importedCount?: number;
+  errorCount?: number;
+  invalidRecords?: any[];
+  data?: any;
+}> {
+  try {
+    if (!Array.isArray(studentsList) || studentsList.length === 0) {
+      return { success: false, error: 'No undergraduate records provided for migration.' };
+    }
+
+    const bcrypt = await import('bcryptjs');
+    const defaultStudentHash = await bcrypt.hash('student123', 10);
+    const defaultParentHash = await bcrypt.hash('Parent@123', 10);
+
+    // Pre-cache all programs for fast code & name resolution
+    const allPrograms = await prisma.academicProgram.findMany({
+      include: { department: true, faculty: true },
+    });
+    const programMap = new Map<string, string>();
+    for (const prog of allPrograms) {
+      programMap.set(prog.id.toLowerCase().trim(), prog.id);
+      programMap.set(prog.code.toLowerCase().trim(), prog.id);
+      programMap.set(prog.name.toLowerCase().trim(), prog.id);
+    }
+
+    let importedCount = 0;
+    const invalidRecords: any[] = [];
+
+    for (const item of studentsList) {
+      try {
+        const firstName = item.firstName?.toString().trim();
+        const lastName = item.lastName?.toString().trim();
+        const matricNumber = (item.matricNumber || item.matric || item.registrationNumber)?.toString().trim().toUpperCase();
+        let email = item.email?.toString().trim().toLowerCase();
+
+        if (!firstName || !lastName || !matricNumber) {
+          invalidRecords.push({
+            matricNumber: matricNumber || 'N/A',
+            name: `${firstName || ''} ${lastName || ''}`.trim() || 'N/A',
+            error: 'Missing required first name, last name, or matriculation number',
+          });
+          continue;
+        }
+
+        // Auto-generate institutional email if missing
+        if (!email) {
+          const sanitizedMatric = matricNumber.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+          email = `${sanitizedMatric}@university.edu.ng`;
+        }
+
+        // Resolve Academic Program
+        const targetProgram = (item.program || item.programCode || item.programId || item.department || 'CSC').toString().toLowerCase().trim();
+        let resolvedProgramId = programMap.get(targetProgram) || null;
+        if (!resolvedProgramId) {
+          for (const [key, id] of programMap.entries()) {
+            if (targetProgram.includes(key) || key.includes(targetProgram)) {
+              resolvedProgramId = id;
+              break;
+            }
+          }
+        }
+        if (!resolvedProgramId && allPrograms.length > 0) {
+          resolvedProgramId = allPrograms[0].id;
+        }
+        if (!resolvedProgramId) {
+          invalidRecords.push({
+            matricNumber,
+            name: `${firstName} ${lastName}`,
+            error: `Could not match degree program "${targetProgram}". Ensure programs are defined in TIMS.`,
+          });
+          continue;
+        }
+
+        const currentLevel = parseInt(item.level || item.currentLevel || '100', 10) || 100;
+        const guardianName = (item.guardianName || item.sponsorName || item.parentName)?.toString().trim() || null;
+        const guardianEmail = (item.guardianEmail || item.sponsorEmail || item.parentEmail)?.toString().trim().toLowerCase() || null;
+        const guardianPhone = (item.guardianPhone || item.sponsorPhone || item.parentPhone)?.toString().trim() || null;
+        const guardianRelationship = (item.guardianRelationship || item.relationship || 'Parent / Sponsor').toString().trim();
+
+        // Database write inside isolated transaction
+        await prisma.$transaction(async (tx) => {
+          // Check for existing student profile with this matric number
+          const existingProfile = await tx.studentProfile.findUnique({
+            where: { matricNumber },
+          });
+          if (existingProfile) {
+            throw new Error(`Matriculation number ${matricNumber} already exists in the institution.`);
+          }
+
+          // Provision or resolve guardian user account if email supplied
+          let guardianUserId: string | null = null;
+          if (guardianEmail) {
+            let parentUser = await tx.user.findUnique({ where: { email: guardianEmail } });
+            if (!parentUser) {
+              const nameParts = (guardianName || 'Parent Guardian').split(' ');
+              parentUser = await tx.user.create({
+                data: {
+                  firstName: nameParts[0] || 'Parent',
+                  lastName: nameParts.slice(1).join(' ') || 'Guardian',
+                  email: guardianEmail,
+                  phone: guardianPhone || '+234 800 000 0000',
+                  passwordHash: defaultParentHash,
+                  role: 'PARENT',
+                  status: 'active',
+                  requiresPasswordChange: false,
+                },
+              });
+            }
+            guardianUserId = parentUser.id;
+          }
+
+          // Provision user account (or link if email already exists)
+          let studentUser = await tx.user.findUnique({ where: { email } });
+          if (!studentUser) {
+            studentUser = await tx.user.create({
+              data: {
+                firstName,
+                lastName,
+                email,
+                phone: item.phone?.toString().trim() || null,
+                passwordHash: defaultStudentHash,
+                role: 'STUDENT',
+                status: 'active',
+                requiresPasswordChange: true,
+              },
+            });
+          }
+
+          // Create StudentProfile
+          await tx.studentProfile.create({
+            data: {
+              userId: studentUser.id,
+              matricNumber,
+              programId: resolvedProgramId,
+              currentLevel,
+              guardianUserId,
+              guardianName,
+              guardianEmail,
+              guardianPhone,
+              guardianRelationship,
+            },
+          });
+        });
+
+        importedCount++;
+      } catch (err: any) {
+        invalidRecords.push({
+          matricNumber: item.matricNumber || item.matric || 'N/A',
+          name: `${item.firstName || ''} ${item.lastName || ''}`.trim() || 'N/A',
+          error: err.message || 'Error creating undergraduate student record',
+        });
+      }
+    }
+
+    revalidatePath('/dashboard/students');
+    revalidatePath('/dashboard/tertiary/student-hub');
+    revalidatePath('/dashboard/tertiary/registration');
+
+    return {
+      success: true,
+      importedCount,
+      errorCount: invalidRecords.length,
+      invalidRecords,
+    };
+  } catch (error: any) {
+    console.error('Error in bulkEnrollTertiaryStudentsAction:', error);
+    return { success: false, error: error.message || 'Failed to complete bulk enrollment.' };
+  }
+}
