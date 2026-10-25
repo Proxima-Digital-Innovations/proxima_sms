@@ -52,6 +52,9 @@ export default function StudentHubPage() {
   // Live Virtual Classroom State
   const [activeLiveSessions, setActiveLiveSessions] = useState<LiveVirtualClassSession[]>([]);
   const [selectedLiveSession, setSelectedLiveSession] = useState<LiveVirtualClassSession | null>(null);
+
+  // Video Class Player State
+  const [activeVideoModal, setActiveVideoModal] = useState<{ title: string; url: string; course: string; week?: number } | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioProgress, setAudioProgress] = useState(0);
   const [audioDuration, setAudioDuration] = useState(0);
@@ -437,6 +440,53 @@ export default function StudentHubPage() {
         />
       )}
 
+      {/* VIDEO CLASS THEATER MODAL */}
+      {activeVideoModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in">
+          <div className="bg-card rounded-3xl p-5 sm:p-6 max-w-4xl w-full border border-border shadow-2xl relative text-card-foreground flex flex-col">
+            <div className="flex items-start justify-between pb-3 border-b border-border mb-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2.5 py-0.5 bg-rose-500 text-white font-bold text-[10px] rounded-md font-mono">
+                    {activeVideoModal.course}
+                  </span>
+                  <span className="text-xs text-muted-foreground font-semibold">
+                    Week {activeVideoModal.week || 1} &bull; Recorded Video Class
+                  </span>
+                </div>
+                <h3 className="text-base font-bold text-foreground">{activeVideoModal.title}</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href={activeVideoModal.url}
+                  download
+                  className="px-3 py-1.5 bg-muted hover:bg-muted/80 text-foreground border border-border rounded-xl text-xs font-bold flex items-center gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5 text-muted-foreground" />
+                  Download Video (Offline)
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setActiveVideoModal(null)}
+                  className="p-1.5 text-muted-foreground hover:text-foreground rounded-xl bg-muted font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <div className="w-full bg-black rounded-2xl overflow-hidden aspect-video flex items-center justify-center shadow-2xl border border-white/10">
+              <video
+                src={activeVideoModal.url}
+                controls
+                autoPlay
+                className="w-full h-full object-contain"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 2. PERSISTENT AUDIO PLAYER BAR (If audio selected) */}
       {currentAudio && (
         <div className="sticky top-4 z-40 bg-slate-900/95 text-white p-4 rounded-2xl shadow-2xl border border-indigo-500/40 backdrop-blur-lg flex flex-col md:flex-row items-center justify-between gap-4">
@@ -641,11 +691,14 @@ export default function StudentHubPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {student?.materials?.map((mat: any) => {
                 const isAudio = mat.materialType === 'AUDIO_RECORDING';
+                const isVideo = mat.materialType === 'VIDEO_RECORDING' || mat.materialType === 'VIDEO_LINK';
                 return (
                   <div
                     key={mat.id}
                     className={`p-5 rounded-2xl border transition-all ${
-                      isAudio
+                      isVideo
+                        ? 'bg-rose-500/5 border-rose-500/30 hover:border-rose-500/60 hover:shadow-md'
+                        : isAudio
                         ? 'bg-primary/5 border-primary/30 hover:border-primary/60 hover:shadow-md'
                         : 'bg-card border-border hover:border-primary/40 hover:shadow-md'
                     }`}
@@ -659,13 +712,15 @@ export default function StudentHubPage() {
                           Week {mat.weekNumber || 1}
                         </span>
                       </div>
-                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
-                        isAudio
+                      <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 ${
+                        isVideo
+                          ? 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-500/20'
+                          : isAudio
                           ? 'bg-purple-500/15 text-purple-700 dark:text-purple-400'
                           : 'bg-blue-500/15 text-blue-700 dark:text-blue-400'
                       }`}>
-                        {isAudio ? <Headphones className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
-                        {isAudio ? 'Audio Lecture' : mat.materialType}
+                        {isVideo ? <Video className="w-3 h-3 text-rose-500" /> : isAudio ? <Headphones className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
+                        {isVideo ? 'Video Class' : isAudio ? 'Audio Lecture' : mat.materialType}
                       </span>
                     </div>
 
@@ -674,7 +729,27 @@ export default function StudentHubPage() {
 
                     <div className="flex items-center justify-between pt-3 border-t border-border text-xs text-muted-foreground">
                       <div>Uploaded by <span className="font-semibold text-foreground">{mat.lecturerName}</span></div>
-                      {isAudio ? (
+                      {isVideo ? (
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setActiveVideoModal({ title: mat.title, url: mat.fileUrl, course: mat.courseCode, week: mat.weekNumber })}
+                            className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-sm transition-transform active:scale-95"
+                          >
+                            <Play className="w-3.5 h-3.5" />
+                            Watch Video Class
+                          </button>
+                          <a
+                            href={mat.fileUrl}
+                            download
+                            className="px-2.5 py-1.5 bg-muted hover:bg-muted/80 text-foreground border border-border rounded-xl font-semibold text-xs flex items-center gap-1"
+                            title="Download video file for offline watching"
+                          >
+                            <Download className="w-3.5 h-3.5 text-muted-foreground" />
+                            Download
+                          </a>
+                        </div>
+                      ) : isAudio ? (
                         <button
                           onClick={() => playAudio(mat)}
                           className="px-3 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-sm transition-transform active:scale-95"

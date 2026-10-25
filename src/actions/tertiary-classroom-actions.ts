@@ -518,12 +518,13 @@ export async function uploadLectureMaterialAction(formData: FormData) {
       fileUrl = `/uploads/materials/${fileName}`;
     } else {
       // Fallback url or link
-      fileName = `${title.toLowerCase().replace(/[^a-z0-9]/g, '_')}.${materialType === 'AUDIO_RECORDING' ? 'mp3' : 'pdf'}`;
+      const ext = materialType === 'AUDIO_RECORDING' ? 'mp3' : (materialType === 'VIDEO_RECORDING' || materialType === 'VIDEO_LINK') ? 'mp4' : 'pdf';
+      fileName = `${title.toLowerCase().replace(/[^a-z0-9]/g, '_')}.${ext}`;
       fileUrl = `/uploads/materials/${fileName}`;
     }
 
-    // Default duration for audio
-    const durationSeconds = materialType === 'AUDIO_RECORDING' ? Math.floor(Math.random() * 1800) + 1200 : null;
+    // Default duration for audio/video
+    const durationSeconds = (materialType === 'AUDIO_RECORDING' || materialType === 'VIDEO_RECORDING') ? Math.floor(Math.random() * 1800) + 1200 : null;
 
     const newMaterial = await prisma.tertiaryLectureMaterial.create({
       data: {
@@ -550,6 +551,8 @@ export async function uploadLectureMaterialAction(formData: FormData) {
       material: newMaterial,
       message: materialType === 'AUDIO_RECORDING'
         ? 'Audio lecture published successfully and made accessible to students.'
+        : (materialType === 'VIDEO_RECORDING' || materialType === 'VIDEO_LINK')
+        ? 'Video class uploaded successfully and published to students for streaming and offline download.'
         : 'Lecture notes uploaded and published to students.'
     };
   } catch (error: any) {

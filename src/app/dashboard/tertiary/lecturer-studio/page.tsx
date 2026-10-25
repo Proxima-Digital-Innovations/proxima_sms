@@ -78,7 +78,8 @@ export default function LecturerStudioPage() {
   const [uploadTitle, setUploadTitle] = useState('');
   const [uploadDesc, setUploadDesc] = useState('');
   const [uploadWeek, setUploadWeek] = useState(1);
-  const [uploadType, setUploadType] = useState<'DOCUMENT' | 'SLIDES' | 'AUDIO_RECORDING'>('AUDIO_RECORDING');
+  const [uploadType, setUploadType] = useState<'DOCUMENT' | 'SLIDES' | 'AUDIO_RECORDING' | 'VIDEO_RECORDING'>('AUDIO_RECORDING');
+  const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -690,7 +691,7 @@ export default function LecturerStudioPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-foreground mb-1">Material Type</label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <button
                     type="button"
                     onClick={() => setUploadType('AUDIO_RECORDING')}
@@ -702,6 +703,18 @@ export default function LecturerStudioPage() {
                   >
                     <Headphones className="w-4 h-4" />
                     Audio Lecture
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUploadType('VIDEO_RECORDING')}
+                    className={`py-2 px-2 text-xs font-bold rounded-xl border flex flex-col items-center gap-1 transition-all ${
+                      uploadType === 'VIDEO_RECORDING'
+                        ? 'bg-rose-500/10 border-rose-500 text-rose-600 dark:text-rose-400 shadow-sm'
+                        : 'bg-background border-border text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <Video className="w-4 h-4 text-rose-500" />
+                    Video Class
                   </button>
                   <button
                     type="button"
@@ -756,7 +769,11 @@ export default function LecturerStudioPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-foreground mb-1">
-                    {uploadType === 'AUDIO_RECORDING' ? 'Audio Source (Record or Upload)' : 'Attach Document'}
+                    {uploadType === 'AUDIO_RECORDING'
+                      ? 'Audio Source (Record or Upload)'
+                      : uploadType === 'VIDEO_RECORDING'
+                      ? 'Attach Video File (MP4, WebM, MOV)'
+                      : 'Attach Document'}
                   </label>
                   {uploadType === 'AUDIO_RECORDING' ? (
                     <div className="space-y-2">
@@ -799,6 +816,18 @@ export default function LecturerStudioPage() {
                         }}
                         className="w-full text-[11px] text-muted-foreground file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[11px] file:font-semibold file:bg-primary/10 file:text-primary cursor-pointer"
                       />
+                    </div>
+                  ) : uploadType === 'VIDEO_RECORDING' ? (
+                    <div className="space-y-1.5">
+                      <input
+                        type="file"
+                        accept="video/mp4,video/webm,video/quicktime,video/x-matroska,.mp4,.webm,.mov,.mkv"
+                        onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                        className="w-full text-[11px] text-muted-foreground file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-[11px] file:font-semibold file:bg-rose-500/10 file:text-rose-600 dark:file:text-rose-400 cursor-pointer"
+                      />
+                      <p className="text-[10px] text-muted-foreground">
+                        Supported: MP4, WebM, MOV. Enrolled students can watch in-browser or download for offline viewing.
+                      </p>
                     </div>
                   ) : (
                     <input
@@ -880,10 +909,14 @@ export default function LecturerStudioPage() {
                                 Week {m.weekNumber || 1}
                               </span>
                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
-                                isAudio ? 'bg-purple-500/15 text-purple-700 dark:text-purple-400' : 'bg-blue-500/15 text-blue-700 dark:text-blue-400'
+                                isVideo
+                                  ? 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-500/20'
+                                  : isAudio
+                                  ? 'bg-purple-500/15 text-purple-700 dark:text-purple-400'
+                                  : 'bg-blue-500/15 text-blue-700 dark:text-blue-400'
                               }`}>
-                                {isAudio ? <Headphones className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
-                                {isAudio ? 'Audio Podcast' : m.materialType}
+                                {isVideo ? <Video className="w-3 h-3" /> : isAudio ? <Headphones className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
+                                {isVideo ? 'Video Class' : isAudio ? 'Audio Podcast' : m.materialType}
                               </span>
                             </div>
 
@@ -894,7 +927,26 @@ export default function LecturerStudioPage() {
                               <span className="text-[10px] text-muted-foreground">
                                 {new Date(m.createdAt).toLocaleDateString()}
                               </span>
-                              {isAudio ? (
+                              {isVideo ? (
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => setPreviewVideoUrl(m.fileUrl)}
+                                    className="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1 shadow-sm"
+                                  >
+                                    <Play className="w-3 h-3" />
+                                    Watch Video
+                                  </button>
+                                  <a
+                                    href={m.fileUrl}
+                                    download
+                                    className="p-1 bg-muted hover:bg-muted/80 text-foreground border border-border rounded-lg text-xs"
+                                    title="Download Video"
+                                  >
+                                    <Download className="w-3 h-3" />
+                                  </a>
+                                </div>
+                              ) : isAudio ? (
                                 <button
                                   onClick={() => toggleAudioPreview(m.fileUrl)}
                                   className="px-2.5 py-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-xs font-semibold flex items-center gap-1 shadow-sm"
@@ -1623,6 +1675,35 @@ export default function LecturerStudioPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* VIDEO PREVIEW MODAL */}
+      {previewVideoUrl && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in">
+          <div className="bg-card rounded-3xl p-5 max-w-4xl w-full border border-border shadow-2xl relative text-card-foreground flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-border mb-4">
+              <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                <Video className="w-4 h-4 text-rose-500" />
+                Video Lecture Preview
+              </h4>
+              <button
+                type="button"
+                onClick={() => setPreviewVideoUrl(null)}
+                className="text-muted-foreground hover:text-foreground text-xs font-bold px-2 py-1 rounded-lg bg-muted"
+              >
+                ✕ Close
+              </button>
+            </div>
+            <div className="w-full bg-black rounded-2xl overflow-hidden aspect-video flex items-center justify-center">
+              <video
+                src={previewVideoUrl}
+                controls
+                autoPlay
+                className="w-full h-full object-contain"
+              />
             </div>
           </div>
         </div>
