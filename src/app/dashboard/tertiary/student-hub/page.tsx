@@ -51,6 +51,71 @@ export default function StudentHubPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // Anti-Cheat & Integrity Telemetry State
+  const [submissionPasteCount, setSubmissionPasteCount] = useState(0);
+  const [submissionPastedChars, setSubmissionPastedChars] = useState(0);
+  const [submissionTabSwitches, setSubmissionTabSwitches] = useState(0);
+  const [isPasteFlagged, setIsPasteFlagged] = useState(false);
+  const [antiCheatToast, setAntiCheatToast] = useState<string | null>(null);
+
+  // Monitor tab-switching & focus changes while assignment submission modal is active
+  useEffect(() => {
+    if (submittingAssignmentId) {
+      setSubmissionPasteCount(0);
+      setSubmissionPastedChars(0);
+      setSubmissionTabSwitches(0);
+      setIsPasteFlagged(false);
+      setAntiCheatToast(null);
+
+      const handleVisibilityChange = () => {
+        if (document.hidden) {
+          setSubmissionTabSwitches((prev) => {
+            const next = prev + 1;
+            setAntiCheatToast(`Security Notice: Window focus lost (${next} tab switch${next > 1 ? 'es' : ''}). Academic integrity telemetry is recorded.`);
+            return next;
+          });
+        }
+      };
+
+      const handleWindowBlur = () => {
+        setSubmissionTabSwitches((prev) => prev + 1);
+      };
+
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      window.addEventListener('blur', handleWindowBlur);
+
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        window.removeEventListener('blur', handleWindowBlur);
+      };
+    }
+  }, [submittingAssignmentId]);
+
+  const handlePreventQuestionCopy = (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    setAntiCheatToast('Copying question text is disabled under Institutional Academic Integrity Policy.');
+    setTimeout(() => setAntiCheatToast(null), 3500);
+  };
+
+  const handleTextareaPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const text = e.clipboardData.getData('text') || '';
+    if (text) {
+      setSubmissionPasteCount((prev) => prev + 1);
+      setSubmissionPastedChars((prev) => prev + text.length);
+      if (text.length > 50) {
+        setIsPasteFlagged(true);
+        setAntiCheatToast(`Bulk paste detected (${text.length} characters). Clipboard telemetry attached to your submission.`);
+      }
+    }
+  };
+
+  const embedWatermark = (text: string, identifier?: string) => {
+    if (!identifier) return text;
+    const binary = Array.from(identifier).map(c => c.charCodeAt(0).toString(2).padStart(8, '0')).join('');
+    const zeroWidth = binary.split('').map(b => b === '1' ? '\u200C' : '\u200B').join('');
+    return `${text}${zeroWidth}`;
+  };
+
   // Load Data
   const fetchData = async (studentId?: string) => {
     setLoading(true);
@@ -139,6 +204,9 @@ export default function StudentHubPage() {
       formData.append('studentId', data.student.id);
       if (submissionText) formData.append('submissionText', submissionText);
       if (submissionFile) formData.append('file', submissionFile);
+      formData.append('pasteCount', String(submissionPasteCount));
+      formData.append('tabSwitchCount', String(submissionTabSwitches));
+      formData.append('isPasteFlagged', String(isPasteFlagged));
 
       const res = await submitAssignmentOnlineAction(formData);
       if (res.success) {
@@ -585,9 +653,18 @@ export default function StudentHubPage() {
                       </div>
                     </div>
 
-                    <p className="text-sm text-gray-700 whitespace-pre-line mb-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                      {asgn.description}
-                    </p>
+                    <div
+                      onCopy={handlePreventQuestionCopy}
+                      onContextMenu={handlePreventQuestionCopy}
+                      className="select-none relative group mb-4"
+                    >
+                      <div className="absolute top-2 right-2 flex items-center gap-1 text-[10px] font-mono font-bold text-gray-400 bg-white/90 backdrop-blur px-2 py-0.5 rounded-md border border-gray-200">
+                        <Lock className="w-2.5 h-2.5 text-amber-500" /> Protected Question
+                      </div>
+                      <p className="text-sm text-gray-700 whitespace-pre-line bg-gray-50 p-4 rounded-xl border border-gray-100 select-none">
+                        {embedWatermark(asgn.description, data?.student?.matricNumber)}
+                      </p>
+                    </div>
 
                     <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-gray-500 pt-3 border-t border-gray-100">
                       <div className="flex items-center gap-4">
@@ -719,9 +796,42 @@ export default function StudentHubPage() {
               <UploadCloud className="w-6 h-6 text-indigo-600" />
               Submit Assignment Solution Online
             </h3>
-            <p className="text-xs text-gray-500 mb-6">
+            <p className="text-xs text-gray-500 mb-4">
               Enter your written solution, GitHub repo URL, or upload your assignment document (.zip, .pdf, .docx).
             </p>
+
+            {/* Academic Integrity & Anti-Cheat Telemetry Banner */}
+            <div className="p-3.5 rounded-2xl bg-slate-900 text-white mb-4 border border-slate-800 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold flex items-center gap-1.5 text-indigo-400">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  Academic Integrity Monitor Active
+                </span>
+                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                  Audit Telemetry
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-[11px] font-mono pt-1 border-t border-slate-800">
+                <div className="flex items-center justify-between bg-slate-800/80 px-2 py-1 rounded">
+                  <span className="text-slate-400">Tab Switches:</span>
+                  <span className={submissionTabSwitches > 0 ? "text-amber-400 font-bold" : "text-emerald-400 font-bold"}>
+                    {submissionTabSwitches} Strikes
+                  </span>
+                </div>
+                <div className="flex items-center justify-between bg-slate-800/80 px-2 py-1 rounded">
+                  <span className="text-slate-400">Pasted Text:</span>
+                  <span className={isPasteFlagged ? "text-amber-400 font-bold" : "text-slate-200"}>
+                    {submissionPastedChars} chars ({submissionPasteCount})
+                  </span>
+                </div>
+              </div>
+              {antiCheatToast && (
+                <div className="text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/20 p-2 rounded-lg flex items-center gap-1.5 animate-pulse">
+                  <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+                  <span>{antiCheatToast}</span>
+                </div>
+              )}
+            </div>
 
             {submitMessage && (
               <div className={`p-4 rounded-xl text-xs font-semibold mb-4 flex items-center gap-2 ${
@@ -740,8 +850,9 @@ export default function StudentHubPage() {
                 <textarea
                   value={submissionText}
                   onChange={(e) => setSubmissionText(e.target.value)}
-                  rows={4}
-                  placeholder="Paste your source code, GitHub repo URL, or executive summary here..."
+                  onPaste={handleTextareaPaste}
+                  rows={5}
+                  placeholder="Type your solution, code, GitHub repo URL, or executive summary here..."
                   className="w-full text-xs p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono"
                 ></textarea>
               </div>

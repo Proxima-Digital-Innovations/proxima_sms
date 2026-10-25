@@ -25,6 +25,7 @@ import {
   Layers,
   CheckSquare,
   ShieldAlert,
+  ShieldCheck,
   ChevronRight,
   Filter
 } from 'lucide-react';
@@ -848,6 +849,7 @@ export default function LecturerStudioPage() {
                     <th className="py-3 px-4">Course &amp; Assignment</th>
                     <th className="py-3 px-4">Submission Text / File</th>
                     <th className="py-3 px-4">Submitted At</th>
+                    <th className="py-3 px-4">Integrity Telemetry</th>
                     <th className="py-3 px-4 text-center">Score / Grade</th>
                     <th className="py-3 px-4 text-right">Action</th>
                   </tr>
@@ -887,6 +889,19 @@ export default function LecturerStudioPage() {
                         <td className="py-3 px-4 text-gray-500">
                           {new Date(sub.submittedAt).toLocaleString()}
                         </td>
+                        <td className="py-3 px-4">
+                          {sub.isPasteFlagged || (sub.tabSwitchCount && sub.tabSwitchCount > 0) ? (
+                            <span className="px-2.5 py-1 bg-amber-100 text-amber-900 border border-amber-200 rounded-lg font-bold flex items-center gap-1.5 text-[10px] w-fit">
+                              <ShieldAlert className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                              {sub.tabSwitchCount || 0} Tab Strikes &bull; {sub.pasteCount || 0} Pastes
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-1 bg-emerald-100 text-emerald-900 border border-emerald-200 rounded-lg font-bold flex items-center gap-1.5 text-[10px] w-fit">
+                              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              Clean Typed
+                            </span>
+                          )}
+                        </td>
                         <td className="py-3 px-4 text-center">
                           {isGraded ? (
                             <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full font-bold">
@@ -916,7 +931,7 @@ export default function LecturerStudioPage() {
 
                   {allSubmissions.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="text-center py-8 text-gray-400 italic">
+                      <td colSpan={7} className="text-center py-8 text-gray-400 italic">
                         No submissions received yet for your assignments.
                       </td>
                     </tr>
@@ -995,6 +1010,38 @@ export default function LecturerStudioPage() {
                 {gradeMessage.text}
               </div>
             )}
+
+            {/* Academic Integrity Telemetry Audit Box */}
+            <div className={`p-3 rounded-xl border text-xs mb-3 flex items-center justify-between ${
+              gradingSubmission.isPasteFlagged || (gradingSubmission.tabSwitchCount && gradingSubmission.tabSwitchCount > 0)
+                ? 'bg-amber-50/90 border-amber-200 text-amber-950'
+                : 'bg-emerald-50/90 border-emerald-200 text-emerald-950'
+            }`}>
+              <div className="flex items-center gap-2">
+                {gradingSubmission.isPasteFlagged || (gradingSubmission.tabSwitchCount && gradingSubmission.tabSwitchCount > 0) ? (
+                  <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0" />
+                ) : (
+                  <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
+                )}
+                <div>
+                  <div className="font-bold text-xs">
+                    {gradingSubmission.isPasteFlagged || (gradingSubmission.tabSwitchCount && gradingSubmission.tabSwitchCount > 0)
+                      ? 'Academic Integrity Alert: External Copy/Paste or Tab-Switching Detected'
+                      : 'Academic Integrity Verified: Hand-Typed Submission'}
+                  </div>
+                  <div className="text-[11px] text-gray-600">
+                    Tab Switches / Focus Loss: <strong className="text-gray-900">{gradingSubmission.tabSwitchCount || 0}</strong> &bull; Paste Operations: <strong className="text-gray-900">{gradingSubmission.pasteCount || 0}</strong> {gradingSubmission.isPasteFlagged ? '(Bulk paste flagged)' : ''}
+                  </div>
+                </div>
+              </div>
+              <span className={`text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded ${
+                gradingSubmission.isPasteFlagged || (gradingSubmission.tabSwitchCount && gradingSubmission.tabSwitchCount > 0)
+                  ? 'bg-amber-200 text-amber-900'
+                  : 'bg-emerald-200 text-emerald-900'
+              }`}>
+                {gradingSubmission.isPasteFlagged ? 'Review Paste' : 'Clean'}
+              </span>
+            </div>
 
             {/* Submission preview */}
             <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 text-xs mb-4 max-h-36 overflow-y-auto">

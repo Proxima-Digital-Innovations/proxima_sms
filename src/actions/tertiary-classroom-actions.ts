@@ -165,6 +165,10 @@ export async function getStudentPortalData(targetStudentId?: string) {
             fileName: studentSubmission.fileName,
             score: studentSubmission.score,
             feedback: studentSubmission.feedback,
+            pasteCount: studentSubmission.pasteCount || 0,
+            tabSwitchCount: studentSubmission.tabSwitchCount || 0,
+            isPasteFlagged: studentSubmission.isPasteFlagged || false,
+            similarityScore: studentSubmission.similarityScore || 0,
             submittedAt: studentSubmission.submittedAt,
             gradedAt: studentSubmission.gradedAt
           } : null
@@ -622,6 +626,10 @@ export async function submitAssignmentOnlineAction(formData: FormData) {
     const studentId = formData.get('studentId') as string;
     const submissionText = (formData.get('submissionText') as string)?.trim() || null;
     const file = formData.get('file') as File | null;
+    const pasteCount = parseInt(formData.get('pasteCount') as string || '0', 10);
+    const tabSwitchCount = parseInt(formData.get('tabSwitchCount') as string || '0', 10);
+    const isPasteFlagged = formData.get('isPasteFlagged') === 'true';
+    const similarityScore = parseFloat(formData.get('similarityScore') as string || '0.0');
 
     if (!assignmentId || !studentId) {
       return { success: false, error: 'Assignment ID and Student ID are required.' };
@@ -659,6 +667,10 @@ export async function submitAssignmentOnlineAction(formData: FormData) {
         fileUrl: fileUrl || undefined,
         fileName: fileName || undefined,
         fileSize: fileSize || undefined,
+        pasteCount,
+        tabSwitchCount,
+        isPasteFlagged,
+        similarityScore,
         status: 'SUBMITTED',
         submittedAt: new Date()
       },
@@ -669,6 +681,10 @@ export async function submitAssignmentOnlineAction(formData: FormData) {
         fileUrl,
         fileName,
         fileSize,
+        pasteCount,
+        tabSwitchCount,
+        isPasteFlagged,
+        similarityScore,
         status: 'SUBMITTED',
         submittedAt: new Date()
       }

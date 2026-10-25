@@ -2224,6 +2224,10 @@ model TertiaryAssignmentSubmission {
   status           String             @default("SUBMITTED") // SUBMITTED, GRADED, RESUBMITTED, LATE
   score            Float?
   feedback         String?            @db.Text
+  pasteCount       Int                @default(0)
+  tabSwitchCount   Int                @default(0)
+  isPasteFlagged   Boolean            @default(false)
+  similarityScore  Float?             @default(0.0)
   gradedById       String?
   gradedBy         StaffProfile?      @relation("SubmissionGrader", fields: [gradedById], references: [id])
   gradedAt         DateTime?
