@@ -154,6 +154,8 @@ export async function getStudentPortalData(targetStudentId?: string) {
           attachmentUrl: asgn.attachmentUrl,
           attachmentName: asgn.attachmentName,
           status: asgn.status,
+          assessmentType: asgn.assessmentType || 'ASSIGNMENT',
+          durationMinutes: asgn.durationMinutes || null,
           courseCode: offering.course.code,
           courseTitle: offering.course.title,
           offeringId: offering.id,
@@ -168,6 +170,7 @@ export async function getStudentPortalData(targetStudentId?: string) {
             pasteCount: studentSubmission.pasteCount || 0,
             tabSwitchCount: studentSubmission.tabSwitchCount || 0,
             isPasteFlagged: studentSubmission.isPasteFlagged || false,
+            startedAt: studentSubmission.startedAt || null,
             similarityScore: studentSubmission.similarityScore || 0,
             submittedAt: studentSubmission.submittedAt,
             gradedAt: studentSubmission.gradedAt
@@ -414,6 +417,8 @@ export async function getLecturerStudioData(targetStaffId?: string) {
             attachmentUrl: a.attachmentUrl,
             attachmentName: a.attachmentName,
             status: a.status,
+            assessmentType: a.assessmentType || 'ASSIGNMENT',
+            durationMinutes: a.durationMinutes || null,
             createdAt: a.createdAt,
             totalSubmissions,
             pendingReview: totalSubmissions - gradedSubmissions.length,
@@ -563,6 +568,8 @@ export async function createTertiaryAssignmentAction(formData: FormData) {
     const description = (formData.get('description') as string)?.trim();
     const maxScore = parseFloat(formData.get('maxScore') as string) || 20.0;
     const dueDateStr = formData.get('dueDate') as string;
+    const assessmentType = (formData.get('assessmentType') as string) || 'ASSIGNMENT';
+    const durationMinutes = formData.get('durationMinutes') ? parseInt(formData.get('durationMinutes') as string, 10) : null;
     const attachment = formData.get('attachment') as File | null;
 
     if (!courseOfferingId || !lecturerId || !title || !description || !dueDateStr) {
@@ -596,6 +603,8 @@ export async function createTertiaryAssignmentAction(formData: FormData) {
         description,
         maxScore,
         dueDate,
+        assessmentType,
+        durationMinutes,
         attachmentUrl,
         attachmentName,
         status: 'PUBLISHED'
@@ -617,6 +626,66 @@ export async function createTertiaryAssignmentAction(formData: FormData) {
 }
 
 // ==============================================================================
+
+// ==============================================================================
+// 4B. ACTIVATE ESSAY EXAM / TIMED SESSION (STUDENT ACTION)
+// ==============================================================================
+
+export async function activateTertiaryExamSessionAction(assignmentId: string, studentId: string) {
+  try {
+    if (!assignmentId || !studentId) {
+      return { success: false, error: 'Assignment ID and Student ID are required.' };
+    }
+
+    const assignment = await prisma.tertiaryAssignment.findUnique({
+      where: { id: assignmentId },
+    });
+
+    if (!assignment) {
+      return { success: false, error: 'Assessment not found.' };
+    }
+
+    let submission = await prisma.tertiaryAssignmentSubmission.findUnique({
+      where: {
+        assignmentId_studentId: {
+          assignmentId,
+          studentId,
+        },
+      },
+    });
+
+    if (!submission) {
+      submission = await prisma.tertiaryAssignmentSubmission.create({
+        data: {
+          assignmentId,
+          studentId,
+          status: 'IN_PROGRESS',
+          startedAt: new Date(),
+        },
+      });
+    } else if (!submission.startedAt) {
+      submission = await prisma.tertiaryAssignmentSubmission.update({
+        where: { id: submission.id },
+        data: {
+          startedAt: new Date(),
+          status: submission.status === 'SUBMITTED' ? submission.status : 'IN_PROGRESS',
+        },
+      });
+    }
+
+    return {
+      success: true,
+      startedAt: submission.startedAt,
+      durationMinutes: assignment.durationMinutes,
+      assessmentType: assignment.assessmentType,
+      submission,
+    };
+  } catch (error: any) {
+    console.error('Error activating exam session:', error);
+    return { success: false, error: error.message || 'Failed to activate exam session.' };
+  }
+}
+
 // 5. SUBMIT ASSIGNMENT ONLINE (STUDENT ACTION)
 // ==============================================================================
 

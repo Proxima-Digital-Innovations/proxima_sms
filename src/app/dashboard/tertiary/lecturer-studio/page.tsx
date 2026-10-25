@@ -72,6 +72,8 @@ export default function LecturerStudioPage() {
   const [asgnDesc, setAsgnDesc] = useState('');
   const [asgnMaxScore, setAsgnMaxScore] = useState(20);
   const [asgnDueDate, setAsgnDueDate] = useState('');
+  const [asgnType, setAsgnType] = useState<'ASSIGNMENT' | 'ESSAY_EXAM'>('ASSIGNMENT');
+  const [asgnDuration, setAsgnDuration] = useState<number>(60);
   const [asgnAttachment, setAsgnAttachment] = useState<File | null>(null);
   const [isCreatingAsgn, setIsCreatingAsgn] = useState(false);
   const [asgnMessage, setAsgnMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -182,6 +184,10 @@ export default function LecturerStudioPage() {
       formData.append('description', asgnDesc);
       formData.append('maxScore', asgnMaxScore.toString());
       formData.append('dueDate', asgnDueDate);
+      formData.append('assessmentType', asgnType);
+      if (asgnType === 'ESSAY_EXAM') {
+        formData.append('durationMinutes', asgnDuration.toString());
+      }
       formData.append('lecturerId', data.lecturer.id);
       if (asgnAttachment) formData.append('file', asgnAttachment);
 

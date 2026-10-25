@@ -904,24 +904,26 @@ model LmsContent {
 }
 
 model Assignment {
-  id          String       @id @default(cuid())
-  title       String
-  description String?   @db.Text
-  points      Int          @default(100)
-  dueDate     DateTime?
-  moduleId    String
-  module      LmsModule    @relation(fields: [moduleId], references: [id])
-  submissions Submission[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  termId      String?
-  term        Term?        @relation(fields: [termId], references: [id])
-  classId     String?
-  class       Class?       @relation(fields: [classId], references: [id])
-  subjectId   String?
-  subject     Subject?     @relation(fields: [subjectId], references: [id])
-  standardId  String?
-  standard    Standard?    @relation(fields: [standardId], references: [id])
+  id              String       @id @default(cuid())
+  title           String
+  description     String?      @db.Text
+  points          Int          @default(100)
+  dueDate         DateTime?
+  assessmentType  String       @default("ASSIGNMENT") // "ASSIGNMENT" or "ESSAY_EXAM"
+  durationMinutes Int?         // Working session countdown timer in minutes (e.g., 45, 60)
+  moduleId        String
+  module          LmsModule    @relation(fields: [moduleId], references: [id])
+  submissions     Submission[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  termId          String?
+  term            Term?        @relation(fields: [termId], references: [id])
+  classId         String?
+  class           Class?       @relation(fields: [classId], references: [id])
+  subjectId       String?
+  subject         Subject?     @relation(fields: [subjectId], references: [id])
+  standardId      String?
+  standard        Standard?    @relation(fields: [standardId], references: [id])
 }
 
 model Submission {
@@ -938,6 +940,7 @@ model Submission {
   tabSwitchCount  Int        @default(0)
   isPasteFlagged  Boolean    @default(false)
   similarityScore Float?
+  startedAt       DateTime?  // Recorded as soon as student activates/opens session
   submittedAt     DateTime   @default(now())
   gradedAt        DateTime?
 }
@@ -2210,6 +2213,8 @@ model TertiaryAssignment {
   description      String                         @db.Text
   maxScore         Float                          @default(20.0)
   dueDate          DateTime
+  assessmentType   String                         @default("ASSIGNMENT") // "ASSIGNMENT" or "ESSAY_EXAM"
+  durationMinutes  Int?                           // Live countdown timer in minutes for Essay Exam sessions
   attachmentUrl    String?                        @db.Text
   attachmentName   String?                        @db.Text
   status           String                         @default("PUBLISHED") // DRAFT, PUBLISHED, CLOSED
@@ -2235,6 +2240,7 @@ model TertiaryAssignmentSubmission {
   tabSwitchCount   Int                @default(0)
   isPasteFlagged   Boolean            @default(false)
   similarityScore  Float?             @default(0.0)
+  startedAt        DateTime?          // Timestamp when student activates their exam/submission session
   gradedById       String?
   gradedBy         StaffProfile?      @relation("SubmissionGrader", fields: [gradedById], references: [id])
   gradedAt         DateTime?

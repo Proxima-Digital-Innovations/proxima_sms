@@ -9,6 +9,7 @@ import {
   UploadCloud,
   CheckCircle2,
   Clock,
+  Timer,
   AlertCircle,
   Calendar,
   Award,
@@ -28,7 +29,8 @@ import {
 } from 'lucide-react';
 import {
   getStudentPortalData,
-  submitAssignmentOnlineAction
+  submitAssignmentOnlineAction,
+  activateTertiaryExamSessionAction
 } from '@/actions/tertiary-classroom-actions';
 
 export default function StudentHubPage() {
@@ -50,6 +52,10 @@ export default function StudentHubPage() {
   const [submissionFile, setSubmissionFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Timed Essay Exam Session State
+  const [activeExamTimerSeconds, setActiveExamTimerSeconds] = useState<number | null>(null);
+  const [isExamMode, setIsExamMode] = useState(false);
 
   // Anti-Cheat & Integrity Telemetry State
   const [submissionPasteCount, setSubmissionPasteCount] = useState(0);
@@ -90,6 +96,25 @@ export default function StudentHubPage() {
       };
     }
   }, [submittingAssignmentId]);
+
+  // Live Countdown Timer for Timed Essay Exams
+  useEffect(() => {
+    if (!submittingAssignmentId || activeExamTimerSeconds === null) return;
+
+    if (activeExamTimerSeconds <= 0) {
+      // Auto-submit when countdown hits zero
+      setAntiCheatToast('Exam time expired! Auto-submitting your written response...');
+      const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+      handleAssignmentSubmit(fakeEvent);
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setActiveExamTimerSeconds((prev) => (prev !== null && prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [submittingAssignmentId, activeExamTimerSeconds]);
 
   const handlePreventQuestionCopy = (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -216,6 +241,8 @@ export default function StudentHubPage() {
           setSubmissionText('');
           setSubmissionFile(null);
           setSubmitMessage(null);
+          setActiveExamTimerSeconds(null);
+          setIsExamMode(false);
           fetchData(data.student.id);
         }, 1500);
       } else {
@@ -691,9 +718,30 @@ export default function StudentHubPage() {
                       {/* Submit / Resubmit Button */}
                       <div>
                         <button
-                          onClick={() => {
+                          onClick={async () => {
                             setSubmittingAssignmentId(asgn.id);
                             setSubmissionText(sub?.submissionText || '');
+                            if (asgn.assessmentType === 'ESSAY_EXAM' && asgn.durationMinutes) {
+                              setIsExamMode(true);
+                              // Activate exam session on backend to timestamp startedAt
+                              if (data?.student?.id) {
+                                const actRes = await activateTertiaryExamSessionAction(asgn.id, data.student.id);
+                                if (actRes.success && actRes.startedAt) {
+                                  const started = new Date(actRes.startedAt).getTime();
+                                  const totalSec = asgn.durationMinutes * 60;
+                                  const elapsedSec = Math.floor((Date.now() - started) / 1000);
+                                  const remaining = Math.max(0, totalSec - elapsedSec);
+                                  setActiveExamTimerSeconds(remaining);
+                                } else {
+                                  setActiveExamTimerSeconds(asgn.durationMinutes * 60);
+                                }
+                              } else {
+                                setActiveExamTimerSeconds(asgn.durationMinutes * 60);
+                              }
+                            } else {
+                              setIsExamMode(false);
+                              setActiveExamTimerSeconds(null);
+                            }
                           }}
                           className={`px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 ${
                             isGraded
@@ -794,10 +842,26 @@ export default function StudentHubPage() {
       {submittingAssignmentId && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
           <div className="bg-card rounded-3xl p-5 sm:p-8 w-[95vw] sm:max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl border border-border relative text-card-foreground animate-in fade-in zoom-in-95">
-            <h3 className="text-xl font-bold text-foreground mb-2 flex items-center gap-2">
-              <UploadCloud className="w-6 h-6 text-primary" />
-              Submit Assignment Solution Online
-            </h3>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3">
+              <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
+                {isExamMode ? <Timer className="w-6 h-6 text-amber-500 animate-pulse" /> : <UploadCloud className="w-6 h-6 text-primary" />}
+                {isExamMode ? 'Timed Essay Examination' : 'Submit Assignment Solution Online'}
+              </h3>
+              {activeExamTimerSeconds !== null && (
+                <div className={`px-3 py-1.5 rounded-xl font-mono text-sm font-bold flex items-center gap-2 shadow-inner ${
+                  activeExamTimerSeconds < 300 
+                    ? 'bg-rose-600 text-white animate-pulse' 
+                    : 'bg-slate-900 border border-slate-700 text-amber-400'
+                }`}>
+                  <Timer className="w-4 h-4" />
+                  <span>
+                    {String(Math.floor(activeExamTimerSeconds / 3600)).padStart(2, '0')}:
+                    {String(Math.floor((activeExamTimerSeconds % 3600) / 60)).padStart(2, '0')}:
+                    {String(activeExamTimerSeconds % 60).padStart(2, '0')}
+                  </span>
+                </div>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground mb-4">
               Enter your written solution, GitHub repo URL, or upload your assignment document (.zip, .pdf, .docx).
             </p>
