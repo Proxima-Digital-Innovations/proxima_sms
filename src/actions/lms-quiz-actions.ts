@@ -44,14 +44,23 @@ import { prisma } from "@/lib/prisma";
 /**
  * Submit a quiz attempt and AUTO-GRADE
  */
-export async function submitQuizAttempt(quizId: string, studentId: string, studentAnswers: Record<string, string>) {
+export async function submitQuizAttempt(
+  quizId: string,
+  studentId: string,
+  studentAnswers: Record<string, string>,
+  telemetry?: {
+    pasteCount?: number;
+    tabSwitchCount?: number;
+    isPasteFlagged?: boolean;
+  }
+) {
   try {
     const session = await auth();
     const resolvedStudentId = (studentId && studentId !== 'mock-student-id')
       ? studentId
       : (session?.user?.id || (await prisma.student.findFirst())?.id || 'student');
 
-    const result = await service.submitQuizAttempt(quizId, resolvedStudentId, studentAnswers);
+    const result = await service.submitQuizAttempt(quizId, resolvedStudentId, studentAnswers, telemetry);
     revalidatePath("/student/lms");
     return { success: true, attempt: result.attempt, score: result.score };
   } catch (error: any) {

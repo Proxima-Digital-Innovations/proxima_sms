@@ -18,7 +18,16 @@ export class LmsQuizService {
       quizId, question, type, correctAnswer, options, points});
   }
 
-  async submitQuizAttempt(quizId: string, studentId: string, studentAnswers: Record<string, string>) {
+  async submitQuizAttempt(
+    quizId: string,
+    studentId: string,
+    studentAnswers: Record<string, string>,
+    telemetry?: {
+      pasteCount?: number;
+      tabSwitchCount?: number;
+      isPasteFlagged?: boolean;
+    }
+  ) {
     const quiz = await repository.findQuizWithQuestionsAndModule(quizId);
     if (!quiz) throw new Error("Quiz not found.");
 
@@ -40,6 +49,9 @@ export class LmsQuizService {
       studentId,
       answers: JSON.stringify(studentAnswers),
       score: finalPercentage,
+      pasteCount: telemetry?.pasteCount ?? 0,
+      tabSwitchCount: telemetry?.tabSwitchCount ?? 0,
+      isPasteFlagged: telemetry?.isPasteFlagged ?? false,
       completedAt: new Date()
     });
 

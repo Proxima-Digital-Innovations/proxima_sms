@@ -7,8 +7,28 @@ export class LmsAssignmentService {
     return await repository.createAssignment({ moduleId, title, points, description, dueDate });
   }
 
-  async submitWork(assignmentId: string, studentId: string, fileUrl?: string, body?: string) {
-    return await repository.createSubmission({ assignmentId, studentId, fileUrl, body });
+  async submitWork(
+    assignmentId: string,
+    studentId: string,
+    fileUrl?: string,
+    body?: string,
+    telemetry?: {
+      pasteCount?: number;
+      tabSwitchCount?: number;
+      isPasteFlagged?: boolean;
+      similarityScore?: number | null;
+    }
+  ) {
+    return await repository.upsertSubmission({
+      assignmentId,
+      studentId,
+      fileUrl,
+      body,
+      pasteCount: telemetry?.pasteCount,
+      tabSwitchCount: telemetry?.tabSwitchCount,
+      isPasteFlagged: telemetry?.isPasteFlagged,
+      similarityScore: telemetry?.similarityScore,
+    });
   }
 
   async getSubmissions(assignmentId: string) {

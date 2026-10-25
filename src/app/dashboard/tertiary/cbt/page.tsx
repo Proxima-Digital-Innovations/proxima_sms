@@ -22,6 +22,7 @@ import {
   submitCbtExamAction,
 } from '@/actions/cbt-actions';
 import {
+  Lock,
   Timer,
   AlertTriangle,
   CheckCircle2,
@@ -302,6 +303,22 @@ function parseBulkQuestionText(rawInput: string, defaultCourseCode?: string): Pa
   return results;
 }
 
+
+// Steganographic invisible watermarking with zero-width characters (\u200B and \u200C)
+function embedWatermark(text: string, identifier: string): string {
+  if (!text || !identifier) return text || '';
+  const binary = identifier
+    .split('')
+    .map((c) => c.charCodeAt(0).toString(2).padStart(8, '0'))
+    .join('');
+  const invisibleSeq = binary
+    .split('')
+    .map((b) => (b === '1' ? '\u200C' : '\u200B'))
+    .join('');
+  const mid = Math.floor(text.length / 2);
+  return text.slice(0, mid) + invisibleSeq + text.slice(mid);
+}
+
 export default function TertiaryCbtPage() {
   const { role } = useRole();
   const isFacultyOrAdmin = ['SUPER_ADMIN', 'ADMIN', 'SLT', 'HOD', 'LECTURER', 'TEACHER', 'EXAM_OFFICER'].includes(role || '');
@@ -396,7 +413,7 @@ export default function TertiaryCbtPage() {
     loadExams();
   }, []);
 
-  // Anti-cheat: Tab-switch & window blur detection
+  // Anti-cheat: Tab-switch, window blur & clipboard lockdown
   useEffect(() => {
     if (!activeExam || isExamCompleted) return;
 
@@ -414,9 +431,25 @@ export default function TertiaryCbtPage() {
       }
     };
 
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && ['c', 'x', 'u', 'C', 'X', 'U'].includes(e.key)) {
+        if (!['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
+          e.preventDefault();
+          toast({
+            variant: 'destructive',
+            title: 'Clipboard Copy Restricted',
+            description: 'Copying exam questions is strictly prohibited to maintain test integrity.',
+          });
+        }
+      }
+    };
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('keydown', handleKeyDown);
+
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('keydown', handleKeyDown);
     };
   }, [activeExam, isExamCompleted, toast]);
 
@@ -827,18 +860,44 @@ export default function TertiaryCbtPage() {
 
         {/* Question Panel */}
         {currentQ ? (
-          <Card className="border shadow-md">
+          <Card 
+            className="border shadow-md select-none"
+            onCopy={(e) => {
+              e.preventDefault();
+              toast({
+                variant: 'destructive',
+                title: 'Copying Restricted',
+                description: 'Question prompts cannot be copied during active CBT examinations.',
+              });
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              toast({
+                variant: 'destructive',
+                title: 'Security Notice',
+                description: 'Right-click context menu is disabled in the examination environment.',
+              });
+            }}
+          >
             <CardHeader className="border-b bg-muted/20">
               <div className="flex justify-between items-center">
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Question {currentQuestionIndex + 1} of {qList.length}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Question {currentQuestionIndex + 1} of {qList.length}
+                  </span>
+                  <Badge variant="secondary" className="text-[10px] gap-1 font-mono">
+                    <Lock className="w-3 h-3 text-primary" /> Protected Item
+                  </Badge>
+                </div>
                 <Badge variant="outline" className="text-xs font-mono">
                   {currentQ.points} Points
                 </Badge>
               </div>
-              <CardTitle className="text-lg font-medium text-foreground pt-2">
-                {currentQ.questionText}
+              <CardTitle className="text-lg font-medium text-foreground pt-2 select-none">
+                {embedWatermark(
+                  currentQ.questionText,
+                  activeExam.courseOffering?.course?.code || 'TERTIARY-CBT-EXAM'
+                )}
               </CardTitle>
             </CardHeader>
 

@@ -26,14 +26,25 @@ export async function createAssignment(moduleId: string, title: string, points: 
 /**
  * Submit student work
  */
-export async function submitWork(assignmentId: string, studentId: string, fileUrl?: string, body?: string) {
+export async function submitWork(
+  assignmentId: string,
+  studentId: string,
+  fileUrl?: string,
+  body?: string,
+  telemetry?: {
+    pasteCount?: number;
+    tabSwitchCount?: number;
+    isPasteFlagged?: boolean;
+    similarityScore?: number | null;
+  }
+) {
   try {
     const session = await auth();
     const resolvedStudentId = (studentId && studentId !== 'mock-student-id')
       ? studentId
       : (session?.user?.id || (await prisma.student.findFirst())?.id || 'student');
     
-    const submission = await service.submitWork(assignmentId, resolvedStudentId, fileUrl, body);
+    const submission = await service.submitWork(assignmentId, resolvedStudentId, fileUrl, body, telemetry);
     revalidatePath("/student/lms");
     return { success: true, submission };
   } catch (error: any) {

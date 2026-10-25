@@ -5,7 +5,7 @@ import { getLmsCourses } from '@/actions/lms-content-actions';
 import { getSubmissions, gradeSubmission } from '@/actions/lms-assignment-actions';
 import { 
   CheckCircle, Clock, FileText, User, ChevronRight, 
-  ChevronLeft, Star, MessageSquare, Save, Search, Filter 
+  ChevronLeft, Star, MessageSquare, Save, Search, Filter, ShieldAlert, AlertTriangle, EyeOff 
 } from 'lucide-react';
 
 export default function SpeedGrader() {
@@ -175,8 +175,28 @@ export default function SpeedGrader() {
               {/* Submission Content */}
               <div className="flex-1 p-12 overflow-y-auto custom-scrollbar">
                 <div className="max-w-3xl mx-auto bg-neutral-900 border border-white/10 rounded-3xl p-10 shadow-2xl min-h-[600px]">
-                   <div className="flex items-center gap-2 text-xs font-black text-emerald-500 uppercase mb-6 tracking-widest">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Student Submission
+                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-white/5">
+                      <div className="flex items-center gap-2 text-xs font-black text-emerald-500 uppercase tracking-widest">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Student Submission
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 ${
+                          (currentSubmission.tabSwitchCount || 0) > 0 
+                            ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' 
+                            : 'bg-white/5 text-neutral-400'
+                        }`}>
+                          <EyeOff className="w-3 h-3" />
+                          <span>{currentSubmission.tabSwitchCount || 0} Tab Strikes</span>
+                        </div>
+                        <div className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 ${
+                          currentSubmission.isPasteFlagged || (currentSubmission.pasteCount || 0) > 0
+                            ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' 
+                            : 'bg-white/5 text-neutral-400'
+                        }`}>
+                          <ShieldAlert className="w-3 h-3" />
+                          <span>{currentSubmission.pasteCount || 0} Pastes {currentSubmission.isPasteFlagged ? '• AI/Paste Flagged' : '• Clean Typed'}</span>
+                        </div>
+                      </div>
                    </div>
                    {currentSubmission.body ? (
                      <div className="prose prose-invert max-w-none text-lg leading-relaxed font-light text-neutral-300">

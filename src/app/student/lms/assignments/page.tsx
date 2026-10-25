@@ -6,8 +6,24 @@ import { getLmsCourses } from '@/actions/lms-content-actions';
 import { submitWork } from '@/actions/lms-assignment-actions';
 import { 
   FileUp, Clock, CheckCircle, AlertCircle, Calendar, 
-  BookOpen, ChevronRight, Send, Star 
+  BookOpen, ChevronRight, Send, Star, ShieldAlert, AlertTriangle, EyeOff, Lock
 } from 'lucide-react';
+
+// Steganographic invisible watermarking with zero-width characters (\u200B and \u200C)
+function embedWatermark(text: string, identifier: string): string {
+  if (!text || !identifier) return text || '';
+  const binary = identifier
+    .split('')
+    .map((c) => c.charCodeAt(0).toString(2).padStart(8, '0'))
+    .join('');
+  // 0 -> \u200B (Zero-Width Space), 1 -> \u200C (Zero-Width Non-Joiner)
+  const invisibleSeq = binary
+    .split('')
+    .map((b) => (b === '1' ? '\u200C' : '\u200B'))
+    .join('');
+  const mid = Math.floor(text.length / 2);
+  return text.slice(0, mid) + invisibleSeq + text.slice(mid);
+}
 
 export default function StudentLmsPortal() {
   const { data: session } = useSession();
@@ -21,6 +37,15 @@ export default function StudentLmsPortal() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  // Anti-cheat Telemetry & Lockdown State
+  const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const [pastedChars, setPastedChars] = useState(0);
+  const [pasteCount, setPasteCount] = useState(0);
+  const [isPasteFlagged, setIsPasteFlagged] = useState(false);
+  const [securityAlert, setSecurityAlert] = useState<string | null>(null);
+
+  const studentIdentifier = (session?.user as any)?.admissionNumber || (session?.user as any)?.email || (session?.user as any)?.name || 'STUDENT-SESSION';
+
   useEffect(() => {
     async function load() {
       const res = await getLmsCourses();
@@ -30,11 +55,75 @@ export default function StudentLmsPortal() {
     load();
   }, []);
 
+  // Track window blur and visibility changes while an assignment is actively selected
+  useEffect(() => {
+    if (!selectedAssignment || success) return;
+
+    const handleFocusLoss = () => {
+      setTabSwitchCount((prev) => {
+        const next = prev + 1;
+        setSecurityAlert(`Academic Integrity Alert: Focus lost from assignment window (Strike ${next}). Tab switches are recorded in your instructor audit log.`);
+        return next;
+      });
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        handleFocusLoss();
+      }
+    };
+
+    window.addEventListener('blur', handleFocusLoss);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('blur', handleFocusLoss);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [selectedAssignment, success]);
+
+  // Block copy shortcuts (Ctrl+C, Cmd+C, Ctrl+X, Ctrl+U)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && ['c', 'x', 'u', 'C', 'X', 'U'].includes(e.key)) {
+        if (!['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
+          e.preventDefault();
+          setSecurityAlert('Text copying and source inspection are disabled on academic assignments.');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const handleSelectAssignment = (as: any) => {
     setSelectedAssignment(as);
     setSuccess(false);
     setBody('');
     setFileUrl('');
+    setTabSwitchCount(0);
+    setPastedChars(0);
+    setPasteCount(0);
+    setIsPasteFlagged(false);
+    setSecurityAlert(null);
+  };
+
+  const handleInterceptCopy = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    setSecurityAlert('Copying assignment question content is restricted to uphold academic integrity.');
+  };
+
+  const handleInterceptPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const text = e.clipboardData.getData('text') || '';
+    const length = text.length;
+    setPastedChars((prev) => prev + length);
+    setPasteCount((prev) => prev + 1);
+
+    if (length > 50) {
+      setIsPasteFlagged(true);
+      setSecurityAlert(`Notice: Large clipboard paste detected (${length} chars). External text insertion is monitored for AI/plagiarism review.`);
+    }
   };
 
   const handleSubmit = async () => {
@@ -42,7 +131,18 @@ export default function StudentLmsPortal() {
     setSubmitting(true);
     
     const studentId = (session?.user as any)?.id || '';
-    const res = await submitWork(selectedAssignment.id, studentId, fileUrl, body);
+    const res = await submitWork(
+      selectedAssignment.id,
+      studentId,
+      fileUrl,
+      body,
+      {
+        pasteCount,
+        tabSwitchCount,
+        isPasteFlagged: isPasteFlagged || pastedChars > 80,
+        similarityScore: null,
+      }
+    );
     
     if (res.success) {
       setSuccess(true);
@@ -57,23 +157,47 @@ export default function StudentLmsPortal() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 p-8 font-sans">
+    <div className="min-h-screen bg-neutral-950 text-neutral-100 p-8 font-sans select-none">
       <div className="max-w-7xl mx-auto space-y-8">
         
         {/* Header section */}
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-900/40 to-neutral-900/40 border border-white/10 p-8 shadow-2xl backdrop-blur-xl">
           <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl opacity-50 pointer-events-none" />
           
-          <div className="relative z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-2">
-              <BookOpen className="w-4 h-4" /> Student Learning Cloud
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-2">
+                <BookOpen className="w-4 h-4" /> Student Learning Cloud
+              </div>
+              <h1 className="text-4xl font-extrabold tracking-tight">Active Assignments</h1>
+              <p className="text-neutral-400 mt-2 max-w-xl text-lg font-light leading-relaxed">
+                Track your deadlines and submit your original work directly to your instructors.
+              </p>
             </div>
-            <h1 className="text-4xl font-extrabold tracking-tight">Active Assignments</h1>
-            <p className="text-neutral-400 mt-2 max-w-xl text-lg font-light leading-relaxed">
-              Track your deadlines and submit your work directly to your instructors.
-            </p>
+
+            {/* Academic Integrity Badge */}
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-950/60 border border-indigo-500/30 text-indigo-200 text-xs font-medium self-start md:self-auto shadow-inner">
+              <ShieldAlert className="w-4 h-4 text-indigo-400" />
+              <span>Anti-Cheat & Steganography Shield Active</span>
+            </div>
           </div>
         </div>
+
+        {/* Security Alert Toast / Notice */}
+        {securityAlert && (
+          <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+              <span>{securityAlert}</span>
+            </div>
+            <button 
+              onClick={() => setSecurityAlert(null)}
+              className="text-xs font-bold text-amber-400 hover:text-white px-2 py-1 rounded-lg bg-amber-500/20"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
@@ -111,7 +235,7 @@ export default function StudentLmsPortal() {
               </div>
             ) : (
               <div className="bg-neutral-900/40 border border-white/10 rounded-3xl p-8 backdrop-blur-xl animate-in fade-in slide-in-from-right-4">
-                 <div className="flex justify-between items-start mb-8">
+                 <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-8">
                     <div>
                       <h2 className="text-3xl font-black text-white">{selectedAssignment.title}</h2>
                       <div className="flex items-center gap-4 text-sm font-bold text-neutral-500 mt-2">
@@ -119,6 +243,20 @@ export default function StudentLmsPortal() {
                         <span className="text-white/10">|</span>
                         <span className="flex items-center gap-1.5"><Star className="w-4 h-4 text-amber-500" /> {selectedAssignment.points} Points</span>
                       </div>
+                    </div>
+
+                    {/* Real-time Telemetry HUD */}
+                    <div className="flex items-center gap-3">
+                      <div className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 border ${tabSwitchCount > 0 ? 'bg-rose-500/10 border-rose-500/30 text-rose-300' : 'bg-white/5 border-white/10 text-neutral-400'}`}>
+                        <EyeOff className="w-3.5 h-3.5" />
+                        <span>Tab Strikes: {tabSwitchCount}</span>
+                      </div>
+                      {pastedChars > 0 && (
+                        <div className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 border ${isPasteFlagged ? 'bg-amber-500/10 border-amber-500/30 text-amber-300' : 'bg-white/5 border-white/10 text-neutral-400'}`}>
+                          <AlertCircle className="w-3.5 h-3.5" />
+                          <span>Pasted: {pastedChars}c</span>
+                        </div>
+                      )}
                     </div>
                  </div>
 
@@ -133,18 +271,44 @@ export default function StudentLmsPortal() {
                    </div>
                  ) : (
                    <div className="space-y-8">
-                      <div className="bg-black/40 border border-white/5 p-6 rounded-2xl">
-                         <h3 className="text-xs font-black text-neutral-500 uppercase tracking-widest mb-4">Instructions</h3>
-                         <p className="text-neutral-300 leading-relaxed font-light">{selectedAssignment.description || 'No specific instructions provided. Submit your response below.'}</p>
+                      {/* Protected Question Text Box */}
+                      <div 
+                        onCopy={handleInterceptCopy}
+                        onContextMenu={(e) => { e.preventDefault(); setSecurityAlert('Right-click context menu is disabled on question prompts.'); }}
+                        className="bg-black/40 border border-white/5 p-6 rounded-2xl relative group select-none"
+                      >
+                         <div className="flex items-center justify-between mb-4">
+                           <h3 className="text-xs font-black text-neutral-500 uppercase tracking-widest flex items-center gap-2">
+                             <Lock className="w-3.5 h-3.5 text-indigo-400" /> Protected Instructions
+                           </h3>
+                           <span className="text-[10px] font-mono text-neutral-600 bg-white/5 px-2 py-0.5 rounded">Protected Prompt</span>
+                         </div>
+                         <p className="text-neutral-300 leading-relaxed font-light select-none">
+                           {embedWatermark(
+                             selectedAssignment.description || 'No specific instructions provided. Submit your response below.',
+                             studentIdentifier
+                           )}
+                         </p>
+                      </div>
+
+                      {/* Live Anti-Cheat Monitor Notice */}
+                      <div className="p-4 rounded-xl bg-indigo-950/30 border border-indigo-500/20 flex items-start gap-3 text-xs text-indigo-300">
+                        <ShieldAlert className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold text-indigo-200">Active Integrity Monitoring: </span>
+                          All keystrokes, tab-switching focus losses, and clipboard pastes are tracked and reported in your teacher's grading console. Copying prompt questions will embed an invisible digital signature tracing back to your account.
+                        </div>
                       </div>
 
                       <div>
                          <label className="text-xs font-bold text-neutral-500 uppercase mb-3 block">Response Text</label>
                          <textarea 
-                           value={body} onChange={e => setBody(e.target.value)}
-                           placeholder="Write your answer or summary here..."
+                           value={body} 
+                           onChange={e => setBody(e.target.value)}
+                           onPaste={handleInterceptPaste}
+                           placeholder="Type your original answer or summary here..."
                            rows={10}
-                           className="w-full bg-black/40 border border-white/10 rounded-2xl p-6 outline-none focus:border-indigo-500 transition-colors text-lg font-light leading-relaxed resize-none"
+                           className="w-full bg-black/40 border border-white/10 rounded-2xl p-6 outline-none focus:border-indigo-500 transition-colors text-lg font-light leading-relaxed resize-none select-text"
                          />
                       </div>
 

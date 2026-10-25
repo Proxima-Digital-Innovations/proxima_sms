@@ -9,6 +9,52 @@ export class LmsAssignmentRepository {
     return await prisma.submission.create({ data });
   }
 
+  async upsertSubmission(data: {
+    assignmentId: string;
+    studentId: string;
+    fileUrl?: string;
+    body?: string;
+    pasteCount?: number;
+    tabSwitchCount?: number;
+    isPasteFlagged?: boolean;
+    similarityScore?: number | null;
+  }) {
+    const existing = await prisma.submission.findFirst({
+      where: {
+        assignmentId: data.assignmentId,
+        studentId: data.studentId,
+      },
+    });
+
+    if (existing) {
+      return await prisma.submission.update({
+        where: { id: existing.id },
+        data: {
+          fileUrl: data.fileUrl ?? existing.fileUrl,
+          body: data.body ?? existing.body,
+          pasteCount: data.pasteCount ?? existing.pasteCount,
+          tabSwitchCount: data.tabSwitchCount ?? existing.tabSwitchCount,
+          isPasteFlagged: data.isPasteFlagged ?? existing.isPasteFlagged,
+          similarityScore: data.similarityScore !== undefined ? data.similarityScore : existing.similarityScore,
+          submittedAt: new Date(),
+        },
+      });
+    }
+
+    return await prisma.submission.create({
+      data: {
+        assignmentId: data.assignmentId,
+        studentId: data.studentId,
+        fileUrl: data.fileUrl,
+        body: data.body,
+        pasteCount: data.pasteCount ?? 0,
+        tabSwitchCount: data.tabSwitchCount ?? 0,
+        isPasteFlagged: data.isPasteFlagged ?? false,
+        similarityScore: data.similarityScore ?? null,
+      },
+    });
+  }
+
   async findSubmissionsByAssignmentId(assignmentId: string) {
     return await prisma.submission.findMany({
       where: { assignmentId },

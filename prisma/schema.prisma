@@ -925,17 +925,21 @@ model Assignment {
 }
 
 model Submission {
-  id           String     @id @default(cuid())
-  assignmentId String
-  assignment   Assignment @relation(fields: [assignmentId], references: [id])
-  studentId    String
-  student      Student    @relation(fields: [studentId], references: [id])
-  fileUrl      String?
-  body         String?
-  score        Float?
-  feedback     String?
-  submittedAt  DateTime   @default(now())
-  gradedAt     DateTime?
+  id              String     @id @default(cuid())
+  assignmentId    String
+  assignment      Assignment @relation(fields: [assignmentId], references: [id])
+  studentId       String
+  student         Student    @relation(fields: [studentId], references: [id])
+  fileUrl         String?
+  body            String?
+  score           Float?
+  feedback        String?
+  pasteCount      Int        @default(0)
+  tabSwitchCount  Int        @default(0)
+  isPasteFlagged  Boolean    @default(false)
+  similarityScore Float?
+  submittedAt     DateTime   @default(now())
+  gradedAt        DateTime?
 }
 
 model Quiz {
@@ -965,15 +969,18 @@ model QuizQuestion {
 }
 
 model QuizAttempt {
-  id          String    @id @default(cuid())
-  quizId      String
-  quiz        Quiz      @relation(fields: [quizId], references: [id])
-  studentId   String
-  student     Student   @relation(fields: [studentId], references: [id])
-  answers     String
-  score       Float?
-  startedAt   DateTime  @default(now())
-  completedAt DateTime?
+  id              String    @id @default(cuid())
+  quizId          String
+  quiz            Quiz      @relation(fields: [quizId], references: [id])
+  studentId       String
+  student         Student   @relation(fields: [studentId], references: [id])
+  answers         String
+  score           Float?
+  pasteCount      Int       @default(0)
+  tabSwitchCount  Int       @default(0)
+  isPasteFlagged  Boolean   @default(false)
+  startedAt       DateTime  @default(now())
+  completedAt     DateTime?
 }
 
 // --- MISSING ERP MODELS ---
