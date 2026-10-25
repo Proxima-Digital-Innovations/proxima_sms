@@ -231,8 +231,8 @@ export default function StudentHubPage() {
   if (loading && !data) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center p-8 space-y-4">
-        <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-gray-600 font-medium animate-pulse">Loading Student Portal & Activities...</p>
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-muted-foreground font-medium animate-pulse">Loading Student Portal &amp; Activities...</p>
       </div>
     );
   }
@@ -241,7 +241,7 @@ export default function StudentHubPage() {
   const availableStudents = data?.availableStudents || [];
 
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
+    <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
       {/* Hidden native audio element */}
       <audio
         ref={audioRef}
@@ -289,7 +289,7 @@ export default function StudentHubPage() {
             <select
               value={student?.id || ''}
               onChange={(e) => handleStudentSwitch(e.target.value)}
-              className="bg-slate-800 text-white text-xs font-medium rounded-xl px-3 py-2 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 w-full md:w-64"
+              className="bg-slate-800 text-white text-xs font-medium rounded-xl px-3 py-2 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 w-full sm:w-64"
             >
               {availableStudents.map((s: any) => (
                 <option key={s.id} value={s.id}>
@@ -338,7 +338,7 @@ export default function StudentHubPage() {
           <div className="flex items-center gap-3 w-full md:w-auto">
             <button
               onClick={() => playAudio(currentAudio)}
-              className="w-12 h-12 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center shadow-lg transition-transform active:scale-95 flex-shrink-0"
+              className="w-12 h-12 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center shadow-lg transition-transform active:scale-95 shrink-0"
             >
               {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
             </button>
@@ -384,63 +384,65 @@ export default function StudentHubPage() {
       )}
 
       {/* 3. NAVIGATION TABS */}
-      <div className="flex border-b border-gray-200 overflow-x-auto space-x-2">
-        <button
-          onClick={() => setActiveTab('activities')}
-          className={`pb-3 px-4 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${
-            activeTab === 'activities'
-              ? 'border-indigo-600 text-indigo-600'
-              : 'border-transparent text-gray-500 hover:text-gray-800'
-          }`}
-        >
-          <Clock className="w-4 h-4" />
-          Institution Activity Monitor
-          <span className="px-2 py-0.5 text-xs bg-indigo-100 text-indigo-700 rounded-full font-bold">
-            {student?.activities?.length || 0}
-          </span>
-        </button>
+      <div className="w-full overflow-x-auto scrollbar-none border-b border-border">
+        <div className="flex space-x-2 pb-1 min-w-max">
+          <button
+            onClick={() => setActiveTab('activities')}
+            className={`pb-3 px-4 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${
+              activeTab === 'activities'
+                ? 'border-primary text-primary font-bold'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Clock className="w-4 h-4" />
+            Institution Activity Monitor
+            <span className="px-2 py-0.5 text-xs bg-primary/10 text-primary rounded-full font-bold">
+              {student?.activities?.length || 0}
+            </span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab('materials')}
-          className={`pb-3 px-4 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${
-            activeTab === 'materials'
-              ? 'border-indigo-600 text-indigo-600'
-              : 'border-transparent text-gray-500 hover:text-gray-800'
-          }`}
-        >
-          <Headphones className="w-4 h-4" />
-          Lecture Notes & Audio Library
-          <span className="px-2 py-0.5 text-xs bg-indigo-100 text-indigo-700 rounded-full font-bold">
-            {student?.materials?.length || 0}
-          </span>
-        </button>
+          <button
+            onClick={() => setActiveTab('materials')}
+            className={`pb-3 px-4 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${
+              activeTab === 'materials'
+                ? 'border-primary text-primary font-bold'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Headphones className="w-4 h-4" />
+            Lecture Notes &amp; Audio Library
+            <span className="px-2 py-0.5 text-xs bg-primary/10 text-primary rounded-full font-bold">
+              {student?.materials?.length || 0}
+            </span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab('assignments')}
-          className={`pb-3 px-4 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${
-            activeTab === 'assignments'
-              ? 'border-indigo-600 text-indigo-600'
-              : 'border-transparent text-gray-500 hover:text-gray-800'
-          }`}
-        >
-          <FileText className="w-4 h-4" />
-          Online Assignments & Submissions
-          <span className="px-2 py-0.5 text-xs bg-indigo-100 text-indigo-700 rounded-full font-bold">
-            {student?.assignments?.length || 0}
-          </span>
-        </button>
+          <button
+            onClick={() => setActiveTab('assignments')}
+            className={`pb-3 px-4 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${
+              activeTab === 'assignments'
+                ? 'border-primary text-primary font-bold'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            Online Assignments &amp; Submissions
+            <span className="px-2 py-0.5 text-xs bg-primary/10 text-primary rounded-full font-bold">
+              {student?.assignments?.length || 0}
+            </span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab('courses')}
-          className={`pb-3 px-4 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${
-            activeTab === 'courses'
-              ? 'border-indigo-600 text-indigo-600'
-              : 'border-transparent text-gray-500 hover:text-gray-800'
-          }`}
-        >
-          <Calendar className="w-4 h-4" />
-          Enrolled Courses & Timetable
-        </button>
+          <button
+            onClick={() => setActiveTab('courses')}
+            className={`pb-3 px-4 font-semibold text-sm transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${
+              activeTab === 'courses'
+                ? 'border-primary text-primary font-bold'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Calendar className="w-4 h-4" />
+            Enrolled Courses &amp; Timetable
+          </button>
+        </div>
       </div>
 
       {/* 4. TAB CONTENTS */}
@@ -448,43 +450,43 @@ export default function StudentHubPage() {
       {/* TAB 1: INSTITUTION ACTIVITY MONITOR */}
       {activeTab === 'activities' && (
         <div className="space-y-6">
-          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-            <h3 className="text-lg font-bold text-gray-900 mb-1 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-indigo-600" />
+          <div className="bg-card rounded-2xl p-4 sm:p-6 border border-border shadow-sm">
+            <h3 className="text-lg font-bold text-foreground mb-1 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-primary" />
               Chronological Institution Activity Feed
             </h3>
-            <p className="text-sm text-gray-500 mb-6">
+            <p className="text-sm text-muted-foreground mb-6">
               Live automated feed tracking lecture notes, newly recorded audio lectures, assignment deadlines, and graded submissions.
             </p>
 
-            <div className="relative pl-6 border-l-2 border-indigo-100 space-y-6">
+            <div className="relative pl-6 border-l-2 border-border space-y-6">
               {student?.activities?.map((act: any) => (
                 <div key={act.id} className="relative group">
                   {/* Timeline bullet */}
-                  <div className={`absolute -left-[31px] top-1 w-4 h-4 rounded-full border-2 border-white shadow ${
+                  <div className={`absolute -left-[31px] top-1 w-4 h-4 rounded-full border-2 border-card shadow ${
                     act.category === 'GRADE' ? 'bg-emerald-500' :
-                    act.category === 'MATERIAL' ? 'bg-indigo-600' :
+                    act.category === 'MATERIAL' ? 'bg-primary' :
                     act.category === 'ASSIGNMENT' ? 'bg-amber-500' : 'bg-blue-500'
                   }`}></div>
 
-                  <div className="bg-gray-50 hover:bg-indigo-50/40 p-4 rounded-xl border border-gray-100 transition-colors">
+                  <div className="bg-muted/30 hover:bg-muted/60 p-4 rounded-xl border border-border/60 transition-colors">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
                       <div className="flex items-center gap-2">
                         <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                          act.category === 'GRADE' ? 'bg-emerald-100 text-emerald-800' :
-                          act.category === 'MATERIAL' ? 'bg-indigo-100 text-indigo-800' :
-                          act.category === 'ASSIGNMENT' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                          act.category === 'GRADE' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' :
+                          act.category === 'MATERIAL' ? 'bg-primary/15 text-primary' :
+                          act.category === 'ASSIGNMENT' ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' : 'bg-blue-500/15 text-blue-700 dark:text-blue-400'
                         }`}>
                           {act.category}
                         </span>
-                        <h4 className="font-semibold text-gray-900 text-sm">{act.title}</h4>
+                        <h4 className="font-semibold text-foreground text-sm">{act.title}</h4>
                       </div>
-                      <span className="text-xs text-gray-400 font-medium">
+                      <span className="text-xs text-muted-foreground font-medium">
                         {new Date(act.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                       </span>
                     </div>
 
-                    <p className="text-sm text-gray-600">{act.description}</p>
+                    <p className="text-sm text-muted-foreground">{act.description}</p>
 
                     {/* Action buttons on activity item */}
                     {act.metadata?.type === 'AUDIO_RECORDING' && (
@@ -496,7 +498,7 @@ export default function StudentHubPage() {
                             fileUrl: act.metadata.url,
                             courseCode: 'COURSE'
                           })}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-xs font-semibold shadow-sm transition-colors"
                         >
                           <Play className="w-3.5 h-3.5" />
                           Listen to Audio Lecture
@@ -508,7 +510,7 @@ export default function StudentHubPage() {
               ))}
 
               {student?.activities?.length === 0 && (
-                <p className="text-gray-500 text-sm italic">No recent institutional activities recorded.</p>
+                <p className="text-muted-foreground text-sm italic">No recent institutional activities recorded.</p>
               )}
             </div>
           </div>
@@ -518,14 +520,14 @@ export default function StudentHubPage() {
       {/* TAB 2: LECTURE NOTES & AUDIO LIBRARY */}
       {activeTab === 'materials' && (
         <div className="space-y-6">
-          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+          <div className="bg-card rounded-2xl p-4 sm:p-6 border border-border shadow-sm">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
               <div>
-                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  <Headphones className="w-5 h-5 text-indigo-600" />
-                  Course Lecture Notes & Audio Broadcasts
+                <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                  <Headphones className="w-5 h-5 text-primary" />
+                  Course Lecture Notes &amp; Audio Broadcasts
                 </h3>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   Access digital course packs, lecture slides, and streaming audio podcasts uploaded by your lecturers.
                 </p>
               </div>
@@ -539,38 +541,38 @@ export default function StudentHubPage() {
                     key={mat.id}
                     className={`p-5 rounded-2xl border transition-all ${
                       isAudio
-                        ? 'bg-gradient-to-br from-indigo-50/60 to-purple-50/40 border-indigo-100 hover:border-indigo-300'
-                        : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-md'
+                        ? 'bg-primary/5 border-primary/30 hover:border-primary/60 hover:shadow-md'
+                        : 'bg-card border-border hover:border-primary/40 hover:shadow-md'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3 mb-2">
                       <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-1 bg-indigo-600 text-white font-bold text-xs rounded-lg">
+                        <span className="px-2.5 py-1 bg-primary text-primary-foreground font-bold text-xs rounded-lg">
                           {mat.courseCode}
                         </span>
-                        <span className="text-xs font-semibold text-gray-600">
+                        <span className="text-xs font-semibold text-muted-foreground">
                           Week {mat.weekNumber || 1}
                         </span>
                       </div>
                       <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
                         isAudio
-                          ? 'bg-purple-100 text-purple-700'
-                          : 'bg-blue-100 text-blue-700'
+                          ? 'bg-purple-500/15 text-purple-700 dark:text-purple-400'
+                          : 'bg-blue-500/15 text-blue-700 dark:text-blue-400'
                       }`}>
                         {isAudio ? <Headphones className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
                         {isAudio ? 'Audio Lecture' : mat.materialType}
                       </span>
                     </div>
 
-                    <h4 className="font-bold text-gray-900 text-base mb-1">{mat.title}</h4>
-                    <p className="text-xs text-gray-600 mb-4 line-clamp-2">{mat.description}</p>
+                    <h4 className="font-bold text-foreground text-base mb-1">{mat.title}</h4>
+                    <p className="text-xs text-muted-foreground mb-4 line-clamp-2">{mat.description}</p>
 
-                    <div className="flex items-center justify-between pt-3 border-t border-gray-100 text-xs text-gray-500">
-                      <div>Uploaded by <span className="font-semibold text-gray-700">{mat.lecturerName}</span></div>
+                    <div className="flex items-center justify-between pt-3 border-t border-border text-xs text-muted-foreground">
+                      <div>Uploaded by <span className="font-semibold text-foreground">{mat.lecturerName}</span></div>
                       {isAudio ? (
                         <button
                           onClick={() => playAudio(mat)}
-                          className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-sm transition-transform active:scale-95"
+                          className="px-3 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-sm transition-transform active:scale-95"
                         >
                           <Play className="w-3.5 h-3.5" />
                           Stream Audio
@@ -579,9 +581,9 @@ export default function StudentHubPage() {
                         <a
                           href={mat.fileUrl}
                           download
-                          className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition-colors"
+                          className="px-3 py-1.5 bg-muted hover:bg-muted/80 text-foreground border border-border rounded-xl font-semibold text-xs flex items-center gap-1.5 transition-colors"
                         >
-                          <Download className="w-3.5 h-3.5 text-gray-600" />
+                          <Download className="w-3.5 h-3.5 text-muted-foreground" />
                           Download Note
                         </a>
                       )}
@@ -591,8 +593,8 @@ export default function StudentHubPage() {
               })}
 
               {student?.materials?.length === 0 && (
-                <div className="col-span-2 text-center py-12 text-gray-500">
-                  <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <div className="col-span-2 text-center py-12 text-muted-foreground">
+                  <BookOpen className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
                   <p className="font-medium">No lecture materials or audio uploaded yet for your enrolled courses.</p>
                 </div>
               )}
@@ -604,12 +606,12 @@ export default function StudentHubPage() {
       {/* TAB 3: ONLINE ASSIGNMENTS & SUBMISSION */}
       {activeTab === 'assignments' && (
         <div className="space-y-6">
-          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-            <h3 className="text-lg font-bold text-gray-900 mb-1 flex items-center gap-2">
-              <FileText className="w-5 h-5 text-indigo-600" />
-              Online Continuous Assessment & Assignments
+          <div className="bg-card rounded-2xl p-4 sm:p-6 border border-border shadow-sm">
+            <h3 className="text-lg font-bold text-foreground mb-1 flex items-center gap-2">
+              <FileText className="w-5 h-5 text-primary" />
+              Online Continuous Assessment &amp; Assignments
             </h3>
-            <p className="text-sm text-gray-500 mb-6">
+            <p className="text-sm text-muted-foreground mb-6">
               Review lecturer specifications, submit code/solutions online, and receive graded continuous assessment feedback.
             </p>
 
@@ -622,37 +624,38 @@ export default function StudentHubPage() {
                 return (
                   <div
                     key={asgn.id}
-                    className="p-6 rounded-2xl border border-gray-200 hover:border-indigo-200 transition-all bg-white shadow-sm"
+                    className="p-5 sm:p-6 rounded-2xl border border-border hover:border-primary/30 transition-all bg-card/60 shadow-sm"
                   >
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-3">
                       <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-1 bg-indigo-600 text-white font-bold text-xs rounded-lg">
+                        <span className="px-2.5 py-1 bg-primary text-primary-foreground font-bold text-xs rounded-lg">
                           {asgn.courseCode}
                         </span>
-                        <h4 className="font-bold text-gray-900 text-base">{asgn.title}</h4>
+                        <h4 className="font-bold text-foreground text-base">{asgn.title}</h4>
                       </div>
 
                       {/* Status Badge */}
                       <div>
                         {isGraded ? (
-                          <span className="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          <span className="px-3 py-1 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold rounded-full flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                             Graded: {sub.score} / {asgn.maxScore} pts
                           </span>
                         ) : isSubmitted ? (
-                          <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded-full flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5 text-blue-600" />
+                          <span className="px-3 py-1 bg-blue-500/15 text-blue-700 dark:text-blue-400 border border-blue-500/20 text-xs font-bold rounded-full flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                             Submitted (Awaiting Grading)
                           </span>
                         ) : (
-                          <span className="px-3 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-full flex items-center gap-1">
-                            <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                          <span className="px-3 py-1 bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20 text-xs font-bold rounded-full flex items-center gap-1">
+                            <AlertCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                             Pending Submission
                           </span>
                         )}
                       </div>
                     </div>
 
+<<<<<<< HEAD
                     <div
                       onCopy={handlePreventQuestionCopy}
                       onContextMenu={handlePreventQuestionCopy}
@@ -665,20 +668,25 @@ export default function StudentHubPage() {
                         {embedWatermark(asgn.description, data?.student?.matricNumber)}
                       </p>
                     </div>
+=======
+                    <p className="text-sm text-foreground/90 whitespace-pre-line mb-4 bg-muted/40 p-4 rounded-xl border border-border/60">
+                      {asgn.description}
+                    </p>
+>>>>>>> daa3a42cf05677c37a212319dbee6b6d3b874018
 
-                    <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-gray-500 pt-3 border-t border-gray-100">
-                      <div className="flex items-center gap-4">
-                        <span className="font-medium text-gray-700">
+                    <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground pt-3 border-t border-border">
+                      <div className="flex flex-wrap items-center gap-4">
+                        <span className="font-medium text-foreground">
                           Due Date: {new Date(asgn.dueDate).toLocaleString()}
                         </span>
-                        <span className="font-medium text-gray-700">
+                        <span className="font-medium text-foreground">
                           Maximum Points: {asgn.maxScore} pts
                         </span>
                         {asgn.attachmentUrl && (
                           <a
                             href={asgn.attachmentUrl}
                             download
-                            className="text-indigo-600 hover:text-indigo-700 font-bold flex items-center gap-1"
+                            className="text-primary hover:text-primary/80 font-bold flex items-center gap-1"
                           >
                             <Download className="w-3.5 h-3.5" />
                             {asgn.attachmentName || 'Download Spec Sheet'}
@@ -695,10 +703,10 @@ export default function StudentHubPage() {
                           }}
                           className={`px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 ${
                             isGraded
-                              ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                              ? 'bg-muted hover:bg-muted/80 text-foreground border border-border'
                               : isSubmitted
                               ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                              : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                              : 'bg-primary hover:bg-primary/90 text-primary-foreground'
                           }`}
                         >
                           <UploadCloud className="w-4 h-4" />
@@ -709,14 +717,14 @@ export default function StudentHubPage() {
 
                     {/* If Graded: Show Lecturer Feedback */}
                     {isGraded && (
-                      <div className="mt-4 p-4 rounded-xl bg-emerald-50/70 border border-emerald-200">
+                      <div className="mt-4 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
                         <div className="flex items-center gap-2 mb-1">
-                          <Award className="w-4 h-4 text-emerald-700" />
-                          <span className="text-xs font-bold text-emerald-900 uppercase tracking-wider">
-                            Lecturer Feedback & Assessment
+                          <Award className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
+                            Lecturer Feedback &amp; Assessment
                           </span>
                         </div>
-                        <p className="text-sm text-emerald-950 font-medium italic">
+                        <p className="text-sm text-emerald-950 dark:text-emerald-200 font-medium italic">
                           &ldquo;{sub.feedback || 'Good work on this continuous assessment assignment.'}&rdquo;
                         </p>
                       </div>
@@ -726,8 +734,8 @@ export default function StudentHubPage() {
               })}
 
               {student?.assignments?.length === 0 && (
-                <div className="text-center py-12 text-gray-500">
-                  <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <div className="text-center py-12 text-muted-foreground">
+                  <FileText className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
                   <p className="font-medium">No online assignments currently published for your enrolled courses.</p>
                 </div>
               )}
@@ -739,45 +747,45 @@ export default function StudentHubPage() {
       {/* TAB 4: ENROLLED COURSES & TIMETABLE */}
       {activeTab === 'courses' && (
         <div className="space-y-6">
-          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-            <h3 className="text-lg font-bold text-gray-900 mb-1 flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-indigo-600" />
-              Registered Courses & Weekly Schedule
+          <div className="bg-card rounded-2xl p-4 sm:p-6 border border-border shadow-sm">
+            <h3 className="text-lg font-bold text-foreground mb-1 flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-primary" />
+              Registered Courses &amp; Weekly Schedule
             </h3>
-            <p className="text-sm text-gray-500 mb-6">
+            <p className="text-sm text-muted-foreground mb-6">
               Official course load for {student?.session} &bull; Semester {student?.semester} (Total Credits: {student?.totalCredits} Units)
             </p>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-gray-50 text-gray-600 font-semibold border-b border-gray-200">
+            <div className="w-full overflow-x-auto scrollbar-none">
+              <table className="w-full min-w-[650px] text-left text-sm">
+                <thead className="bg-muted/50 text-muted-foreground font-semibold border-b border-border">
                   <tr>
                     <th className="py-3 px-4">Course Code</th>
                     <th className="py-3 px-4">Title</th>
                     <th className="py-3 px-4 text-center">Credit Units</th>
                     <th className="py-3 px-4">Lecturer(s)</th>
-                    <th className="py-3 px-4">Lecture Schedule & Venue</th>
+                    <th className="py-3 px-4">Lecture Schedule &amp; Venue</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-border">
                   {student?.registeredCourses?.map((c: any) => (
-                    <tr key={c.id} className="hover:bg-gray-50/70 transition-colors">
-                      <td className="py-3 px-4 font-mono font-bold text-indigo-600">{c.code}</td>
-                      <td className="py-3 px-4 font-medium text-gray-900">{c.title}</td>
-                      <td className="py-3 px-4 text-center font-bold">{c.creditUnits}</td>
-                      <td className="py-3 px-4 text-xs text-gray-600">
+                    <tr key={c.id} className="hover:bg-muted/40 transition-colors">
+                      <td className="py-3 px-4 font-mono font-bold text-primary">{c.code}</td>
+                      <td className="py-3 px-4 font-medium text-foreground">{c.title}</td>
+                      <td className="py-3 px-4 text-center font-bold text-foreground">{c.creditUnits}</td>
+                      <td className="py-3 px-4 text-xs text-muted-foreground">
                         {c.lecturers?.map((l: any, i: number) => (
-                          <div key={i} className="font-medium text-gray-800">{l.name}</div>
+                          <div key={i} className="font-medium text-foreground">{l.name}</div>
                         ))}
-                        {(!c.lecturers || c.lecturers.length === 0) && <span className="italic text-gray-400">Department Faculty</span>}
+                        {(!c.lecturers || c.lecturers.length === 0) && <span className="italic text-muted-foreground">Department Faculty</span>}
                       </td>
-                      <td className="py-3 px-4 text-xs text-gray-600">
+                      <td className="py-3 px-4 text-xs text-muted-foreground">
                         {c.schedules?.map((s: any, idx: number) => (
                           <div key={idx} className="flex items-center gap-1.5">
-                            <span className="font-semibold text-gray-700">{s.day}:</span> {s.time} ({s.venue})
+                            <span className="font-semibold text-foreground">{s.day}:</span> {s.time} ({s.venue})
                           </div>
                         ))}
-                        {(!c.schedules || c.schedules.length === 0) && <span className="italic text-gray-400">TBA</span>}
+                        {(!c.schedules || c.schedules.length === 0) && <span className="italic text-muted-foreground">TBA</span>}
                       </td>
                     </tr>
                   ))}
@@ -790,13 +798,17 @@ export default function StudentHubPage() {
 
       {/* 5. ONLINE ASSIGNMENT SUBMISSION MODAL */}
       {submittingAssignmentId && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-xl w-full shadow-2xl border border-gray-200 relative animate-in fade-in zoom-in-95">
-            <h3 className="text-xl font-bold text-gray-900 mb-2 flex items-center gap-2">
-              <UploadCloud className="w-6 h-6 text-indigo-600" />
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-card rounded-3xl p-5 sm:p-8 w-[95vw] sm:max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl border border-border relative text-card-foreground animate-in fade-in zoom-in-95">
+            <h3 className="text-xl font-bold text-foreground mb-2 flex items-center gap-2">
+              <UploadCloud className="w-6 h-6 text-primary" />
               Submit Assignment Solution Online
             </h3>
+<<<<<<< HEAD
             <p className="text-xs text-gray-500 mb-4">
+=======
+            <p className="text-xs text-muted-foreground mb-6">
+>>>>>>> daa3a42cf05677c37a212319dbee6b6d3b874018
               Enter your written solution, GitHub repo URL, or upload your assignment document (.zip, .pdf, .docx).
             </p>
 
@@ -835,55 +847,61 @@ export default function StudentHubPage() {
 
             {submitMessage && (
               <div className={`p-4 rounded-xl text-xs font-semibold mb-4 flex items-center gap-2 ${
-                submitMessage.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200'
+                submitMessage.type === 'success' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20' : 'bg-destructive/15 text-destructive border border-destructive/20'
               }`}>
-                {submitMessage.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <AlertCircle className="w-4 h-4 text-red-600" />}
+                {submitMessage.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <AlertCircle className="w-4 h-4 text-destructive" />}
                 {submitMessage.text}
               </div>
             )}
 
             <form onSubmit={handleAssignmentSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                <label className="block text-xs font-semibold text-foreground mb-1">
                   Written Response / Repository Link / Notes
                 </label>
                 <textarea
                   value={submissionText}
                   onChange={(e) => setSubmissionText(e.target.value)}
+<<<<<<< HEAD
                   onPaste={handleTextareaPaste}
                   rows={5}
                   placeholder="Type your solution, code, GitHub repo URL, or executive summary here..."
                   className="w-full text-xs p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono"
+=======
+                  rows={4}
+                  placeholder="Paste your source code, GitHub repo URL, or executive summary here..."
+                  className="w-full text-xs p-3 bg-background border border-input rounded-xl focus:ring-2 focus:ring-primary focus:outline-none font-mono text-foreground"
+>>>>>>> daa3a42cf05677c37a212319dbee6b6d3b874018
                 ></textarea>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                <label className="block text-xs font-semibold text-foreground mb-1">
                   Attach Solution File (Optional)
                 </label>
                 <input
                   type="file"
                   onChange={(e) => setSubmissionFile(e.target.files?.[0] || null)}
-                  className="w-full text-xs text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
+                  className="w-full text-xs text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
                 <button
                   type="button"
                   onClick={() => setSubmittingAssignmentId(null)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-100"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-muted-foreground hover:bg-muted"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-2 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1.5 shadow-md"
+                  className="px-6 py-2 rounded-xl text-xs font-bold text-primary-foreground bg-primary hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1.5 shadow-md"
                 >
                   {isSubmitting ? (
                     <>
-                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-3.5 h-3.5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin"></div>
                       Submitting...
                     </>
                   ) : (

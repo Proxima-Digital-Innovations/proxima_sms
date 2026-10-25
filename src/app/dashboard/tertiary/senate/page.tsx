@@ -230,7 +230,7 @@ export default function SenateBroadsheetPage() {
 
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full min-w-[700px] text-left text-sm">
               <thead className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wider border-b border-border font-mono">
                 <tr>
                   <th className="py-3 px-4">Matric No.</th>
@@ -298,7 +298,7 @@ export default function SenateBroadsheetPage() {
 
       {/* Probation Letter Modal */}
       <Dialog open={letterModalOpen} onOpenChange={setLetterModalOpen}>
-        <DialogContent className="sm:max-w-xl rounded-2xl">
+        <DialogContent className="w-[95vw] sm:max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-destructive" /> Official Academic Board Notice

@@ -150,7 +150,7 @@ export default function AdmissionsDashboardPage() {
       if (!res.success) throw new Error(res.error);
       toast({
         title: 'Post-UTME Score Recorded',
-        description: `Score: ${score}% &bull; Composite updated to ${res.data.compositeScore}%`,
+        description: `Score: ${score}% • Composite updated to ${res.data.compositeScore}%`,
       });
       loadRankings(campaign.id, selectedProgramId);
     } catch (err: any) {
@@ -376,7 +376,8 @@ export default function AdmissionsDashboardPage() {
         
         {/* Tab Header & Department Selector */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/30 p-2 rounded-2xl border border-border/60">
-          <TabsList className="bg-background/80 border border-border/60">
+          <div className="w-full sm:w-auto overflow-x-auto scrollbar-none">
+            <TabsList className="bg-background/80 border border-border/60 inline-flex w-max">
             <TabsTrigger value="quota-engine" className="text-xs font-bold gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
               <span>Quota &amp; Ranking Engine</span>
@@ -394,6 +395,7 @@ export default function AdmissionsDashboardPage() {
               <span>1-Click Matriculation</span>
             </TabsTrigger>
           </TabsList>
+          </div>
 
           {/* Department Picker */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -619,7 +621,7 @@ export default function AdmissionsDashboardPage() {
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <table className="w-full text-xs text-left">
+                <table className="w-full min-w-[700px] text-xs text-left">
                   <thead className="bg-muted/40 text-muted-foreground border-b border-border/60 font-semibold uppercase text-[10px]">
                     <tr>
                       <th className="p-3">JAMB Reg No</th>
@@ -700,7 +702,7 @@ export default function AdmissionsDashboardPage() {
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <table className="w-full text-xs text-left">
+                <table className="w-full min-w-[700px] text-xs text-left">
                   <thead className="bg-muted/40 text-muted-foreground border-b border-border/60 font-semibold uppercase text-[10px]">
                     <tr>
                       <th className="p-3">JAMB Reg No</th>
@@ -760,7 +762,7 @@ export default function AdmissionsDashboardPage() {
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <table className="w-full text-xs text-left">
+                <table className="w-full min-w-[700px] text-xs text-left">
                   <thead className="bg-muted/40 text-muted-foreground border-b border-border/60 font-semibold uppercase text-[10px]">
                     <tr>
                       <th className="p-3">Candidate</th>
@@ -781,7 +783,7 @@ export default function AdmissionsDashboardPage() {
                           <td className="p-3">{a.admittedProgram?.name || a.firstChoice?.name}</td>
                           <td className="p-3">
                             <Badge className={a.acceptanceFeePaid ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}>
-                              {a.acceptanceFeePaid ? 'PAID &bull; ₦50,000' : 'Awaiting Payment'}
+                              {a.acceptanceFeePaid ? 'PAID • ₦50,000' : 'Awaiting Payment'}
                             </Badge>
                           </td>
                           <td className="p-3 font-mono font-bold text-indigo-400">

@@ -214,7 +214,7 @@ export default function StudentTranscriptPage() {
                   </div>
                 </div>
 
-                <div className="w-full overflow-x-auto custom-scrollbar"><table className="w-full text-left text-xs border border-slate-300">
+                <div className="w-full overflow-x-auto custom-scrollbar"><table className="w-full min-w-[550px] text-left text-xs border border-slate-300">
                   <thead className="bg-slate-100 border-b border-slate-300 font-bold uppercase text-[10px] text-slate-700">
                     <tr>
                       <th className="py-2 px-3 border-r border-slate-300">Course Code</th>

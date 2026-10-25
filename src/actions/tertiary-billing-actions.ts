@@ -46,42 +46,45 @@ export async function getTertiaryFeeStructuresAction() {
 export async function saveTertiaryFeeStructureAction(data: {
   programId: string;
   academicSession: string;
-  semester: number;
-  tuitionFee: number;
-  acceptanceFee: number;
-  labFee: number;
-  ictFee: number;
+  semester?: number;
+  level?: number;
+  tuitionFee?: number;
+  tuitionAmount?: number;
+  acceptanceFee?: number;
+  labFee?: number;
+  ictFee?: number;
 }) {
   try {
-    const totalAmount =
-      Number(data.tuitionFee || 0) +
-      Number(data.acceptanceFee || 0) +
-      Number(data.labFee || 0) +
-      Number(data.ictFee || 0);
+    const semester = Number(data.semester || 1);
+    const tuition = Number(data.tuitionFee ?? data.tuitionAmount ?? 0);
+    const acceptance = Number(data.acceptanceFee || 0);
+    const lab = Number(data.labFee || 0);
+    const ict = Number(data.ictFee || 0);
+    const totalAmount = tuition + acceptance + lab + ict;
 
     const record = await prisma.tertiaryFeeStructure.upsert({
       where: {
         programId_academicSession_semester: {
           programId: data.programId,
           academicSession: data.academicSession,
-          semester: data.semester,
+          semester,
         },
       },
       create: {
         programId: data.programId,
         academicSession: data.academicSession,
-        semester: data.semester,
-        tuitionFee: Number(data.tuitionFee || 0),
-        acceptanceFee: Number(data.acceptanceFee || 0),
-        labFee: Number(data.labFee || 0),
-        ictFee: Number(data.ictFee || 0),
+        semester,
+        tuitionFee: tuition,
+        acceptanceFee: acceptance,
+        labFee: lab,
+        ictFee: ict,
         totalAmount,
       },
       update: {
-        tuitionFee: Number(data.tuitionFee || 0),
-        acceptanceFee: Number(data.acceptanceFee || 0),
-        labFee: Number(data.labFee || 0),
-        ictFee: Number(data.ictFee || 0),
+        tuitionFee: tuition,
+        acceptanceFee: acceptance,
+        labFee: lab,
+        ictFee: ict,
         totalAmount,
       },
     });

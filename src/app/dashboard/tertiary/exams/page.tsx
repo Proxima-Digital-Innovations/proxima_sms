@@ -235,7 +235,7 @@ export default function TertiaryExamProcessingPage() {
       {/* Blind Score Entry Table */}
       <Card className="border border-border bg-card rounded-2xl shadow-sm overflow-hidden">
         <CardHeader className="border-b border-border/50 pb-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
                 <EyeOff className="h-5 w-5 text-primary" /> Anonymous Candidate Ledger
@@ -252,7 +252,7 @@ export default function TertiaryExamProcessingPage() {
 
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full min-w-[700px] text-left text-sm">
               <thead className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wider border-b border-border font-mono">
                 <tr>
                   <th className="py-3 px-4">Candidate Token (CIN)</th>
@@ -347,7 +347,7 @@ export default function TertiaryExamProcessingPage() {
 
       {/* Step-Up MFA Authorization Dialog */}
       <Dialog open={stepUpModalOpen} onOpenChange={setStepUpModalOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto rounded-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Key className="h-5 w-5 text-primary" /> Step-Up Governance Verification

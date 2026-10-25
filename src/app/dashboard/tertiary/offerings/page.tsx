@@ -124,7 +124,7 @@ export default function TertiaryOfferingsPage() {
               <Plus className="h-4 w-4 mr-2" /> Open Course Offering
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md rounded-2xl">
+          <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto rounded-2xl">
             <DialogHeader>
               <DialogTitle>Open Course Offering</DialogTitle>
               <DialogDescription>

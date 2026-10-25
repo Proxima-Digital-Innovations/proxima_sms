@@ -71,7 +71,7 @@ export default function OfficialTranscriptPage() {
   const { student, academicHistory, summary } = data;
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-6 max-w-5xl mx-auto p-4 sm:p-6 lg:p-8">
       {/* Top Bar (Hidden on Print) */}
       <div className="flex flex-wrap justify-between items-center gap-3 print:hidden bg-card p-4 rounded-xl border shadow-sm">
         <div className="flex items-center gap-2">
@@ -156,7 +156,7 @@ export default function OfficialTranscriptPage() {
               </div>
 
               <div className="w-full overflow-x-auto custom-scrollbar">
-                <table className="w-full text-left text-xs">
+                <table className="w-full min-w-[550px] text-left text-xs">
                   <thead className="border-b text-[10px] uppercase text-slate-600">
                     <tr>
                       <th className="py-1">Course Code</th>

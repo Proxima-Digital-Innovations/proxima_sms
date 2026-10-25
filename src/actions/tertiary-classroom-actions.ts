@@ -177,8 +177,8 @@ export async function getStudentPortalData(targetStudentId?: string) {
     );
 
     // Financial clearance summary
-    const totalInvoiced = student.invoices.reduce((acc: number, inv: any) => acc + inv.totalAmount, 0);
-    const totalPaid = student.invoices.reduce((acc: number, inv: any) => acc + (inv.amountPaid || 0), 0);
+    const totalInvoiced = student.invoices.reduce((acc: number, inv: any) => acc + (inv.totalAmount ?? inv.amount ?? 0), 0);
+    const totalPaid = student.invoices.reduce((acc: number, inv: any) => acc + (inv.amountPaid ?? inv.paidAmount ?? 0), 0);
     const paymentPercentage = totalInvoiced > 0 ? (totalPaid / totalInvoiced) * 100 : 100;
     const isBursaryCleared = activeReg?.isBursaryCleared || paymentPercentage >= 50;
 

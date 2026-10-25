@@ -12,6 +12,9 @@ const PUBLIC_ROUTES = [
   '/favicon.ico',
   '/verify',
   '/result-checker',
+  '/admissions',
+  '/unauthorized',
+  '/license-expired',
 ];
 
 export default auth(async (req) => {

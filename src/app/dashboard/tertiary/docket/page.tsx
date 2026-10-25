@@ -200,7 +200,7 @@ export default function StudentExamDocketPage() {
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
               Authorized Course Offerings for Examination
             </h3>
-            <div className="w-full overflow-x-auto custom-scrollbar"><table className="w-full text-left text-xs border border-slate-900">
+            <div className="w-full overflow-x-auto custom-scrollbar"><table className="w-full min-w-[550px] text-left text-xs border border-slate-900">
               <thead className="bg-slate-100 border-b border-slate-900 font-bold uppercase text-[10px]">
                 <tr>
                   <th className="py-2 px-3 border-r border-slate-900">S/N</th>
@@ -227,7 +227,7 @@ export default function StudentExamDocketPage() {
           </div>
 
           {/* Candidate Attestation & Signatures */}
-          <div className="border-t border-slate-200 pt-6 grid grid-cols-2 gap-8 text-xs">
+          <div className="border-t border-slate-200 pt-6 grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 text-xs">
             <div className="space-y-4">
               <p className="text-[10px] text-slate-600 leading-relaxed italic">
                 &quot;I hereby certify that the information presented on this docket is authentic and that I will abide by all University Senate examination regulations. I understand that impersonation or malpractice constitutes immediate expulsion.&quot;

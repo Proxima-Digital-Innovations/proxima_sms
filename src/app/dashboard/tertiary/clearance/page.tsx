@@ -170,7 +170,7 @@ export default function GraduationClearancePage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+              <table className="w-full min-w-[780px] text-left text-sm">
                 <thead className="border-b bg-muted/40 text-xs font-semibold uppercase text-muted-foreground">
                   <tr>
                     <th className="px-4 py-3">Student / Matric</th>
@@ -274,7 +274,7 @@ export default function GraduationClearancePage() {
 
       {/* Department Clearance Action Modal */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Update {activeDept?.toUpperCase()} Clearance</DialogTitle>
             <DialogDescription>

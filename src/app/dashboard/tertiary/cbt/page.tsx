@@ -794,7 +794,7 @@ export default function TertiaryCbtPage() {
     const answeredCount = Object.keys(answers).length;
 
     return (
-      <div className="space-y-6 max-w-5xl mx-auto py-4">
+      <div className="space-y-6 max-w-5xl mx-auto py-4 px-3 sm:px-4">
         {/* Top Control Bar with Timer & Anti-Cheat */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900 text-white p-4 rounded-2xl shadow-lg border border-slate-800">
           <div>
@@ -934,7 +934,7 @@ export default function TertiaryCbtPage() {
   // --- VIEW 2: EXAM RESULTS SUMMARY ---
   if (isExamCompleted && examResult) {
     return (
-      <div className="max-w-xl mx-auto py-12 space-y-6">
+      <div className="max-w-xl mx-auto py-8 sm:py-12 px-4 space-y-6">
         <Card className="border shadow-lg text-center p-6">
           <CardHeader>
             <div className="mx-auto bg-emerald-100 text-emerald-600 h-16 w-16 rounded-full flex items-center justify-center mb-2">
@@ -960,7 +960,7 @@ export default function TertiaryCbtPage() {
             </div>
 
             {examResult.isDisqualified && (
-              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl">
+              <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 text-destructive text-xs rounded-xl">
                 <AlertTriangle className="h-4 w-4 shrink-0" />
                 <span>Marked disqualified due to exceeding anti-cheat tab-switching thresholds.</span>
               </div>
@@ -979,7 +979,7 @@ export default function TertiaryCbtPage() {
 
   // --- VIEW 3: CBT PORTAL DASHBOARD (EXAM LIST & LECTURER QUESTION MANAGER) ---
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Computer-Based Testing (CBT) Engine</h1>

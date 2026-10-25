@@ -1,9 +1,17 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 
 export function NavigationProgress() {
+  return (
+    <Suspense fallback={null}>
+      <NavigationProgressBar />
+    </Suspense>
+  );
+}
+
+function NavigationProgressBar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isNavigating, setIsNavigating] = useState(false);

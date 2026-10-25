@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getMidtermResultsForPrint } from '@/actions/results-actions';
 import { MidTermResult, Student } from '@/lib/schema';
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Printer } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 
-export default function PrintMidtermResultsPage() {
+function PrintMidtermResultsContent() {
   const searchParams = useSearchParams();
   const studentId = searchParams.get('studentId');
   const classId = searchParams.get('classId');
@@ -90,5 +90,17 @@ export default function PrintMidtermResultsPage() {
         ))}
       </div>
     </div>
+  );
+}
+
+export default function PrintMidtermResultsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin" />
+      </div>
+    }>
+      <PrintMidtermResultsContent />
+    </Suspense>
   );
 }

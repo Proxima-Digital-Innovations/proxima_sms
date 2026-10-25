@@ -21,6 +21,7 @@ import {
   Building,
   HelpCircle,
   ExternalLink,
+  Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -369,7 +370,7 @@ export default function PublicAdmissionApplyPage() {
               onClick={() => fillDemoCandidate('UTME')}
               className="h-8 text-xs bg-slate-800/80 border-slate-700 hover:border-indigo-400 text-slate-200"
             >
-              ⚡ Fill Demo UTME
+              <Zap className="w-3.5 h-3.5 mr-1.5 text-indigo-400" /> Fill Demo UTME
             </Button>
             <Button
               type="button"
@@ -378,7 +379,7 @@ export default function PublicAdmissionApplyPage() {
               onClick={() => fillDemoCandidate('DIRECT_ENTRY')}
               className="h-8 text-xs bg-slate-800/80 border-slate-700 hover:border-emerald-400 text-slate-200"
             >
-              ⚡ Fill Demo Direct Entry
+              <Zap className="w-3.5 h-3.5 mr-1.5 text-emerald-400" /> Fill Demo Direct Entry
             </Button>
           </div>
         </div>

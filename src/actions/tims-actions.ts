@@ -57,6 +57,7 @@ export async function getCurrentStudentContextAction(academicSession = '2025/202
         userRole,
         isStudentRole: userRole === 'STUDENT',
         activeStudent,
+        student: activeStudent,
         allStudents: userRole === 'STUDENT' && activeStudent ? [activeStudent] : allStudents,
       },
     };
@@ -428,7 +429,7 @@ export async function getOfferingCandidateTokensAction(offeringId: string) {
     }
 
     // 2. Fetch all candidate tokens and existing grades for this offering
-    const [tokens, grades] = await Promise.all([
+    const [tokens, grades]: [any[], any[]] = await Promise.all([
       prisma.examCandidateToken.findMany({
         where: { offeringId },
         orderBy: { anonymousToken: 'asc' },
@@ -438,9 +439,9 @@ export async function getOfferingCandidateTokensAction(offeringId: string) {
       }),
     ]);
 
-    const gradeByStudent = new Map(grades.map((g) => [g.studentId, g]));
+    const gradeByStudent = new Map(grades.map((g: any) => [g.studentId, g]));
 
-    const rows = tokens.map((t) => {
+    const rows = tokens.map((t: any) => {
       const g = gradeByStudent.get(t.studentId);
       return {
         anonymousToken: t.anonymousToken,
