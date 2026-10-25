@@ -41,7 +41,7 @@ import {
   LiveVirtualClassSession
 } from '@/actions/tertiary-classroom-actions';
 import { VirtualClassroomModal } from '@/components/dashboard/virtual-class/virtual-classroom-modal';
-import { Radio, Video, PhoneOff, Hand, MessageSquare, Mic, Square } from 'lucide-react';
+import { Radio, Video, PhoneOff, Hand, MessageSquare, Mic, Square, X } from 'lucide-react';
 
 export default function LecturerStudioPage() {
   const { role, isLoading: isRoleLoading } = useRole();
@@ -1693,9 +1693,10 @@ export default function LecturerStudioPage() {
               <button
                 type="button"
                 onClick={() => setPreviewVideoUrl(null)}
-                className="text-muted-foreground hover:text-foreground text-xs font-bold px-2 py-1 rounded-lg bg-muted"
+                className="text-muted-foreground hover:text-foreground text-xs font-bold px-2.5 py-1 rounded-lg bg-muted flex items-center gap-1 transition-colors"
               >
-                ✕ Close
+                <X className="w-3.5 h-3.5" />
+                <span>Close</span>
               </button>
             </div>
             <div className="w-full bg-black rounded-2xl overflow-hidden aspect-video flex items-center justify-center">

@@ -468,9 +468,10 @@ export default function StudentHubPage() {
                 <button
                   type="button"
                   onClick={() => setActiveVideoModal(null)}
-                  className="p-1.5 text-muted-foreground hover:text-foreground rounded-xl bg-muted font-bold"
+                  className="p-1.5 text-muted-foreground hover:text-foreground rounded-xl bg-muted hover:bg-muted/80 transition-colors"
+                  aria-label="Close video player"
                 >
-                  ✕
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
