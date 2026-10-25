@@ -897,6 +897,7 @@ export default function LecturerStudioPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {course.materials.map((m: any) => {
                         const isAudio = m.materialType === 'AUDIO_RECORDING';
+                        const isVideo = m.materialType === 'VIDEO_RECORDING' || m.materialType === 'VIDEO_LINK';
                         return (
                           <div
                             key={m.id}
