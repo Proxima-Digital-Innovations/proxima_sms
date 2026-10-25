@@ -564,15 +564,19 @@ export async function uploadLectureMaterialAction(formData: FormData) {
 
 export async function createTertiaryAssignmentAction(formData: FormData) {
   try {
-    const courseOfferingId = formData.get('courseOfferingId') as string;
-    const lecturerId = formData.get('lecturerId') as string;
+    const courseOfferingId = (formData.get('courseOfferingId') || formData.get('offeringId')) as string;
+    let lecturerId = (formData.get('lecturerId')) as string;
+    if (!lecturerId) {
+      const session = await auth();
+      lecturerId = session?.user?.id || '';
+    }
     const title = (formData.get('title') as string)?.trim();
     const description = (formData.get('description') as string)?.trim();
     const maxScore = parseFloat(formData.get('maxScore') as string) || 20.0;
-    const dueDateStr = formData.get('dueDate') as string;
+    const dueDateStr = (formData.get('dueDate') || formData.get('dueDateStr')) as string;
     const assessmentType = (formData.get('assessmentType') as string) || 'ASSIGNMENT';
     const durationMinutes = formData.get('durationMinutes') ? parseInt(formData.get('durationMinutes') as string, 10) : null;
-    const attachment = formData.get('attachment') as File | null;
+    const attachment = (formData.get('attachment') || formData.get('file')) as File | null;
 
     if (!courseOfferingId || !lecturerId || !title || !description || !dueDateStr) {
       return { success: false, error: 'All fields including course, title, instructions, and due date are required.' };

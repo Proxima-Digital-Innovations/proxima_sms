@@ -80,6 +80,13 @@ export default function LecturerStudioPage() {
   const [isCreatingAsgn, setIsCreatingAsgn] = useState(false);
   const [asgnMessage, setAsgnMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // Multi-Question Assessment State
+  const [questionMode, setQuestionMode] = useState<'SINGLE' | 'MULTI'>('SINGLE');
+  const [multiQuestions, setMultiQuestions] = useState<Array<{ id: string; text: string; points: number }>>([
+    { id: '1', text: '', points: 10 },
+    { id: '2', text: '', points: 10 }
+  ]);
+
   // Grading Modal / Inline State
   const [gradingSubmission, setGradingSubmission] = useState<any | null>(null);
   const [gradeScore, setGradeScore] = useState<number>(0);
@@ -205,16 +212,42 @@ export default function LecturerStudioPage() {
   // Create Assignment
   const handleCreateAssignment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!asgnOfferingId || !asgnTitle || !asgnDueDate || !data?.lecturer) return;
+    const effectiveOfferingId = asgnOfferingId || (assignedCourses[0]?.offeringId || '');
+    if (!effectiveOfferingId || !asgnTitle || !asgnDueDate || !data?.lecturer) {
+      setAsgnMessage({ type: 'error', text: 'Please fill in all required fields (Course, Title, Due Date).' });
+      return;
+    }
+
+    // Compile description if in multi-question mode
+    let finalDesc = asgnDesc;
+    if (questionMode === 'MULTI') {
+      const validQuestions = multiQuestions.filter(q => q.text.trim().length > 0);
+      if (validQuestions.length === 0) {
+        setAsgnMessage({ type: 'error', text: 'Please enter at least one question in Multi-Question mode.' });
+        return;
+      }
+      const questionsText = validQuestions
+        .map((q, idx) => `Question ${idx + 1} (${q.points} Marks):\n${q.text.trim()}`)
+        .join('\n\n');
+      finalDesc = asgnDesc.trim() 
+        ? `${asgnDesc.trim()}\n\n--- EXAMINATION QUESTIONS ---\n${questionsText}`
+        : questionsText;
+    }
+
+    if (!finalDesc.trim()) {
+      setAsgnMessage({ type: 'error', text: 'Please provide instructions or at least one question.' });
+      return;
+    }
 
     setIsCreatingAsgn(true);
     setAsgnMessage(null);
 
     try {
       const formData = new FormData();
-      formData.append('offeringId', asgnOfferingId);
+      formData.append('courseOfferingId', effectiveOfferingId);
+      formData.append('offeringId', effectiveOfferingId);
       formData.append('title', asgnTitle);
-      formData.append('description', asgnDesc);
+      formData.append('description', finalDesc);
       formData.append('maxScore', asgnMaxScore.toString());
       formData.append('dueDate', asgnDueDate);
       formData.append('assessmentType', asgnType);
@@ -222,7 +255,10 @@ export default function LecturerStudioPage() {
         formData.append('durationMinutes', asgnDuration.toString());
       }
       formData.append('lecturerId', data.lecturer.id);
-      if (asgnAttachment) formData.append('file', asgnAttachment);
+      if (asgnAttachment) {
+        formData.append('attachment', asgnAttachment);
+        formData.append('file', asgnAttachment);
+      }
 
       const res = await createTertiaryAssignmentAction(formData);
       if (res.success) {
@@ -728,7 +764,7 @@ export default function LecturerStudioPage() {
               <div>
                 <label className="block text-xs font-semibold text-foreground mb-1">Course Offering</label>
                 <select
-                  value={asgnOfferingId}
+                  value={asgnOfferingId || (assignedCourses[0]?.offeringId || '')}
                   onChange={(e) => setAsgnOfferingId(e.target.value)}
                   className="w-full text-xs p-2.5 bg-background text-foreground border border-input rounded-xl focus:ring-2 focus:ring-primary focus:outline-none"
                 >
@@ -785,16 +821,152 @@ export default function LecturerStudioPage() {
                 />
               </div>
 
+              {/* Assessment Type & Timer */}
+              <div className="grid grid-cols-2 gap-3 p-3 bg-muted/40 rounded-2xl border border-border">
+                <div>
+                  <label className="block text-[11px] font-bold text-foreground mb-1">Assessment Mode</label>
+                  <select
+                    value={asgnType}
+                    onChange={(e: any) => setAsgnType(e.target.value)}
+                    className="w-full text-xs p-2 bg-background border border-input rounded-xl"
+                  >
+                    <option value="ASSIGNMENT">Standard Assignment (No Timer)</option>
+                    <option value="ESSAY_EXAM">Timed Essay Examination</option>
+                  </select>
+                </div>
+                {asgnType === 'ESSAY_EXAM' ? (
+                  <div>
+                    <label className="block text-[11px] font-bold text-foreground mb-1">Timer (Minutes)</label>
+                    <input
+                      type="number"
+                      min="5"
+                      max="360"
+                      value={asgnDuration}
+                      onChange={(e) => setAsgnDuration(parseInt(e.target.value) || 60)}
+                      className="w-full text-xs p-2 bg-background border border-input rounded-xl"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex items-center text-[11px] text-muted-foreground pt-5">
+                    Continuous assessment homework.
+                  </div>
+                )}
+              </div>
+
+              {/* Question Format Toggle */}
               <div>
-                <label className="block text-xs font-semibold text-foreground mb-1">Detailed Instructions &amp; Rubric</label>
-                <textarea
-                  rows={4}
-                  required
-                  placeholder="Detail the problem statement, deliverables, formatting rules, and grading breakdown..."
-                  value={asgnDesc}
-                  onChange={(e) => setAsgnDesc(e.target.value)}
-                  className="w-full text-xs p-2.5 bg-background text-foreground border border-input rounded-xl focus:ring-2 focus:ring-primary focus:outline-none font-mono"
-                ></textarea>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-semibold text-foreground">Question Format</label>
+                  <div className="flex items-center bg-muted p-0.5 rounded-lg text-[11px] font-semibold">
+                    <button
+                      type="button"
+                      onClick={() => setQuestionMode('SINGLE')}
+                      className={`px-2.5 py-1 rounded-md transition-all ${questionMode === 'SINGLE' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      Single Prompt
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setQuestionMode('MULTI')}
+                      className={`px-2.5 py-1 rounded-md transition-all ${questionMode === 'MULTI' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      Multiple Questions (Q1, Q2...)
+                    </button>
+                  </div>
+                </div>
+
+                {questionMode === 'SINGLE' ? (
+                  <textarea
+                    rows={4}
+                    required
+                    placeholder="Detail the problem statement, deliverables, formatting rules, and grading breakdown..."
+                    value={asgnDesc}
+                    onChange={(e) => setAsgnDesc(e.target.value)}
+                    className="w-full text-xs p-2.5 bg-background text-foreground border border-input rounded-xl focus:ring-2 focus:ring-primary focus:outline-none font-mono"
+                  ></textarea>
+                ) : (
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      placeholder="Optional exam general instructions (e.g. Answer all questions clearly.)"
+                      value={asgnDesc}
+                      onChange={(e) => setAsgnDesc(e.target.value)}
+                      className="w-full text-xs p-2.5 bg-background text-foreground border border-input rounded-xl focus:ring-2 focus:ring-primary focus:outline-none"
+                    />
+
+                    <div className="space-y-2.5">
+                      {multiQuestions.map((q, idx) => (
+                        <div key={q.id} className="p-3 bg-muted/40 rounded-xl border border-border space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-primary flex items-center gap-1.5">
+                              Question {idx + 1}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-muted-foreground font-semibold">Points:</span>
+                              <input
+                                type="number"
+                                min="1"
+                                max="100"
+                                value={q.points}
+                                onChange={(e) => {
+                                  const pts = parseFloat(e.target.value) || 1;
+                                  const updated = [...multiQuestions];
+                                  updated[idx].points = pts;
+                                  setMultiQuestions(updated);
+                                  const total = updated.reduce((acc, cur) => acc + cur.points, 0);
+                                  setAsgnMaxScore(total);
+                                }}
+                                className="w-16 text-xs p-1 text-center bg-background border border-input rounded-lg font-bold"
+                              />
+                              {multiQuestions.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = multiQuestions.filter((_, i) => i !== idx);
+                                    setMultiQuestions(updated);
+                                    const total = updated.reduce((acc, cur) => acc + cur.points, 0);
+                                    setAsgnMaxScore(total);
+                                  }}
+                                  className="text-destructive hover:text-destructive/80 text-xs px-1 font-bold"
+                                  title="Remove question"
+                                >
+                                  ×
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <textarea
+                            rows={2}
+                            required
+                            placeholder={`Type Question ${idx + 1} prompt here...`}
+                            value={q.text}
+                            onChange={(e) => {
+                              const updated = [...multiQuestions];
+                              updated[idx].text = e.target.value;
+                              setMultiQuestions(updated);
+                            }}
+                            className="w-full text-xs p-2 bg-background text-foreground border border-input rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newQ = { id: String(Date.now()), text: '', points: 5 };
+                        const updated = [...multiQuestions, newQ];
+                        setMultiQuestions(updated);
+                        const total = updated.reduce((acc, cur) => acc + cur.points, 0);
+                        setAsgnMaxScore(total);
+                      }}
+                      className="w-full py-2 bg-muted hover:bg-muted/80 text-foreground border border-dashed border-border rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5 text-primary" />
+                      Add Another Question (Question {multiQuestions.length + 1})
+                    </button>
+                  </div>
+                )}
               </div>
 
               <button
