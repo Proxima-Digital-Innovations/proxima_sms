@@ -940,11 +940,7 @@ export default function LecturerStudioPage() {
 
                   {allSubmissions.length === 0 && (
                     <tr>
-<<<<<<< HEAD
-                      <td colSpan={7} className="text-center py-8 text-gray-400 italic">
-=======
-                      <td colSpan={6} className="text-center py-8 text-muted-foreground italic">
->>>>>>> daa3a42cf05677c37a212319dbee6b6d3b874018
+                      <td colSpan={7} className="text-center py-8 text-muted-foreground italic">
                         No submissions received yet for your assignments.
                       </td>
                     </tr>

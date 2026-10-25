@@ -655,24 +655,18 @@ export default function StudentHubPage() {
                       </div>
                     </div>
 
-<<<<<<< HEAD
                     <div
                       onCopy={handlePreventQuestionCopy}
                       onContextMenu={handlePreventQuestionCopy}
                       className="select-none relative group mb-4"
                     >
-                      <div className="absolute top-2 right-2 flex items-center gap-1 text-[10px] font-mono font-bold text-gray-400 bg-white/90 backdrop-blur px-2 py-0.5 rounded-md border border-gray-200">
+                      <div className="absolute top-2 right-2 flex items-center gap-1 text-[10px] font-mono font-bold text-muted-foreground bg-background/90 backdrop-blur px-2 py-0.5 rounded-md border border-border">
                         <Lock className="w-2.5 h-2.5 text-amber-500" /> Protected Question
                       </div>
-                      <p className="text-sm text-gray-700 whitespace-pre-line bg-gray-50 p-4 rounded-xl border border-gray-100 select-none">
+                      <p className="text-sm text-foreground/90 whitespace-pre-line bg-muted/40 p-4 rounded-xl border border-border/60 select-none">
                         {embedWatermark(asgn.description, data?.student?.matricNumber)}
                       </p>
                     </div>
-=======
-                    <p className="text-sm text-foreground/90 whitespace-pre-line mb-4 bg-muted/40 p-4 rounded-xl border border-border/60">
-                      {asgn.description}
-                    </p>
->>>>>>> daa3a42cf05677c37a212319dbee6b6d3b874018
 
                     <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground pt-3 border-t border-border">
                       <div className="flex flex-wrap items-center gap-4">
@@ -804,11 +798,7 @@ export default function StudentHubPage() {
               <UploadCloud className="w-6 h-6 text-primary" />
               Submit Assignment Solution Online
             </h3>
-<<<<<<< HEAD
-            <p className="text-xs text-gray-500 mb-4">
-=======
-            <p className="text-xs text-muted-foreground mb-6">
->>>>>>> daa3a42cf05677c37a212319dbee6b6d3b874018
+            <p className="text-xs text-muted-foreground mb-4">
               Enter your written solution, GitHub repo URL, or upload your assignment document (.zip, .pdf, .docx).
             </p>
 
@@ -862,16 +852,10 @@ export default function StudentHubPage() {
                 <textarea
                   value={submissionText}
                   onChange={(e) => setSubmissionText(e.target.value)}
-<<<<<<< HEAD
                   onPaste={handleTextareaPaste}
                   rows={5}
                   placeholder="Type your solution, code, GitHub repo URL, or executive summary here..."
-                  className="w-full text-xs p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono"
-=======
-                  rows={4}
-                  placeholder="Paste your source code, GitHub repo URL, or executive summary here..."
                   className="w-full text-xs p-3 bg-background border border-input rounded-xl focus:ring-2 focus:ring-primary focus:outline-none font-mono text-foreground"
->>>>>>> daa3a42cf05677c37a212319dbee6b6d3b874018
                 ></textarea>
               </div>
 
