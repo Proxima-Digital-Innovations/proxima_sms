@@ -14,7 +14,6 @@ import {
   Lock,
   UserCheck,
   Fingerprint,
-  Sparkles,
   ArrowRight,
   ChevronDown,
   ChevronUp,
@@ -276,7 +275,7 @@ export function LoginForm({ schoolSlug }: { schoolSlug?: string }) {
               onClick={() => setShowDemoDrawer(!showDemoDrawer)}
               className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
             >
-              <Sparkles className="w-3 h-3 text-indigo-400" />
+              <UserCheck className="w-3 h-3 text-indigo-400" />
               <span>Demo Accounts</span>
               {showDemoDrawer ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
             </button>

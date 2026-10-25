@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getFinancialReportData } from '@/actions/finance-actions';
 import { getSystemSettings } from '@/actions/system-actions';
 import type { Payment, Expense } from '@/lib/schema';
-import { ArrowDown, ArrowUp, BarChart, FileText, Loader2, Minus, Plus, Printer, Sparkles, School } from 'lucide-react';
+import { ArrowDown, ArrowUp, BarChart, FileText, Loader2, Minus, Plus, Printer, Bot, School } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
@@ -207,7 +207,7 @@ export function FinancialReportGenerator() {
                                 </div>
                                 <div className="print:hidden">
                                      <Button onClick={handleGenerateAiSummary} disabled={isGeneratingAiSummary} variant="outline" size="sm">
-                                        {isGeneratingAiSummary ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                                        {isGeneratingAiSummary ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
                                         AI Summary
                                      </Button>
                                 </div>
@@ -215,7 +215,7 @@ export function FinancialReportGenerator() {
                             <CardContent className="space-y-4">
                                 {aiSummary && (
                                   <Alert>
-                                    <Sparkles className="h-4 w-4" />
+                                    <Bot className="h-4 w-4" />
                                     <AlertTitle>AI-Powered Summary</AlertTitle>
                                     <AlertDescription>{aiSummary}</AlertDescription>
                                   </Alert>

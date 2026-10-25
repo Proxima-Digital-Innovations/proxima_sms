@@ -17,8 +17,7 @@ import {
   Key, 
   LogOut, 
   Search, 
-  Layers, 
-  Sparkles,
+  Layers,
   Phone,
   Mail,
   ShieldAlert

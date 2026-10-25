@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Check, Sparkles } from 'lucide-react';
+import { Check, UserCheck } from 'lucide-react';
 import { getDemoPersonas, DemoPersona } from '@/actions/demo-auth-actions';
 import { useRole } from '@/context/role-context';
 import { useRouter } from 'next/navigation';
@@ -46,7 +46,7 @@ export function DemoRoleSwitcher() {
           className="h-9 px-2 sm:px-2.5 gap-1.5 border-dashed border-primary/40 bg-primary/5 hover:bg-primary/10 text-xs font-medium shrink-0"
           title={`Switch Role (${currentPersona.label})`}
         >
-          <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
+          <UserCheck className="h-3.5 w-3.5 text-primary shrink-0" />
           <span className="hidden lg:inline">Role Sandbox:</span>
           <span className="hidden sm:inline font-bold text-primary max-w-[100px] truncate">{currentPersona.label}</span>
         </Button>

@@ -44,7 +44,6 @@ import {
   RefreshCw,
   Ban,
   DollarSign,
-  Sparkles,
   Layers,
   ArrowUpDown,
   Check,

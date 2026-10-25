@@ -18,7 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { saveAnnouncement } from '@/actions/announcement-actions';
 import { useState, useTransition } from 'react';
-import { Loader2, Send, Sparkles, Mail } from 'lucide-react';
+import { Loader2, Send, Bot, Mail } from 'lucide-react';
 import { useRole } from '@/context/role-context';
 import type { Announcement } from '@/lib/schema';
 import { aiEngine } from '@/ai';
@@ -168,7 +168,7 @@ export function AnnouncementForm({ initialData, onFormSubmit }: AnnouncementForm
             </div>
             {aiError && <p className="text-xs text-destructive">{aiError}</p>}
             <Button type="button" onClick={handleGenerateContent} disabled={isAiGenerating} variant="outline" size="sm">
-                {isAiGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                {isAiGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
                 Generate Content
             </Button>
         </div>

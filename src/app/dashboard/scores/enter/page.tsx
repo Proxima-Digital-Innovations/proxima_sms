@@ -25,7 +25,6 @@ import {
   Clock,
   AlertTriangle,
   RotateCcw,
-  Sparkles,
   Lock,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -606,7 +605,7 @@ export default function BasicScoreEntryPage() {
                 </div>
                 {dirty.size > 0 && (
                   <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-xs w-fit">
-                    <Sparkles className="w-3 h-3 mr-1" /> {dirty.size} unsaved mark(s)
+                    <AlertCircle className="w-3 h-3 mr-1" /> {dirty.size} unsaved mark(s)
                   </Badge>
                 )}
               </CardHeader>

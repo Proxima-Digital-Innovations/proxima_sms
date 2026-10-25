@@ -1,7 +1,7 @@
 
 'use client';
 
-import { BarChart, BookCopy, FileQuestion, Users, Sparkles, Loader2, AlertTriangle } from 'lucide-react';
+import { BarChart, BookCopy, FileQuestion, Users, Bot, Loader2, AlertTriangle } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -171,11 +171,11 @@ export default function HodAnalyticsPage() {
           <CardHeader>
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                   <div>
-                      <CardTitle className="flex items-center gap-2"><Sparkles className="text-accent" /> AI-Powered Analysis</CardTitle>
+                      <CardTitle className="flex items-center gap-2"><Bot className="text-accent" /> AI-Powered Analysis</CardTitle>
                       <CardDescription>Get a quick narrative summary of your department's performance.</CardDescription>
                   </div>
                    <Button onClick={handleGenerateAnalysis} disabled={isGenerating || isLoading}>
-                        {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                        {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
                        Generate Analysis
                   </Button>
               </div>
@@ -183,7 +183,7 @@ export default function HodAnalyticsPage() {
            {aiNarrative && (
             <CardContent>
               <Alert>
-                <Sparkles className="h-4 w-4" />
+                <Bot className="h-4 w-4" />
                 <AlertTitle>AI Narrative</AlertTitle>
                 <AlertDescription>{aiNarrative}</AlertDescription>
               </Alert>

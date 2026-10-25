@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { getAcademicData } from '@/actions/academic-data';
 import { getMidtermResults, saveMidtermResults, calculateMidtermAchievement } from '@/actions/midterm-actions';
-import { Save, Loader2, Users, Printer, BookOpen, AlertCircle, Sparkles, Search, CheckCircle2 } from 'lucide-react';
+import { Save, Loader2, Users, Printer, BookOpen, AlertCircle, Search, CheckCircle2 } from 'lucide-react';
 import { useRole } from '@/context/role-context';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -463,7 +463,7 @@ export default function MidTermPage() {
                   </div>
                   {dirty.size > 0 && (
                     <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-xs w-fit">
-                      <Sparkles className="w-3 h-3 mr-1" /> {dirty.size} unsaved mark(s)
+                      <AlertCircle className="w-3 h-3 mr-1" /> {dirty.size} unsaved mark(s)
                     </Badge>
                   )}
                 </div>

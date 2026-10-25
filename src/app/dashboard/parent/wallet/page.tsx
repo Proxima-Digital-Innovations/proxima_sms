@@ -15,7 +15,6 @@ import {
   RefreshCw, 
   CheckCircle2, 
   AlertCircle, 
-  Sparkles,
   ChevronRight,
   Receipt,
   GraduationCap
@@ -311,7 +310,7 @@ export default function ParentWalletPage() {
             </div>
 
             <div className="text-[11px] text-muted-foreground leading-relaxed flex items-center gap-2">
-              <Sparkles className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" />
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
               Supported: GTBank, Zenith, Kuda, OPay, PalmPay, FirstBank, Access & all NIBSS apps.
             </div>
 

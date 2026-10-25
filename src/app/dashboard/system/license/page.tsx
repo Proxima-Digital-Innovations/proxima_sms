@@ -16,7 +16,7 @@ import {
   RefreshCcw, 
   Users, 
   Calendar, 
-  Sparkles, 
+  Tag, 
   AlertTriangle, 
   Clock, 
   Building2,
@@ -163,7 +163,7 @@ export default function LicenseManagementPage() {
             {isActivatingEnterprise ? (
               <RefreshCcw className="w-3.5 h-3.5 mr-1.5 animate-spin" />
             ) : (
-              <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+              <Key className="w-3.5 h-3.5 mr-1.5" />
             )}
             Re-Issue Enterprise Key
           </Button>
@@ -443,7 +443,7 @@ export default function LicenseManagementPage() {
                       <div className="flex justify-between items-center py-2.5">
                         <span className="text-muted-foreground font-medium">Prepayment Discount</span>
                         <span className="font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md text-xs flex items-center gap-1">
-                          <Sparkles className="w-3 h-3" /> {details.discountPercent}% Upfront Incentive
+                          <Tag className="w-3 h-3" /> {details.discountPercent}% Upfront Incentive
                         </span>
                       </div>
                     )}
@@ -541,7 +541,7 @@ export default function LicenseManagementPage() {
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+                    <Key className="w-3.5 h-3.5 mr-1.5" />
                     Generate & Apply 1-Year Enterprise Key
                   </>
                 )}

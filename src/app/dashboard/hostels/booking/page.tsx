@@ -8,7 +8,6 @@ import {
   Bed, 
   ArrowLeft, 
   CheckCircle2, 
-  Sparkles, 
   AlertCircle, 
   CreditCard, 
   ShieldCheck, 

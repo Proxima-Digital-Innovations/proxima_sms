@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getCurrentStudentContextAction } from '@/actions/tims-actions';
-import { TrendingUp, Sparkles } from 'lucide-react';
+import { TrendingUp, Target } from 'lucide-react';
 
 interface ForecastCourse {
   code: string;
@@ -233,7 +233,7 @@ export default function CgpaForecasterPage() {
         <Card className="border shadow-md h-fit">
           <CardHeader className="border-b bg-slate-900 text-white rounded-t-xl pb-4">
             <CardTitle className="text-base font-bold flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-amber-400" /> Strategic Grade Roadmap
+              <Target className="h-4 w-4 text-amber-400" /> Strategic Grade Roadmap
             </CardTitle>
             <CardDescription className="text-slate-300 text-xs">
               Automated mathematical threshold analysis.

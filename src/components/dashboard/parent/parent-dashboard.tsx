@@ -23,7 +23,6 @@ import {
   ChevronRight,
   ExternalLink,
   RefreshCw,
-  Sparkles,
   Lock,
   UserPlus,
   Award,

@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, Sparkles, AlertCircle } from 'lucide-react';
+import { Loader2, Save, Bot, AlertCircle } from 'lucide-react';
 import { getSystemSettings, updateAiConfig } from '@/actions/system-actions';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -100,7 +100,7 @@ export default function AISettingsPage() {
     <div className="space-y-8">
       <div>
         <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
-          <Sparkles /> AI Engine Configuration
+          <Bot className="h-8 w-8 text-primary" /> AI Engine Configuration
         </h1>
         <p className="text-muted-foreground">
           Manage and configure the behavior of the AI agents used across the portal.

@@ -3,7 +3,7 @@
 import {
   Activity, BarChart2, Bell, Book, Building, Calendar, Wallet, LayoutDashboard, LogOut, MessageSquare, Server, Settings, Shield, User, Users,
   UsersRound, FileQuestion, BookCopy, Edit3, CheckSquare, Award, BookOpen, TrendingUp, Landmark, Briefcase, FileText, CreditCard,
-  Receipt, Ticket, Grid, BookMarked, Wrench, GraduationCap, Sparkles, UploadCloud, CalendarCheck, Heart, ClipboardCheck, BookText, Megaphone,
+  Receipt, Ticket, Grid, BookMarked, Wrench, GraduationCap, Bot, UploadCloud, CalendarCheck, Heart, ClipboardCheck, BookText, Megaphone,
   QrCode, FileSpreadsheet, ArrowLeftRight, Fingerprint, UserCheck, Presentation, FileEdit, HelpCircle
 } from 'lucide-react';
 import type { ElementType } from 'react';
@@ -11,7 +11,7 @@ import type { ElementType } from 'react';
 export const iconMap: { [key: string]: ElementType } = {
   LayoutDashboard, User, Users, UsersRound, Building, Server, Activity, Book, FileText, BarChart2, BookOpen, Edit3, Wallet, Calendar, Bell, MessageSquare,
   FileQuestion, BookCopy, CheckSquare, Award, Shield, Settings, LogOut, TrendingUp, Landmark, Briefcase, Receipt, CreditCard, Ticket, Grid,
-  BookMarked, Wrench, GraduationCap, Sparkles, UploadCloud, CalendarCheck, Heart, ClipboardCheck, BookText, Megaphone, QrCode, FileSpreadsheet,
+  BookMarked, Wrench, GraduationCap, Bot, UploadCloud, CalendarCheck, Heart, ClipboardCheck, BookText, Megaphone, QrCode, FileSpreadsheet,
   ArrowLeftRight, Fingerprint, UserCheck, Presentation, FileEdit, HelpCircle
 };
 
@@ -84,7 +84,7 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
   studentQuizzes: { icon: 'HelpCircle', label: 'Quizzes', path: '/student/lms/quizzes', requiredModule: 'CBT' },
   classesAndSubjects: { icon: 'BookMarked', label: 'Classes & Subjects', path: '/dashboard/system/classes-subjects', requiredModule: 'SECONDARY_SCHOOL' },
   gradingSystem: { icon: 'GraduationCap', label: 'Grading System', path: '/dashboard/system/grading', requiredModule: 'SECONDARY_SCHOOL' },
-  aiSettings: { icon: 'Sparkles', label: 'AI Settings', path: '/dashboard/system/ai-settings' },
+  aiSettings: { icon: 'Bot', label: 'AI Settings', path: '/dashboard/system/ai-settings' },
   idCards: { icon: 'CreditCard', label: 'ID Card Studio (PVC)', path: '/dashboard/system/id-cards' },
 
   // --- TERTIARY INSTITUTION MANAGEMENT SYSTEM (TIMS) ---

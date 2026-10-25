@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useToast } from '@/hooks/use-toast';
 import { getSenateBroadsheetData } from '@/actions/tims-actions';
 import { generateSenateExecutiveInsights, draftProbationLetter } from '@/ai/agents/tims/senate-advisor';
-import { Landmark, Sparkles, AlertTriangle, ShieldCheck, FileText, Download, Award, Loader2, Printer } from 'lucide-react';
+import { Landmark, Bot, AlertTriangle, ShieldCheck, FileText, Download, Award, Loader2, Printer } from 'lucide-react';
 
 export default function SenateBroadsheetPage() {
   const [session, setSession] = useState('2025/2026');
@@ -188,7 +188,7 @@ export default function SenateBroadsheetPage() {
             disabled={isAiGenerating}
             className="rounded-xl shadow-sm bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white"
           >
-            {isAiGenerating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+            {isAiGenerating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Bot className="h-4 w-4 mr-2" />}
             AI Senate Executive Summary
           </Button>
         </div>
@@ -199,7 +199,7 @@ export default function SenateBroadsheetPage() {
         <Card className="border border-violet-500/30 bg-violet-500/5 rounded-2xl shadow-sm p-6 relative">
           <div className="flex items-start gap-4">
             <div className="p-2.5 rounded-xl bg-violet-600 text-white shrink-0 mt-1">
-              <Sparkles className="h-5 w-5" />
+              <Bot className="h-5 w-5" />
             </div>
             <div className="space-y-2 flex-1">
               <div className="flex items-center justify-between">

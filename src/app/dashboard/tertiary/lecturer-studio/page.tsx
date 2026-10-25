@@ -22,7 +22,6 @@ import {
   Download,
   Send,
   PlusCircle,
-  Sparkles,
   Calendar,
   Layers,
   CheckSquare,

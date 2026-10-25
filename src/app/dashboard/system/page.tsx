@@ -2,7 +2,7 @@
 'use client';
 
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, Calendar, Wallet, GraduationCap, School, ShieldCheck, BookMarked, Wrench, Sparkles, MailCheck } from "lucide-react";
+import { ArrowRight, Calendar, Wallet, GraduationCap, School, ShieldCheck, BookMarked, Wrench, Bot, MailCheck } from "lucide-react";
 import Link from "next/link";
 
 
@@ -34,7 +34,7 @@ const settingsCards = [
     {
         title: 'AI Engine',
         description: 'Configure AI agents, safety settings, and other smart features.',
-        icon: Sparkles,
+        icon: Bot,
         href: '/dashboard/system/ai-settings'
     },
     {

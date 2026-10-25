@@ -16,10 +16,8 @@ import {
   Users,
   Heart,
   BookOpen,
-  Sparkles,
   CheckCircle2,
   AlertCircle,
-  Wand2,
   Search,
   MessageSquare,
 } from 'lucide-react';
@@ -281,7 +279,7 @@ export default function BehaviouralPage() {
                 onClick={handleSetAllDefault}
                 className="rounded-xl border-border"
               >
-                <Wand2 className="h-4 w-4 mr-2" /> Fill All Good (3)
+                <CheckCircle2 className="h-4 w-4 mr-2" /> Fill All Good (3)
               </Button>
 
               <Button
@@ -371,7 +369,7 @@ export default function BehaviouralPage() {
             </div>
             {dirty.size > 0 && (
               <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-xs">
-                <Sparkles className="w-3 h-3 mr-1" /> {dirty.size} unsaved
+                <AlertCircle className="w-3 h-3 mr-1" /> {dirty.size} unsaved
               </Badge>
             )}
           </div>

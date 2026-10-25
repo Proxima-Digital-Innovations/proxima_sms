@@ -41,7 +41,6 @@ import {
   User,
   ArrowRight,
   Printer,
-  Sparkles,
   AlertCircle,
   BookOpen,
   CreditCard,
@@ -402,7 +401,7 @@ export default function AnnouncementsPage() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 flex-wrap">
                     <Badge className="bg-primary text-primary-foreground text-xs font-semibold px-2.5 py-0.5 gap-1.5 inline-flex items-center">
-                      <Sparkles className="w-3.5 h-3.5" />
+                      <Megaphone className="w-3.5 h-3.5" />
                       Featured Circular
                     </Badge>
                     {(() => {

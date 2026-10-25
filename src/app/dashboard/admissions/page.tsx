@@ -7,7 +7,6 @@ import {
   Users,
   ShieldCheck,
   Award,
-  Sparkles,
   Search,
   Filter,
   CheckCircle2,
@@ -379,7 +378,7 @@ export default function AdmissionsDashboardPage() {
           <div className="w-full sm:w-auto overflow-x-auto scrollbar-none">
             <TabsList className="bg-background/80 border border-border/60 inline-flex w-max">
             <TabsTrigger value="quota-engine" className="text-xs font-bold gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+              <GraduationCap className="w-3.5 h-3.5 text-indigo-400" />
               <span>Quota &amp; Ranking Engine</span>
             </TabsTrigger>
             <TabsTrigger value="scoring-desk" className="text-xs font-bold gap-1.5">

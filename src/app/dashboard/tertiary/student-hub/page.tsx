@@ -20,12 +20,13 @@ import {
   Pause,
   Download,
   RotateCcw,
-  Sparkles,
   Send,
   CreditCard,
   Building,
   GraduationCap,
   ShieldCheck,
+  ShieldAlert,
+  Lock,
   ExternalLink,
   Volume2
 } from 'lucide-react';

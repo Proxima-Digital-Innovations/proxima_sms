@@ -24,7 +24,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { saveExpense } from '@/actions/expense-actions';
 import { useState, useTransition } from 'react';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Bot } from 'lucide-react';
 import type { Expense } from '@/lib/schema';
 import { DatePicker } from '@/components/ui/date-picker';
 import { useAcademicData } from '@/hooks/use-academic-data';
@@ -165,7 +165,7 @@ export function ExpenseForm({ initialData, onFormSubmit }: ExpenseFormProps) {
                         <Input placeholder="e.g., Monthly electricity bill" {...field} />
                     </FormControl>
                     <Button type="button" variant="outline" size="icon" onClick={handleAiCategorize} disabled={isAiCategorizing || !descriptionValue}>
-                         {isAiCategorizing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                         {isAiCategorizing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}
                     </Button>
                 </div>
                  <p className="text-xs text-muted-foreground">Enter a description and click the AI suggestion button to categorize automatically.</p>

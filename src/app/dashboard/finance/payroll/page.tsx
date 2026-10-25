@@ -23,7 +23,6 @@ import {
   FileText,
   Printer,
   DollarSign,
-  Sparkles,
   Briefcase,
   AlertCircle,
   Download,
@@ -1034,7 +1033,7 @@ export default function PayrollPage() {
                 disabled={seeding}
                 className="gap-1.5 text-xs h-9 shadow-sm"
               >
-                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                <DollarSign className="h-3.5 w-3.5 text-primary" />
                 {seeding ? "Configuring..." : "Seed Default Salaries"}
               </Button>
             </div>

@@ -16,7 +16,7 @@ import {
   issueDegreeCertificateAction,
 } from '@/actions/graduation-clearance-actions';
 import { getCurrentStudentContextAction } from '@/actions/tims-actions';
-import { CheckCircle2, XCircle, Award, ShieldCheck, QrCode, Loader2, Sparkles } from 'lucide-react';
+import { CheckCircle2, XCircle, Award, ShieldCheck, QrCode, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function GraduationClearancePage() {
@@ -141,7 +141,7 @@ export default function GraduationClearancePage() {
             </Select>
           )}
           <Button onClick={handleInitiateStudentClearance} disabled={isPending} className="flex items-center gap-2 rounded-xl">
-            <Sparkles className="h-4 w-4" /> Initialize Candidate Clearance
+            <ShieldCheck className="h-4 w-4" /> Initialize Candidate Clearance
           </Button>
         </div>
       </div>

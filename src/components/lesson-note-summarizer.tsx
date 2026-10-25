@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { FileText, Bot, Loader2 } from 'lucide-react';
 import { aiEngine } from '@/ai';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
@@ -39,7 +39,7 @@ export function LessonNoteSummarizer({ lessonNotes, subject, className }: { less
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-accent" />
+          <FileText className="h-5 w-5 text-accent" />
           <span>AI Summary</span>
         </CardTitle>
         <CardDescription>
@@ -63,7 +63,7 @@ export function LessonNoteSummarizer({ lessonNotes, subject, className }: { less
             </>
           ) : (
             <>
-              <Sparkles className="mr-2 h-4 w-4" /> Generate Summary
+              <Bot className="mr-2 h-4 w-4" /> Generate Summary
             </>
           )}
         </Button>

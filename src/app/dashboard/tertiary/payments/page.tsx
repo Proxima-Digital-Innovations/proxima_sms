@@ -30,7 +30,7 @@ import {
   AlertTriangle, 
   ShieldCheck, 
   Loader2, 
-  Sparkles, 
+  Receipt, 
   Building2, 
   Landmark, 
   QrCode, 
@@ -308,7 +308,7 @@ export default function TertiaryPaymentsPage() {
             </Button>
           )}
           <Button onClick={handleGenerateInvoice} disabled={isPending} className="flex items-center gap-2 rounded-xl text-xs h-9 shadow-sm">
-            <Sparkles className="h-4 w-4" /> Generate Semester Invoice
+            <Receipt className="h-4 w-4" /> Generate Semester Invoice
           </Button>
         </div>
       </div>

@@ -6,7 +6,6 @@ import {
   Printer,
   Download,
   RotateCw,
-  Sparkles,
   ShieldCheck,
   User,
   GraduationCap,
@@ -376,7 +375,7 @@ export default function IdCardGeneratorPage() {
             {/* Live Customizer Fields */}
             <div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-4">
               <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-indigo-600" />
+                <Layers className="w-4 h-4 text-indigo-600" />
                 Visual Customization &amp; Overrides
               </h3>
 

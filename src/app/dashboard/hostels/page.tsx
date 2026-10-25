@@ -9,7 +9,6 @@ import {
   DoorClosed, 
   Users, 
   PlusCircle, 
-  Sparkles, 
   CheckCircle2, 
   AlertCircle, 
   ArrowRight, 

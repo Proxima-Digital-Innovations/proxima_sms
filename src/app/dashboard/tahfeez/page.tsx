@@ -26,7 +26,6 @@ import {
   Save,
   Loader2,
   AlertCircle,
-  Sparkles,
   SlidersHorizontal,
   Search,
   CheckCircle2,

@@ -30,7 +30,6 @@ import {
   AlertCircle, 
   Globe, 
   GraduationCap, 
-  Sparkles, 
   Tag, 
   Search, 
   Receipt, 
@@ -118,7 +117,7 @@ const SCOPE_CONFIG = [
     value: "CUSTOM" as const,
     label: "Custom Scope",
     tagline: "Arbitrary Grouping",
-    icon: Sparkles,
+    icon: Tag,
     description: "Specialized cohorts, scholarship tiers, or temporary institutional levies.",
     defaultName: "Custom Activity Levy",
     defaultTarget: ""

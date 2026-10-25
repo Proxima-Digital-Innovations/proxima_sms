@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Bot } from 'lucide-react';
 import { aiEngine } from '@/ai';
 import { useToast } from '@/hooks/use-toast';
 import { useRole } from '@/context/role-context';
@@ -155,7 +155,7 @@ export function ReportCardTemplate({ reportCard, schoolInfo }: ReportCardTemplat
                              <h4 className="font-semibold">Teacher's Comment:</h4>
                              {canEdit && (
                                 <Button onClick={handleGenerateComment} disabled={isGeneratingComment} size="sm" variant="outline" className="text-black print:hidden">
-                                     {isGeneratingComment ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                                     {isGeneratingComment ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
                                     Generate with AI
                                 </Button>
                              )}

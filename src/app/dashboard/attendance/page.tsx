@@ -15,7 +15,6 @@ import {
   Save, 
   Users, 
   AlertCircle,
-  Sparkles,
   ChevronRight
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';

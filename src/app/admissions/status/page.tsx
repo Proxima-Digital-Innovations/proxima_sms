@@ -13,7 +13,6 @@ import {
   Download,
   Printer,
   ArrowRight,
-  Sparkles,
   Lock,
   Loader2,
   Building,

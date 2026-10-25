@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Save, Plus, Trash2, Globe, Sparkles, RotateCcw } from 'lucide-react';
+import { Save, Plus, Trash2, Globe, RotateCcw } from 'lucide-react';
 import { getSystemSettings, updateGradingScale } from '@/actions/system-actions';
 
 type Grade = {

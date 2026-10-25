@@ -58,7 +58,6 @@ import {
   Check,
   HelpCircle,
   User,
-  Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';

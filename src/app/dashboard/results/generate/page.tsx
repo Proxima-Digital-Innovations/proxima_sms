@@ -42,7 +42,6 @@ import {
   Users,
   ShieldCheck,
   RotateCcw,
-  Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
 import {

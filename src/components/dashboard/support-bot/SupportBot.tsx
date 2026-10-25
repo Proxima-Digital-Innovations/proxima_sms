@@ -3,7 +3,7 @@
 import { useState, useTransition, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { MessageSquare, Send, Sparkles, User, X, Bot } from 'lucide-react';
+import { MessageSquare, Send, User, X, Bot } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
@@ -109,7 +109,7 @@ export function SupportBot() {
         <Card className="w-full sm:w-96 max-h-[65dvh] h-[460px] flex flex-col shadow-2xl">
           <CardHeader className="border-b p-4">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Sparkles className="text-primary h-4 w-4" />
+              <Bot className="text-primary h-4 w-4" />
               SCHOOL Support Bot
             </CardTitle>
              <CardDescription className="text-xs">

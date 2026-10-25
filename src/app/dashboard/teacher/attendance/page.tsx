@@ -40,7 +40,7 @@ import {
   Save,
   ArrowLeft,
   GraduationCap,
-  Sparkles,
+  CalendarCheck,
   RefreshCw,
   Loader2,
   Fingerprint,
@@ -478,7 +478,7 @@ export default function TeacherAttendancePage() {
                 <p className="text-xs font-medium text-violet-600">Turnout Rate</p>
                 <p className="text-2xl font-bold tracking-tight text-violet-600 mt-0.5">{stats.rate}%</p>
               </div>
-              <Sparkles className="h-6 w-6 text-violet-500/40" />
+              <CalendarCheck className="h-6 w-6 text-violet-500/40" />
             </CardContent>
           </Card>
         </div>

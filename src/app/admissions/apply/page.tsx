@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import {
   GraduationCap,
   ShieldCheck,
-  Sparkles,
   ArrowRight,
   ArrowLeft,
   CheckCircle2,
@@ -353,7 +352,7 @@ export default function PublicAdmissionApplyPage() {
         <div className="p-5 rounded-2xl bg-gradient-to-r from-indigo-950/60 via-slate-900/80 to-slate-900 border border-indigo-500/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-indigo-400" />
+              <GraduationCap className="w-4 h-4 text-indigo-400" />
               <h2 className="text-base font-extrabold text-white">Post-UTME &amp; JAMB Screening Application</h2>
             </div>
             <p className="text-xs text-slate-300">
@@ -1071,7 +1070,7 @@ export default function PublicAdmissionApplyPage() {
               <div className="p-5 rounded-2xl bg-gradient-to-br from-indigo-950/60 via-slate-900/90 to-slate-900 border border-indigo-500/40 space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-indigo-400" />
+                    <Award className="w-4 h-4 text-indigo-400" />
                     <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-300">
                       Calculated Composite Aggregate Score
                     </h4>
