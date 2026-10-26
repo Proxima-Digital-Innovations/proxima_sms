@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -13,7 +14,7 @@ import {
 } from '@/components/ui/card';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ShieldAlert, GraduationCap, ArrowLeft } from 'lucide-react';
+import Image from 'next/image';
 import { useRole } from '@/context/role-context';
 
 export default function AdminLoginPage() {
@@ -21,7 +22,7 @@ export default function AdminLoginPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect if user is already authenticated
+    // Redirect if a user is already logged in (even non-admins)
     if (!isLoading && role) {
       router.push('/dashboard');
     }
@@ -29,53 +30,56 @@ export default function AdminLoginPage() {
 
   if (isLoading || role) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
+        {/* You can add a loader here if you want */}
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-muted/30 p-4">
-      <div className="w-full max-w-sm space-y-4">
-        
-        <div className="text-center space-y-1 mb-2">
-          <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 text-primary mx-auto flex items-center justify-center shadow-xs">
-            <GraduationCap className="w-6 h-6" />
-          </div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground">
-            Administrative Portal
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            Sign in with your verified administrator credentials
-          </p>
-        </div>
-
-        <Card className="shadow-sm border border-border">
-          <CardHeader className="pb-4 pt-5 px-6">
-            <CardTitle className="text-base font-semibold">
-              Administrator Login
+    <div className="relative min-h-screen">
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: "url('/school-background.jpg')" }}
+      ></div>
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/20 backdrop-blur-sm"></div>
+      <main className="relative z-10 flex min-h-screen flex-col items-center justify-center bg-transparent p-4 font-body">
+        <Card className="w-full max-w-sm shadow-2xl">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4">
+              <Image
+                src="/school-logo.png"
+                alt="School OS Logo"
+                width={250}
+                height={60}
+              />
+            </div>
+            <CardTitle className="font-headline text-3xl text-primary">
+              Admin Portal
             </CardTitle>
-            <CardDescription className="text-xs">
-              Direct access for authorized executive and ICT staff.
+            <CardDescription>
+              Please enter your administrator credentials.
             </CardDescription>
           </CardHeader>
-          <CardContent className="px-6 pb-6">
+          <CardContent>
             <AdminLoginForm />
           </CardContent>
+          <CardFooter className="flex-col gap-4">
+            <Button variant="link" asChild className="p-0 text-sm">
+              <Link href="/forgot-password">Forgot Password?</Link>
+            </Button>
+          </CardFooter>
         </Card>
-
-        <div className="text-center pt-2">
-          <Link
-            href="/login"
-            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground font-medium transition-colors"
+        <div className="mt-4 text-center">
+          <Button
+            variant="link"
+            asChild
+            className="text-xs text-foreground hover:text-slate-100"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Return to Unified Portal Login</span>
-          </Link>
+            <Link href="/">Return to Staff Login</Link>
+          </Button>
         </div>
-
-      </div>
+      </main>
     </div>
   );
 }

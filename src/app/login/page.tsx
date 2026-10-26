@@ -8,16 +8,16 @@ export default async function LoginPage() {
   // Fetch system details server-side (Single Tenant) with safe fallback
   const school = await prisma.systemProfile.findFirst().catch(() => null);
 
-  const schoolName = school?.name || 'School Management Portal';
+  const schoolName = school?.name || 'Proxima SMS';
   const logo = school?.logoUrl || undefined;
 
   return (
     <LoginLayout
       schoolName={schoolName}
       logo={logo}
-      tagline="Academic & Administrative Portal"
+      tagline="Academic Portal"
     >
-      <Suspense fallback={<div className="flex justify-center p-8"><Loader2 className="animate-spin text-primary" /></div>}>
+      <Suspense fallback={<div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div>}>
         <LoginForm />
       </Suspense>
     </LoginLayout>
