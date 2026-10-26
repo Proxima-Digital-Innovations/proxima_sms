@@ -507,15 +507,24 @@ export default function LecturerStudioPage() {
             {/* Quick Launch Live Virtual Class Button */}
             <button
               onClick={() => setActiveTab('virtual-class')}
-              className="px-5 py-3 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white rounded-2xl text-xs font-black shadow-xl shadow-rose-950/50 border border-rose-400/40 transition-all flex items-center justify-center gap-2 group active:scale-95 shrink-0"
+              className="px-4 py-3 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white rounded-2xl text-xs font-black shadow-xl shadow-rose-950/50 border border-rose-400/40 transition-all flex items-center justify-center gap-2 group active:scale-95 shrink-0"
             >
               <span className="flex h-2.5 w-2.5 relative">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
               </span>
               <Radio className="w-4 h-4 text-white animate-pulse" />
-              <span>Launch Live Virtual Class</span>
+              <span>Live Virtual Class</span>
             </button>
+
+            {/* Quick Attendance Button */}
+            <a
+              href="/dashboard/teacher/attendance?mode=tertiary"
+              className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-2xl text-xs font-bold border border-white/10 transition-all flex items-center justify-center gap-2 active:scale-95 shrink-0"
+            >
+              <CalendarCheck className="w-4 h-4 text-emerald-400" />
+              <span>Take Attendance</span>
+            </a>
 
             {/* Quick Demo Switcher */}
             <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/10">
@@ -1656,9 +1665,18 @@ export default function LecturerStudioPage() {
                       </span>
                       <h4 className="font-bold text-foreground text-sm mt-1">{c.courseTitle}</h4>
                     </div>
-                    <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full">
-                      {c.enrolledCount} Enrolled
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+                        {c.enrolledCount} Enrolled
+                      </span>
+                      <a
+                        href={`/dashboard/teacher/attendance?offeringId=${c.offeringId}&mode=tertiary`}
+                        className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow-sm transition-all"
+                      >
+                        <CalendarCheck className="w-3.5 h-3.5" />
+                        Take Roll Call
+                      </a>
+                    </div>
                   </div>
 
                   <div className="max-h-60 overflow-y-auto space-y-2 mt-4 pr-1">

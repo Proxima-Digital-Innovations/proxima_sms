@@ -88,6 +88,7 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
   idCards: { icon: 'CreditCard', label: 'ID Card Studio (PVC)', path: '/dashboard/system/id-cards' },
 
   // --- TERTIARY INSTITUTION MANAGEMENT SYSTEM (TIMS) ---
+  tertiaryAttendance: { icon: 'CalendarCheck', label: 'Lecture Attendance', path: '/dashboard/teacher/attendance', requiredModule: 'TERTIARY_INSTITUTION' },
   tertiaryPrograms: { icon: 'GraduationCap', label: 'Degree Programs', path: '/dashboard/tertiary/programs', requiredModule: 'TERTIARY_INSTITUTION' },
   tertiaryCourses: { icon: 'BookMarked', label: 'Course Catalog', path: '/dashboard/tertiary/courses', requiredModule: 'TERTIARY_INSTITUTION' },
   tertiaryOfferings: { icon: 'Calendar', label: 'Course Offerings', path: '/dashboard/tertiary/offerings', requiredModule: 'TERTIARY_INSTITUTION' },
@@ -183,7 +184,7 @@ export const navConfig: Record<string, { group: string; links: (keyof typeof all
   LECTURER: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'announcements'] },
     { group: 'Communication', links: ['messaging'] },
-    { group: 'Tertiary Academics', links: ['tertiaryLecturerStudio', 'tertiaryOfferings', 'tertiaryCourses', 'tertiaryTimetable', 'tertiaryCbt', 'tertiaryExams', 'tertiarySenate', 'staffAttendance'] },
+    { group: 'Tertiary Academics', links: ['tertiaryLecturerStudio', 'tertiaryAttendance', 'tertiaryOfferings', 'tertiaryCourses', 'tertiaryTimetable', 'tertiaryCbt', 'tertiaryExams', 'tertiarySenate', 'staffAttendance'] },
     { group: 'e-Library', links: ['elibraryCatalog'] },
   ],
   TEACHER: [

@@ -102,9 +102,16 @@ export default function TeacherAttendancePage() {
           setTertiaryOfferings(res.tertiaryOfferings);
           setIsTertiaryFaculty(res.isTertiaryFaculty);
 
-          if (res.isTertiaryFaculty && res.tertiaryOfferings.length > 0) {
+          const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+          const paramOfferingId = urlParams?.get('offeringId');
+          const paramMode = urlParams?.get('mode');
+
+          if (paramMode === 'tertiary' || (res.isTertiaryFaculty && res.tertiaryOfferings.length > 0)) {
             setMode('tertiary');
-            setSelectedOfferingId(res.tertiaryOfferings[0].id);
+            const targetId = paramOfferingId && res.tertiaryOfferings.some(o => o.id === paramOfferingId)
+              ? paramOfferingId
+              : (res.tertiaryOfferings[0]?.id || paramOfferingId || '');
+            setSelectedOfferingId(targetId);
           } else if (res.classes.length > 0) {
             setMode('secondary');
             setSelectedClassId(res.classes[0].id);
