@@ -6,6 +6,7 @@ import type { NextRequest } from "next/server";
 const { auth } = NextAuth(authConfig);
 
 const PUBLIC_ROUTES = [
+  '/',
   '/login',
   '/api/auth',
   '/_next',
@@ -23,14 +24,16 @@ export default auth(async (req) => {
   const pathname = nextUrl.pathname;
 
   // 1. Skip public assets and internal next routes
-  if (PUBLIC_ROUTES.some(route => pathname.startsWith(route)) || pathname.includes('.')) {
+  if (pathname === '/' || PUBLIC_ROUTES.some(route => route !== '/' && pathname.startsWith(route)) || pathname.includes('.')) {
     return NextResponse.next();
   }
 
   // 2. Hub routes: require authentication
   if (pathname.startsWith('/hub')) {
     if (!isLoggedIn) {
-      return NextResponse.redirect(new URL('/login', req.url));
+      const loginUrl = nextUrl.clone();
+      loginUrl.pathname = '/login';
+      return NextResponse.redirect(loginUrl);
     }
     return NextResponse.next();
   }
@@ -41,8 +44,10 @@ export default auth(async (req) => {
     if (nextUrl.search) {
       callbackUrl += nextUrl.search;
     }
-    const encodedCallbackUrl = encodeURIComponent(callbackUrl);
-    return NextResponse.redirect(new URL(`/login?callbackUrl=${encodedCallbackUrl}`, req.url));
+    const loginUrl = nextUrl.clone();
+    loginUrl.pathname = '/login';
+    loginUrl.search = `?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+    return NextResponse.redirect(loginUrl);
   }
 
   return NextResponse.next();

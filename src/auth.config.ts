@@ -12,8 +12,15 @@ export const authConfig = {
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const isPublic = nextUrl.pathname.startsWith("/login") || 
-                       nextUrl.pathname.startsWith("/api/auth");
+      const pathname = nextUrl.pathname;
+      const isPublic = pathname === "/" ||
+                       pathname.startsWith("/login") || 
+                       pathname.startsWith("/api/auth") ||
+                       pathname.startsWith("/verify") ||
+                       pathname.startsWith("/result-checker") ||
+                       pathname.startsWith("/admissions") ||
+                       pathname.startsWith("/unauthorized") ||
+                       pathname.startsWith("/license-expired");
       
       if (!isLoggedIn && !isPublic) {
         return false; // Redirect to login
