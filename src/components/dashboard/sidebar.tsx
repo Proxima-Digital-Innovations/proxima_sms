@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useRole } from '@/context/role-context';
 import { useLanguage } from '@/context/language-context';
-import { Menu, ChevronDown, Rocket, X, ShieldCheck } from 'lucide-react';
+import { Menu, ChevronDown, Rocket, X, ShieldCheck, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -21,6 +21,7 @@ export default function Sidebar() {
     const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
     const [schoolName, setSchoolName] = useState<string>('Proxima SMS');
     const [schoolLogo, setSchoolLogo] = useState<string | null>(null);
+    const [pendingPath, setPendingPath] = useState<string | null>(null);
 
     const { openMobile, setOpenMobile, state, setOpen } = useSidebar();
     
@@ -30,6 +31,7 @@ export default function Sidebar() {
     // Auto-close mobile drawer when route changes
     useEffect(() => {
         setOpenMobile(false);
+        setPendingPath(null);
     }, [pathname, setOpenMobile]);
 
     useEffect(() => {
@@ -248,19 +250,26 @@ export default function Sidebar() {
                                                                     >
                                                                         {link.subLinks.filter(subLink => !subLink.requiredModule || activeModules?.includes(subLink.requiredModule)).map(subLink => {
                                                                             const isChildActive = pathname === subLink.path;
+                                                                            const isChildPending = pendingPath === subLink.path && !isChildActive;
                                                                             return (
                                                                                 <Link 
                                                                                     key={subLink.path} 
                                                                                     href={subLink.path}
-                                                                                    onClick={() => setOpenMobile(false)}
+                                                                                    onClick={() => {
+                                                                                        setOpenMobile(false);
+                                                                                        if (pathname !== subLink.path) setPendingPath(subLink.path);
+                                                                                    }}
                                                                                     className={cn(
-                                                                                        "flex items-center p-2 min-h-[38px] rounded-md transition-all text-sm",
+                                                                                        "flex items-center justify-between p-2 min-h-[38px] rounded-md transition-all text-sm",
                                                                                         isChildActive 
                                                                                             ? "text-primary font-semibold bg-primary/10" 
                                                                                             : "text-muted-foreground hover:text-foreground hover:bg-accent"
                                                                                     )}
                                                                                 >
                                                                                     <span className="truncate">{subLink.label}</span>
+                                                                                    {isChildPending && (
+                                                                                        <Loader2 className="w-3.5 h-3.5 animate-spin text-primary shrink-0 ms-2" />
+                                                                                    )}
                                                                                 </Link>
                                                                             );
                                                                         })}
@@ -273,11 +282,15 @@ export default function Sidebar() {
      
                                                 // Standard single link
                                                 const isActiveExact = pathname === link.path;
+                                                const isLinkPending = pendingPath === link.path && !isActiveExact;
                                                 return (
                                                     <Link 
                                                         key={linkKey} 
                                                         href={link.path}
-                                                        onClick={() => setOpenMobile(false)}
+                                                        onClick={() => {
+                                                            setOpenMobile(false);
+                                                            if (pathname !== link.path) setPendingPath(link.path);
+                                                        }}
                                                         className={cn(
                                                             "flex items-center gap-3 p-2.5 min-h-[42px] rounded-lg transition-colors group mb-1",
                                                             isActiveExact
@@ -287,13 +300,18 @@ export default function Sidebar() {
                                                         )}
                                                         title={collapsed ? link.label : undefined}
                                                     >
-                                                        {IconComponent && (
+                                                        {isLinkPending ? (
+                                                            <Loader2 className="w-5 h-5 shrink-0 animate-spin text-primary" />
+                                                        ) : IconComponent && (
                                                             <IconComponent className={cn(
                                                                 "w-5 h-5 shrink-0 transition-colors",
                                                                 isActiveExact ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground"
                                                             )} />
                                                         )}
-                                                        {!collapsed && <span className="text-sm font-medium truncate">{link.label}</span>}
+                                                        {!collapsed && <span className="text-sm font-medium truncate flex-1">{link.label}</span>}
+                                                        {!collapsed && isLinkPending && (
+                                                            <Loader2 className="w-3.5 h-3.5 animate-spin text-primary shrink-0 ms-auto" />
+                                                        )}
                                                     </Link>
                                                 );
                                             })}
