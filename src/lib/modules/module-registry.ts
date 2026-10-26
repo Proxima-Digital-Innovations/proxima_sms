@@ -82,6 +82,14 @@ export const AVAILABLE_MODULES: SystemModule[] = [
     icon: 'Building',
     defaultEnabled: true,
   },
+  {
+    id: 'ADMISSIONS',
+    name: 'University & Tertiary Admissions',
+    description: 'Handles UTME/Direct Entry applications, Post-UTME screening, departmental cut-offs, merit lists, catchment quotas, JAMB CAPS workflow, and applicant portals.',
+    category: 'INSTITUTION',
+    icon: 'GraduationCap',
+    defaultEnabled: true,
+  },
 ];
 
 export const DEFAULT_ACTIVE_MODULES = AVAILABLE_MODULES.map((m) => m.id);

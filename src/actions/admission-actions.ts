@@ -145,3 +145,56 @@ export async function getJambCapsReconciliationData(campaignId: string) {
     return { success: false, error: error.message };
   }
 }
+
+export async function updateApplicantCapsStatusAction(applicantId: string, status: 'PROPOSED' | 'RECOMMENDED_TO_JAMB' | 'APPROVED_BY_JAMB' | 'ACCEPTED_BY_CANDIDATE' | 'REJECTED_ON_CAPS') {
+  try {
+    const updated = await AdmissionService.updateCapsStatus(applicantId, status);
+    revalidatePath('/dashboard/admissions');
+    return { success: true, data: updated };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function bulkUpdateCapsStatusAction(applicantIds: string[], status: 'PROPOSED' | 'RECOMMENDED_TO_JAMB' | 'APPROVED_BY_JAMB' | 'ACCEPTED_BY_CANDIDATE' | 'REJECTED_ON_CAPS') {
+  try {
+    const updated = await AdmissionService.bulkUpdateCapsStatus(applicantIds, status);
+    revalidatePath('/dashboard/admissions');
+    return { success: true, data: updated };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function reconcileWithJambCapsAction(
+  campaignId: string,
+  rows: { jambRegNumber: string; candidateName?: string; jambStatus: string; programOffered?: string; jambScore?: number }[]
+) {
+  try {
+    const result = await AdmissionService.reconcileWithJambCaps(campaignId, rows);
+    return { success: true, data: result };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function applyCapsReconciliationAction(
+  updates: { applicantId: string; status: string }[]
+) {
+  try {
+    const result = await AdmissionService.applyCapsReconciliation(updates);
+    revalidatePath('/dashboard/admissions');
+    return { success: true, data: result };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getApprovalTrackingPipelineAction(campaignId: string) {
+  try {
+    const pipeline = await AdmissionService.getApprovalTrackingPipeline(campaignId);
+    return { success: true, data: pipeline };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}

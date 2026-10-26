@@ -663,4 +663,148 @@ export class AdmissionService {
       };
     });
   }
+
+  /**
+   * Update CAPS Approval Tracking Status for single applicant
+   */
+  public static async updateCapsStatus(
+    applicantId: string, 
+    status: 'PROPOSED' | 'RECOMMENDED_TO_JAMB' | 'APPROVED_BY_JAMB' | 'ACCEPTED_BY_CANDIDATE' | 'REJECTED_ON_CAPS'
+  ) {
+    return prisma.admissionApplicant.update({
+      where: { id: applicantId },
+      data: {
+        jambCapsStatus: status,
+        status: status === 'ACCEPTED_BY_CANDIDATE' ? 'OFFER_ACCEPTED' : status === 'APPROVED_BY_JAMB' ? 'PROVISIONALLY_ADMITTED' : undefined,
+      },
+      include: {
+        firstChoice: true,
+        admittedProgram: true,
+        batch: true,
+      },
+    });
+  }
+
+  /**
+   * Bulk Update CAPS Status
+   */
+  public static async bulkUpdateCapsStatus(
+    applicantIds: string[], 
+    status: 'PROPOSED' | 'RECOMMENDED_TO_JAMB' | 'APPROVED_BY_JAMB' | 'ACCEPTED_BY_CANDIDATE' | 'REJECTED_ON_CAPS'
+  ) {
+    return prisma.admissionApplicant.updateMany({
+      where: { id: { in: applicantIds } },
+      data: { jambCapsStatus: status },
+    });
+  }
+
+  /**
+   * Reconcile candidate records with external JAMB CAPS dataset
+   */
+  public static async reconcileWithJambCaps(
+    campaignId: string,
+    rows: { jambRegNumber: string; candidateName?: string; jambStatus: string; programOffered?: string; jambScore?: number }[]
+  ) {
+    const localApplicants = await prisma.admissionApplicant.findMany({
+      where: { campaignId },
+      include: { firstChoice: true, admittedProgram: true },
+    });
+
+    const localMap = new Map<string, (typeof localApplicants)[0]>();
+    localApplicants.forEach((a) => localMap.set(a.jambRegNumber.toUpperCase().trim(), a));
+
+    const matched: any[] = [];
+    const unmatchedInLocal: any[] = [];
+    const seenRegs = new Set<string>();
+
+    for (const r of rows) {
+      const reg = r.jambRegNumber.toUpperCase().trim();
+      seenRegs.add(reg);
+      const local = localMap.get(reg);
+
+      if (local) {
+        const normalizedIncoming = r.jambStatus.toUpperCase().replace(/\s+/g, '_');
+        matched.push({
+          applicantId: local.id,
+          jambRegNumber: reg,
+          name: `${local.firstName} ${local.lastName}`,
+          localProgram: local.admittedProgram?.name || local.firstChoice?.name,
+          jambProgram: r.programOffered || 'N/A',
+          currentCapsStatus: local.jambCapsStatus || 'PENDING_RECOMMENDATION',
+          incomingCapsStatus: normalizedIncoming,
+          score: local.jambScore,
+          hasDiscrepancy: (local.jambCapsStatus || 'PENDING_RECOMMENDATION') !== normalizedIncoming,
+        });
+      } else {
+        unmatchedInLocal.push(r);
+      }
+    }
+
+    const missingInJamb = localApplicants
+      .filter((a) => !seenRegs.has(a.jambRegNumber.toUpperCase().trim()))
+      .map((a) => ({
+        applicantId: a.id,
+        jambRegNumber: a.jambRegNumber,
+        name: `${a.firstName} ${a.lastName}`,
+        program: a.admittedProgram?.name || a.firstChoice?.name,
+        currentCapsStatus: a.jambCapsStatus || 'PENDING_RECOMMENDATION',
+      }));
+
+    return {
+      totalLocal: localApplicants.length,
+      totalUploaded: rows.length,
+      matched,
+      unmatchedInLocal,
+      missingInJamb,
+    };
+  }
+
+  /**
+   * Apply Batch CAPS Reconciliation updates
+   */
+  public static async applyCapsReconciliation(
+    updates: { applicantId: string; status: string }[]
+  ) {
+    return prisma.$transaction(
+      updates.map((u) =>
+        prisma.admissionApplicant.update({
+          where: { id: u.applicantId },
+          data: { jambCapsStatus: u.status },
+        })
+      )
+    );
+  }
+
+  /**
+   * Retrieve Full Approval Tracking Funnel Stats
+   */
+  public static async getApprovalTrackingPipeline(campaignId: string) {
+    const applicants = await prisma.admissionApplicant.findMany({
+      where: { campaignId },
+      include: {
+        firstChoice: true,
+        admittedProgram: true,
+        batch: true,
+        offerLetter: true,
+      },
+      orderBy: [{ compositeScore: 'desc' }, { jambScore: 'desc' }],
+    });
+
+    const stats = {
+      totalApplied: applicants.length,
+      proposedCount: applicants.filter((a) => a.jambCapsStatus === 'PROPOSED').length,
+      recommendedCount: applicants.filter((a) => a.jambCapsStatus === 'RECOMMENDED_TO_JAMB').length,
+      jambApprovedCount: applicants.filter((a) => a.jambCapsStatus === 'APPROVED_BY_JAMB').length,
+      candidateAcceptedCount: applicants.filter(
+        (a) => a.jambCapsStatus === 'ACCEPTED_BY_CANDIDATE' || a.status === 'OFFER_ACCEPTED'
+      ).length,
+      matriculatedCount: applicants.filter((a) => a.status === 'MATRICULATED').length,
+    };
+
+    return {
+      stats,
+      applicants,
+    };
+  }
 }
+
