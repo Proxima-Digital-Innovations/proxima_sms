@@ -80,6 +80,29 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
   parentAnnouncements: { icon: 'Megaphone', label: 'Announcements', path: '/dashboard/announcements' },
   
   studentResults: { icon: 'Award', label: 'My Results', path: '/dashboard/performance' },
+  cbtExams: { 
+    icon: 'CheckSquare', 
+    label: 'CBT Examination Portal', 
+    path: '/dashboard/cbt', 
+    requiredModule: 'CBT',
+    subLinks: [
+      { label: 'CBT Tests & Exams', path: '/dashboard/cbt', requiredModule: 'CBT' },
+      { label: 'Question Bank & Papers', path: '/dashboard/exam-questions', requiredModule: 'CBT' },
+      { label: 'Exam Registration', path: '/dashboard/exam-registration', requiredModule: 'CBT' },
+      { label: 'Seating Plans', path: '/dashboard/seating-plan', requiredModule: 'CBT' },
+      { label: 'Online Quizzes', path: '/admin/lms/quizzes', requiredModule: 'CBT' },
+    ]
+  },
+  studentCbt: {
+    icon: 'CheckSquare',
+    label: 'CBT Tests & Exams',
+    path: '/dashboard/cbt',
+    requiredModule: 'CBT',
+    subLinks: [
+      { label: 'Active CBT Tests & Exams', path: '/dashboard/cbt', requiredModule: 'CBT' },
+      { label: 'Quizzes & Practice', path: '/student/lms/quizzes', requiredModule: 'CBT' },
+    ]
+  },
   studentAssignments: { icon: 'FileEdit', label: 'Assignments', path: '/student/lms/assignments', requiredModule: 'LMS' },
   studentQuizzes: { icon: 'HelpCircle', label: 'Quizzes', path: '/student/lms/quizzes', requiredModule: 'CBT' },
   classesAndSubjects: { icon: 'BookMarked', label: 'Classes & Subjects', path: '/dashboard/system/classes-subjects', requiredModule: 'SECONDARY_SCHOOL' },
@@ -102,7 +125,7 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
   tertiaryCertificate: { icon: 'GraduationCap', label: 'Degree Diploma', path: '/dashboard/tertiary/certificate', requiredModule: 'TERTIARY_INSTITUTION' },
   tertiaryTimetable: { icon: 'Calendar', label: 'Lecture Timetable', path: '/dashboard/tertiary/timetable', requiredModule: 'TERTIARY_INSTITUTION' },
   tertiaryPayments: { icon: 'CreditCard', label: 'Tuition Payments', path: '/dashboard/tertiary/payments', requiredModule: 'TERTIARY_INSTITUTION' },
-  tertiaryCampuses: { icon: 'Landmark', label: 'Campuses & Faculties', path: '/dashboard/tertiary/campuses' },
+  tertiaryCampuses: { icon: 'Landmark', label: 'Campuses & Faculties', path: '/dashboard/tertiary/campuses', requiredModule: 'TERTIARY_INSTITUTION' },
   tertiaryAddDrop: { icon: 'ArrowLeftRight', label: 'Course Add / Drop', path: '/dashboard/tertiary/add-drop', requiredModule: 'TERTIARY_INSTITUTION' },
   tertiaryForecast: { icon: 'TrendingUp', label: 'CGPA Forecaster', path: '/dashboard/tertiary/forecast', requiredModule: 'TERTIARY_INSTITUTION' },
   tertiaryOfficialTranscript: { icon: 'Award', label: 'Official Transcript', path: '/dashboard/tertiary/transcript/official', requiredModule: 'TERTIARY_INSTITUTION' },
@@ -146,7 +169,7 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
 export const navConfig: Record<string, { group: string; links: (keyof typeof allNavLinks)[] }[]> = {
   ADMIN: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'announcements', 'messaging'] },
-    { group: 'Academics', links: ['attendance', 'lessonApprovals', 'reviewQuestions', 'enterScores', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'generateResults', 'viewResults'] },
+    { group: 'Academics', links: ['attendance', 'lessonApprovals', 'cbtExams', 'enterScores', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'generateResults', 'viewResults'] },
     { group: 'Tertiary (TIMS)', links: ['tertiaryAdmissions', 'tertiaryStudentHub', 'tertiaryLecturerStudio', 'tertiaryPrograms', 'tertiaryCourses', 'tertiaryOfferings', 'tertiaryTimetable', 'tertiaryRegistration', 'tertiaryAddDrop', 'tertiaryPayments', 'tertiaryCbt', 'tertiaryExams', 'tertiarySenate', 'tertiaryDocket', 'tertiaryTranscript', 'tertiaryOfficialTranscript', 'tertiaryForecast', 'tertiaryClearance', 'tertiaryCertificate'] },
     { group: 'e-Library', links: ['elibraryCatalog', 'elibraryLoans'] },
     { group: 'Management', links: ['reports', 'system', 'manageStaff', 'manageStudents', 'tertiaryCampuses', 'departments', 'idCards', 'hostels', 'bas'] },
@@ -156,7 +179,7 @@ export const navConfig: Record<string, { group: string; links: (keyof typeof all
   SLT: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'announcements'] },
     { group: 'Communication', links: ['messaging'] },
-    { group: 'Academics', links: ['academicOverview', 'lessonApprovals', 'generateResults', 'viewResults', 'gradingSystem', 'classesAndSubjects', 'aiSettings'] },
+    { group: 'Academics', links: ['academicOverview', 'lessonApprovals', 'cbtExams', 'generateResults', 'viewResults', 'gradingSystem', 'classesAndSubjects', 'aiSettings'] },
     { group: 'Tertiary (TIMS)', links: ['tertiaryAdmissions', 'tertiaryStudentHub', 'tertiaryLecturerStudio', 'tertiaryPrograms', 'tertiaryCourses', 'tertiaryOfferings', 'tertiaryTimetable', 'tertiaryRegistration', 'tertiaryAddDrop', 'tertiaryPayments', 'tertiaryCbt', 'tertiaryExams', 'tertiarySenate', 'tertiaryDocket', 'tertiaryTranscript', 'tertiaryOfficialTranscript', 'tertiaryForecast', 'tertiaryClearance', 'tertiaryCertificate'] },
     { group: 'e-Library', links: ['elibraryCatalog', 'elibraryLoans'] },
     { group: 'Oversight', links: ['reports', 'manageStaff', 'manageStudents', 'tertiaryCampuses', 'departments', 'hostels'] },
@@ -165,7 +188,7 @@ export const navConfig: Record<string, { group: string; links: (keyof typeof all
   HOD: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'announcements'] },
     { group: 'Communication', links: ['messaging'] },
-    { group: 'Academics', links: ['classesAndSubjects'] },
+    { group: 'Academics', links: ['classesAndSubjects', 'cbtExams'] },
     { group: 'Tertiary Academics', links: ['tertiaryLecturerStudio', 'tertiaryCourses', 'tertiaryOfferings', 'tertiaryTimetable', 'tertiaryRegistration', 'tertiaryCbt', 'tertiaryExams', 'tertiarySenate', 'tertiaryDocket', 'tertiaryTranscript', 'tertiaryClearance'] },
     { group: 'e-Library', links: ['elibraryCatalog'] },
     { group: 'Department', links: ['attendance', 'lessonApprovals', 'enterScores', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'hodAnalytics', 'manageStaff'] },
@@ -178,7 +201,7 @@ export const navConfig: Record<string, { group: string; links: (keyof typeof all
   EXAM_OFFICER: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'announcements'] },
     { group: 'Communication', links: ['messaging'] },
-    { group: 'Examinations', links: ['reviewQuestions', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'generateResults', 'viewResults', 'timetable', 'examRegistration', 'seatingPlans'] },
+    { group: 'Examinations', links: ['cbtExams', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'generateResults', 'viewResults', 'timetable', 'examRegistration', 'seatingPlans'] },
     { group: 'Tertiary Examinations', links: ['tertiaryOfferings', 'tertiaryTimetable', 'tertiaryRegistration', 'tertiaryCbt', 'tertiaryExams', 'tertiarySenate', 'tertiaryDocket', 'tertiaryTranscript', 'tertiaryCertificate'] },
   ],
   LECTURER: [
@@ -190,7 +213,7 @@ export const navConfig: Record<string, { group: string; links: (keyof typeof all
   TEACHER: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'announcements'] },
     { group: 'Communication', links: ['messaging'] },
-    { group: 'My Work', links: ['lessonPlans', 'examQuestions', 'bulkUpload', 'enterScores', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'attendance', 'myStudents', 'timetable', 'staffAttendance'] },
+    { group: 'My Work', links: ['lessonPlans', 'cbtExams', 'bulkUpload', 'enterScores', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'attendance', 'myStudents', 'timetable', 'staffAttendance'] },
     { group: 'e-Library', links: ['elibraryCatalog'] },
   ],
   PARENT: [
@@ -200,7 +223,7 @@ export const navConfig: Record<string, { group: string; links: (keyof typeof all
   ],
   STUDENT: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'messaging'] },
-    { group: 'Academics', links: ['studentResults', 'studentAssignments', 'studentQuizzes', 'timetable'] },
+    { group: 'Academics', links: ['studentResults', 'studentCbt', 'studentAssignments', 'timetable'] },
     { group: 'Tertiary (TIMS)', links: ['tertiaryStudentHub', 'studentHostelBooking', 'tertiaryPayments', 'tertiaryTimetable', 'tertiaryRegistration', 'tertiaryAddDrop', 'tertiaryForecast', 'tertiaryCbt', 'tertiaryDocket', 'tertiaryTranscript', 'tertiaryOfficialTranscript', 'tertiaryCertificate'] },
     { group: 'e-Library', links: ['elibraryCatalog'] },
   ],
@@ -276,6 +299,7 @@ export const ROUTE_MODULE_MAP: { prefix: string; module: string; label: string }
   { prefix: '/dashboard/pay', module: 'FINANCE', label: 'Tuition Payments' },
   { prefix: '/dashboard/elibrary', module: 'E_LIBRARY', label: 'e-Library & Repository' },
   { prefix: '/dashboard/bas', module: 'BAS_BIOMETRICS', label: 'Biometric Attendance (BAS)' },
+  { prefix: '/dashboard/cbt', module: 'CBT', label: 'CBT Examination Portal' },
   { prefix: '/dashboard/exam-questions', module: 'CBT', label: 'Question Bank' },
   { prefix: '/dashboard/exam-registration', module: 'CBT', label: 'Exam Registration' },
   { prefix: '/dashboard/seating-plan', module: 'CBT', label: 'Seating Plans' },

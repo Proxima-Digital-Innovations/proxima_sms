@@ -42,9 +42,20 @@ export async function getCbtExams(courseOfferingId?: string) {
       });
 
       const registeredOfferingIds = student?.registrations?.[0]?.courses.map((c) => c.offeringId) || [];
-      where = {
-        courseOfferingId: { in: registeredOfferingIds },
-      };
+      if (registeredOfferingIds.length > 0) {
+        where = {
+          OR: [
+            { courseOfferingId: { in: registeredOfferingIds } },
+            { courseOfferingId: null },
+          ],
+          isPublished: true,
+        };
+      } else {
+        // Primary, JSS, SSS or general student: access all published institutional CBT tests/exams
+        where = {
+          isPublished: true,
+        };
+      }
     }
 
     const [exams, offerings] = await Promise.all([

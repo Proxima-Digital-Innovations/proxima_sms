@@ -322,7 +322,8 @@ function embedWatermark(text: string, identifier: string): string {
 }
 
 export default function TertiaryCbtPage() {
-  const { role } = useRole();
+  const { role, activeModules } = useRole();
+  const hasTertiary = activeModules?.includes('TERTIARY_INSTITUTION');
   const isFacultyOrAdmin = ['SUPER_ADMIN', 'ADMIN', 'SLT', 'HOD', 'LECTURER', 'TEACHER', 'EXAM_OFFICER'].includes(role || '');
 
   const [exams, setExams] = useState<any[]>([]);
@@ -1223,13 +1224,13 @@ export default function TertiaryCbtPage() {
                 <div className="space-y-4 py-2">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <Label>Course Offering (Faculty / Department)</Label>
+                      <Label>{hasTertiary ? 'Course Offering (Faculty / Department)' : 'Target Subject / Assessment Domain'}</Label>
                       <select
                         value={newCourseOfferingId}
                         onChange={(e) => setNewCourseOfferingId(e.target.value)}
                         className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm mt-1"
                       >
-                        <option value="none">General Institutional CBT</option>
+                        <option value="none">General Institutional / School-Wide CBT Assessment</option>
                         {offerings.map((off: any) => (
                           <option key={off.id} value={off.id}>
                             [{off.departmentName}] {off.code} — {off.title}
