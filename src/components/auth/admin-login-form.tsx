@@ -18,9 +18,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { useRole } from '@/context/role-context';
 import { useToast } from '@/hooks/use-toast';
+import { Loader2, ArrowRight } from 'lucide-react';
 
 const formSchema = z.object({
-  email: z.string().email({ message: 'Please enter a valid email.' }),
+  email: z.string().trim().email({ message: 'Please enter a valid administrator email.' }),
   password: z.string().min(1, { message: 'Password is required.' }),
 });
 
@@ -44,41 +45,48 @@ export function AdminLoginForm() {
       if (res?.error) {
         toast({
           variant: 'destructive',
-          title: 'Login Failed',
-          description: 'Invalid email or password.',
+          title: 'Authentication Failed',
+          description: 'Invalid administrator email or password.',
         });
         return;
       }
 
       toast({
-        title: 'Admin Login Successful',
-        description: 'Welcome back!',
+        title: 'Authentication Verified',
+        description: 'Entering administrative workspace...',
       });
       router.push('/dashboard');
       router.refresh();
       
-    } catch (error: any) {
+    } catch {
       toast({
         variant: 'destructive',
-        title: 'Login Failed',
-        description: 'An unexpected error occurred.',
+        title: 'Connection Error',
+        description: 'Unable to connect to authentication server.',
       });
     }
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="email"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
+            <FormItem className="space-y-1.5">
+              <FormLabel className="text-xs font-semibold">Administrator Email</FormLabel>
               <FormControl>
-                <Input placeholder="admin@school.edu" {...field} />
+                <Input
+                  type="email"
+                  placeholder="admin@school.edu"
+                  autoComplete="username"
+                  autoFocus
+                  className="h-10 text-xs rounded-xl"
+                  {...field}
+                />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="text-[11px]" />
             </FormItem>
           )}
         />
@@ -86,21 +94,37 @@ export function AdminLoginForm() {
           control={form.control}
           name="password"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Password</FormLabel>
+            <FormItem className="space-y-1.5">
+              <FormLabel className="text-xs font-semibold">Password</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="••••••••" {...field} />
+                <Input
+                  type="password"
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  className="h-10 text-xs rounded-xl"
+                  {...field}
+                />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="text-[11px]" />
             </FormItem>
           )}
         />
         <Button
           type="submit"
-          className="w-full"
+          className="w-full h-10 rounded-xl font-semibold shadow-xs flex items-center justify-center gap-2 mt-2"
           disabled={form.formState.isSubmitting}
         >
-          {form.formState.isSubmitting ? 'Signing In...' : 'Sign In'}
+          {form.formState.isSubmitting ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Verifying...</span>
+            </>
+          ) : (
+            <>
+              <span>Sign In as Admin</span>
+              <ArrowRight className="w-4 h-4" />
+            </>
+          )}
         </Button>
       </form>
     </Form>

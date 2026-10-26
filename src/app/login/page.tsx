@@ -1,25 +1,23 @@
 import { prisma } from '@/lib/prisma';
 import { LoginLayout } from '@/components/auth/login-layout';
 import { LoginForm } from '@/components/auth/login-form';
-import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 
 export default async function LoginPage() {
-  // Fetch system details server-side (Single Tenant)
-  const school = await prisma.systemProfile.findFirst();
+  // Fetch system details server-side (Single Tenant) with safe fallback
+  const school = await prisma.systemProfile.findFirst().catch(() => null);
 
-  if (!school) {
-    notFound();
-  }
+  const schoolName = school?.name || 'School Management Portal';
+  const logo = school?.logoUrl || undefined;
 
   return (
     <LoginLayout
-      schoolName={school.name}
-      logo={school.logoUrl || undefined}
-      tagline="Academic Portal"
+      schoolName={schoolName}
+      logo={logo}
+      tagline="Academic & Administrative Portal"
     >
-      <Suspense fallback={<div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div>}>
+      <Suspense fallback={<div className="flex justify-center p-8"><Loader2 className="animate-spin text-primary" /></div>}>
         <LoginForm />
       </Suspense>
     </LoginLayout>

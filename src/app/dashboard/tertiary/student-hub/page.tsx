@@ -38,7 +38,7 @@ import {
   LiveVirtualClassSession
 } from '@/actions/tertiary-classroom-actions';
 import { VirtualClassroomModal } from '@/components/dashboard/virtual-class/virtual-classroom-modal';
-import { Radio, Video } from 'lucide-react';
+import { Radio, Video, X } from 'lucide-react';
 
 export default function StudentHubPage() {
   const [loading, setLoading] = useState(true);

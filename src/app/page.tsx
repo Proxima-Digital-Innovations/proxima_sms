@@ -8,17 +8,17 @@ export default function PlatformLoginPage() {
   return (
     <LoginLayout
       schoolName="Proxima SMS"
-      tagline="Centralized Management System"
+      tagline="Centralized Institutional Portal"
     >
       <div className="space-y-6">
-        <Suspense fallback={<div className="flex justify-center p-8"><Loader2 className="animate-spin text-indigo-400" /></div>}>
+        <Suspense fallback={<div className="flex justify-center p-8"><Loader2 className="animate-spin text-primary" /></div>}>
           <LoginForm />
         </Suspense>
 
-        <div className="pt-4 border-t border-slate-800/80">
+        <div className="pt-4 border-t border-border">
           <Link 
             href="/super-admin" 
-            className="text-xs font-bold text-slate-400 hover:text-indigo-400 transition-colors block text-center uppercase tracking-widest"
+            className="text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors block text-center tracking-wider uppercase"
           >
             Platform Administrator
           </Link>
