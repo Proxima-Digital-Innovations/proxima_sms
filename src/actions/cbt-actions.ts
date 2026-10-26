@@ -1,5 +1,7 @@
 'use server';
 
+import { getActiveInstitutionalModules } from '@/lib/modules/module-registry';
+
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
@@ -28,31 +30,51 @@ export async function getCbtExams(courseOfferingId?: string) {
     const session = await auth();
     let where: any = courseOfferingId ? { courseOfferingId } : {};
 
+    const activeModules = await getActiveInstitutionalModules();
+    const hasTertiary = activeModules.includes('TERTIARY_INSTITUTION');
+
+    // If Tertiary Institution module is disabled:
+    // Strictly exclude any tertiary university course exams (courseOfferingId != null)
+    if (!hasTertiary) {
+      where = {
+        ...where,
+        courseOfferingId: null,
+      };
+    }
+
     // If the user is a STUDENT, strictly filter CBT exams to ONLY the courses they registered for
     if (session?.user?.id && (session.user as any).role === 'STUDENT' && !courseOfferingId) {
-      const student = await prisma.studentProfile.findUnique({
-        where: { userId: session.user.id },
-        include: {
-          registrations: {
-            orderBy: { createdAt: 'desc' },
-            take: 1,
-            include: { courses: true },
+      if (hasTertiary) {
+        const student = await prisma.studentProfile.findUnique({
+          where: { userId: session.user.id },
+          include: {
+            registrations: {
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+              include: { courses: true },
+            },
           },
-        },
-      });
+        });
 
-      const registeredOfferingIds = student?.registrations?.[0]?.courses.map((c) => c.offeringId) || [];
-      if (registeredOfferingIds.length > 0) {
-        where = {
-          OR: [
-            { courseOfferingId: { in: registeredOfferingIds } },
-            { courseOfferingId: null },
-          ],
-          isPublished: true,
-        };
+        const registeredOfferingIds = student?.registrations?.[0]?.courses.map((c) => c.offeringId) || [];
+        if (registeredOfferingIds.length > 0) {
+          where = {
+            OR: [
+              { courseOfferingId: { in: registeredOfferingIds } },
+              { courseOfferingId: null },
+            ],
+            isPublished: true,
+          };
+        } else {
+          where = {
+            courseOfferingId: null,
+            isPublished: true,
+          };
+        }
       } else {
-        // Primary, JSS, SSS or general student: access all published institutional CBT tests/exams
+        // Non-tertiary (Primary, JSS, SSS): show all published school CBT tests/exams
         where = {
+          courseOfferingId: null,
           isPublished: true,
         };
       }
@@ -69,10 +91,12 @@ export async function getCbtExams(courseOfferingId?: string) {
         },
         orderBy: { createdAt: 'desc' },
       }),
-      prisma.courseOffering.findMany({
-        include: OFFERING_HIERARCHY_INCLUDE,
-        orderBy: { createdAt: 'desc' },
-      }),
+      hasTertiary
+        ? prisma.courseOffering.findMany({
+            include: OFFERING_HIERARCHY_INCLUDE,
+            orderBy: { createdAt: 'desc' },
+          })
+        : Promise.resolve([]),
     ]);
 
     return {
@@ -82,10 +106,10 @@ export async function getCbtExams(courseOfferingId?: string) {
         const program = course?.program;
         return {
           ...e,
-          courseCode: course?.code || 'GENERAL',
+          courseCode: course?.code || (e.courseOfferingId ? 'TERTIARY' : 'K-12 CBT'),
           courseTitle: course?.title || 'Institutional CBT Assessment',
-          departmentName: program?.department?.name || (course?.code?.startsWith('MTH') ? 'Mathematics' : course?.code?.startsWith('GST') ? 'General Studies' : 'Computer Science'),
-          facultyName: program?.faculty?.name || (course?.code?.startsWith('GST') ? 'Directorate of General Studies' : 'Faculty of Computing & Sciences'),
+          departmentName: program?.department?.name || '',
+          facultyName: program?.faculty?.name || '',
           programName: program?.name || 'B.Sc. Degree Program',
         };
       }),

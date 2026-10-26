@@ -1106,6 +1106,7 @@ export default function TertiaryCbtPage() {
         {isFacultyOrAdmin && (
           <div className="flex flex-wrap items-center gap-2.5">
             {/* Master Multi-Faculty / Multi-Department Bulk Question Bank Upload */}
+            {hasTertiary && (
             <Dialog open={isMasterBulkOpen} onOpenChange={setIsMasterBulkOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" className="flex items-center gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50">
@@ -1205,6 +1206,7 @@ export default function TertiaryCbtPage() {
                 </div>
               </DialogContent>
             </Dialog>
+            )}
 
             {/* Create Single CBT Assessment Dialog */}
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
@@ -1443,6 +1445,7 @@ export default function TertiaryCbtPage() {
       </div>
 
       {/* FACULTY, DEPARTMENT & COURSE FILTER BAR */}
+      {hasTertiary && distinctFaculties.length > 1 && (
       <div className="p-4 rounded-2xl border bg-card shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
         <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-wider shrink-0">
           <Filter className="h-4 w-4 text-primary" />
@@ -1497,6 +1500,7 @@ export default function TertiaryCbtPage() {
           </select>
         </div>
       </div>
+      )}
 
       {/* Available Exams Grid */}
       {isLoading ? (
@@ -1518,7 +1522,7 @@ export default function TertiaryCbtPage() {
               <CardHeader>
                 <div className="flex justify-between items-start gap-2">
                   <Badge variant="secondary" className="font-mono text-xs font-bold">
-                    {exam.courseCode || 'TERTIARY TEST'}
+                    {exam.courseOfferingId ? (exam.courseCode || 'TERTIARY TEST') : 'Basic & Secondary School'}
                   </Badge>
                   <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs">
                     {exam.targetCategory} ({exam.totalMarks} Marks)
@@ -1526,15 +1530,17 @@ export default function TertiaryCbtPage() {
                 </div>
 
                 {/* Faculty & Department Pill */}
-                <div className="flex flex-wrap items-center gap-1.5 pt-2">
-                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200/60">
-                    <Building2 className="h-3 w-3" />
-                    {exam.facultyName}
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
-                    Dept: {exam.departmentName}
-                  </span>
-                </div>
+                {hasTertiary && exam.courseOfferingId && exam.facultyName ? (
+                  <div className="flex flex-wrap items-center gap-1.5 pt-2">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200/60">
+                      <Building2 className="h-3 w-3" />
+                      {exam.facultyName}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                      Dept: {exam.departmentName}
+                    </span>
+                  </div>
+                ) : null}
 
                 <CardTitle className="text-base font-semibold pt-1.5">{exam.title}</CardTitle>
                 <CardDescription className="text-xs line-clamp-2">
