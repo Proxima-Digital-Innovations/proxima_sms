@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getFilteredNavConfig, allNavLinks, iconMap } from '@/lib/auth-guard';
 import { getSchoolInfo } from '@/actions/school-actions';
 import { useSidebar } from '@/components/ui/sidebar';
+import { useNavigationLoader } from '@/context/navigation-loader-context';
 
 export default function Sidebar() {
     const pathname = usePathname();
@@ -24,6 +25,7 @@ export default function Sidebar() {
     const [pendingPath, setPendingPath] = useState<string | null>(null);
 
     const { openMobile, setOpenMobile, state, setOpen } = useSidebar();
+    const { startNavigation, isNavigating, navigatingPath } = useNavigationLoader();
     
     // Never render collapsed icon-only view inside the mobile slide-over drawer
     const collapsed = state === "collapsed" && !openMobile;
@@ -250,14 +252,17 @@ export default function Sidebar() {
                                                                     >
                                                                         {link.subLinks.filter(subLink => !subLink.requiredModule || activeModules?.includes(subLink.requiredModule)).map(subLink => {
                                                                             const isChildActive = pathname === subLink.path;
-                                                                            const isChildPending = pendingPath === subLink.path && !isChildActive;
+                                                                            const isChildPending = (pendingPath === subLink.path || (navigatingPath === subLink.path && isNavigating)) && !isChildActive;
                                                                             return (
                                                                                 <Link 
                                                                                     key={subLink.path} 
                                                                                     href={subLink.path}
                                                                                     onClick={() => {
                                                                                         setOpenMobile(false);
-                                                                                        if (pathname !== subLink.path) setPendingPath(subLink.path);
+                                                                                        if (pathname !== subLink.path) {
+                                                                                            setPendingPath(subLink.path);
+                                                                                            startNavigation(subLink.path, subLink.label);
+                                                                                        }
                                                                                     }}
                                                                                     className={cn(
                                                                                         "flex items-center justify-between p-2 min-h-[38px] rounded-md transition-all text-sm",
@@ -282,14 +287,17 @@ export default function Sidebar() {
      
                                                 // Standard single link
                                                 const isActiveExact = pathname === link.path;
-                                                const isLinkPending = pendingPath === link.path && !isActiveExact;
+                                                const isLinkPending = (pendingPath === link.path || (navigatingPath === link.path && isNavigating)) && !isActiveExact;
                                                 return (
                                                     <Link 
                                                         key={linkKey} 
                                                         href={link.path}
                                                         onClick={() => {
                                                             setOpenMobile(false);
-                                                            if (pathname !== link.path) setPendingPath(link.path);
+                                                            if (pathname !== link.path) {
+                                                                setPendingPath(link.path);
+                                                                startNavigation(link.path, link.label);
+                                                            }
                                                         }}
                                                         className={cn(
                                                             "flex items-center gap-3 p-2.5 min-h-[42px] rounded-lg transition-colors group mb-1",

@@ -16,6 +16,8 @@ import { isPathAuthorized, navConfig, ROUTE_MODULE_MAP } from '@/lib/auth-guard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SupportBot } from '@/components/dashboard/support-bot/SupportBot';
+import { useNavigationLoader } from '@/context/navigation-loader-context';
+import { FancifulLoader } from '@/components/dashboard/fanciful-loader';
 import { ForcePasswordChangeModal } from '@/components/auth/force-password-change-modal';
 import { DynamicPageTitle } from '@/components/dashboard/dynamic-title';
 import { checkLicenseStatus } from '@/actions/license-actions';
@@ -116,6 +118,7 @@ function MainLayout({
   const { state } = useSidebar();
   const { isRtl } = useLanguage();
   const isCollapsed = state === "collapsed";
+  const { isNavigating, navigatingTarget } = useNavigationLoader();
 
   const marginClass = isRtl
     ? (isCollapsed ? "lg:mr-[80px]" : "lg:mr-[270px]")
@@ -141,10 +144,12 @@ function MainLayout({
               <AuthLoader />
             ) : disabledModuleName ? (
               <ModuleDisabledNotice moduleName={disabledModuleName} />
-            ) : isAuthorized ? (
-              children
-            ) : (
+            ) : !isAuthorized ? (
               <AccessDenied />
+            ) : isNavigating ? (
+              <FancifulLoader mode="inline" navigatingTo={navigatingTarget} />
+            ) : (
+              children
             )}
           </main>
           <MobileBottomNav />
