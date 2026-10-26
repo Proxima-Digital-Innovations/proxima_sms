@@ -61,12 +61,14 @@ export const RoleProvider = ({ children }: { children: React.ReactNode }) => {
   }, [router]);
 
   useInactivityTimeout(() => {
+    if (!session?.user) return;
     toast({
       title: 'Session Expired',
-      description: 'You have been logged out due to inactivity.',
+      description: 'You have been logged out after 15 minutes of inactivity.',
+      variant: 'destructive',
     });
     logout({ silent: true });
-  }, 3600000); // 1 hour
+  }, 15 * 60 * 1000); // 15 minutes of inactivity
 
   useEffect(() => {
     if (session?.user) {

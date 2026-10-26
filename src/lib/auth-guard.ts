@@ -146,29 +146,29 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
 export const navConfig: Record<string, { group: string; links: (keyof typeof allNavLinks)[] }[]> = {
   ADMIN: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'announcements', 'messaging'] },
-    { group: 'Management', links: ['reports', 'system', 'manageStaff', 'manageStudents', 'tertiaryCampuses', 'departments', 'idCards', 'hostels', 'bas'] },
-    { group: 'Finance', links: ['feeSystem', 'invoices', 'payments', 'expenses', 'vouchers', 'payroll', 'reconciliation', 'chartOfAccounts', 'financialReports'] },
     { group: 'Academics', links: ['attendance', 'lessonApprovals', 'reviewQuestions', 'enterScores', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'generateResults', 'viewResults'] },
     { group: 'Tertiary (TIMS)', links: ['tertiaryAdmissions', 'tertiaryStudentHub', 'tertiaryLecturerStudio', 'tertiaryPrograms', 'tertiaryCourses', 'tertiaryOfferings', 'tertiaryTimetable', 'tertiaryRegistration', 'tertiaryAddDrop', 'tertiaryPayments', 'tertiaryCbt', 'tertiaryExams', 'tertiarySenate', 'tertiaryDocket', 'tertiaryTranscript', 'tertiaryOfficialTranscript', 'tertiaryForecast', 'tertiaryClearance', 'tertiaryCertificate'] },
     { group: 'e-Library', links: ['elibraryCatalog', 'elibraryLoans'] },
+    { group: 'Management', links: ['reports', 'system', 'manageStaff', 'manageStudents', 'tertiaryCampuses', 'departments', 'idCards', 'hostels', 'bas'] },
+    { group: 'Finance', links: ['feeSystem', 'invoices', 'payments', 'expenses', 'vouchers', 'payroll', 'reconciliation', 'chartOfAccounts', 'financialReports'] },
     { group: 'Infrastructure', links: ['database', 'logs'] }
   ],
   SLT: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'announcements'] },
     { group: 'Communication', links: ['messaging'] },
-    { group: 'Oversight', links: ['reports', 'manageStaff', 'manageStudents', 'tertiaryCampuses', 'departments', 'hostels'] },
     { group: 'Academics', links: ['academicOverview', 'lessonApprovals', 'generateResults', 'viewResults', 'gradingSystem', 'classesAndSubjects', 'aiSettings'] },
     { group: 'Tertiary (TIMS)', links: ['tertiaryAdmissions', 'tertiaryStudentHub', 'tertiaryLecturerStudio', 'tertiaryPrograms', 'tertiaryCourses', 'tertiaryOfferings', 'tertiaryTimetable', 'tertiaryRegistration', 'tertiaryAddDrop', 'tertiaryPayments', 'tertiaryCbt', 'tertiaryExams', 'tertiarySenate', 'tertiaryDocket', 'tertiaryTranscript', 'tertiaryOfficialTranscript', 'tertiaryForecast', 'tertiaryClearance', 'tertiaryCertificate'] },
     { group: 'e-Library', links: ['elibraryCatalog', 'elibraryLoans'] },
+    { group: 'Oversight', links: ['reports', 'manageStaff', 'manageStudents', 'tertiaryCampuses', 'departments', 'hostels'] },
     { group: 'Finance', links: ['financialReports'] },
   ],
   HOD: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'announcements'] },
     { group: 'Communication', links: ['messaging'] },
-    { group: 'Department', links: ['attendance', 'lessonApprovals', 'enterScores', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'hodAnalytics', 'manageStaff'] },
     { group: 'Academics', links: ['classesAndSubjects'] },
     { group: 'Tertiary Academics', links: ['tertiaryLecturerStudio', 'tertiaryCourses', 'tertiaryOfferings', 'tertiaryTimetable', 'tertiaryRegistration', 'tertiaryCbt', 'tertiaryExams', 'tertiarySenate', 'tertiaryDocket', 'tertiaryTranscript', 'tertiaryClearance'] },
     { group: 'e-Library', links: ['elibraryCatalog'] },
+    { group: 'Department', links: ['attendance', 'lessonApprovals', 'enterScores', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'hodAnalytics', 'manageStaff'] },
   ],
   ACCOUNTANT: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'announcements'] },

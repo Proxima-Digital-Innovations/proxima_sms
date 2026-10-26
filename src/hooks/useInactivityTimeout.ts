@@ -1,30 +1,54 @@
-
 'use client';
 
 import { useEffect, useRef, useCallback } from 'react';
 
 export function useInactivityTimeout(onInactive: () => void, timeout: number) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastActivityRef = useRef<number>(Date.now());
+  const onInactiveRef = useRef(onInactive);
+
+  useEffect(() => {
+    onInactiveRef.current = onInactive;
+  }, [onInactive]);
 
   const resetTimer = useCallback(() => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    timeoutRef.current = setTimeout(onInactive, timeout);
-  }, [onInactive, timeout]);
+    lastActivityRef.current = Date.now();
+    timeoutRef.current = setTimeout(() => {
+      onInactiveRef.current();
+    }, timeout);
+  }, [timeout]);
 
   useEffect(() => {
-    const events: (keyof WindowEventMap)[] = ['mousemove', 'keydown', 'click', 'scroll'];
+    const events: (keyof WindowEventMap)[] = [
+      'mousemove',
+      'mousedown',
+      'mouseup',
+      'keydown',
+      'keyup',
+      'touchstart',
+      'touchmove',
+      'touchend',
+      'scroll',
+      'wheel',
+      'pointerdown'
+    ];
 
     const handleActivity = () => {
-      resetTimer();
+      // Throttle resetting the timer to at most once every 1000ms
+      const now = Date.now();
+      if (now - lastActivityRef.current > 1000) {
+        resetTimer();
+      }
     };
 
     // Set initial timer
     resetTimer();
 
-    // Add event listeners
-    events.forEach(event => window.addEventListener(event, handleActivity));
+    // Add passive event listeners for high performance
+    events.forEach(event => window.addEventListener(event, handleActivity, { passive: true }));
 
     // Cleanup function
     return () => {
