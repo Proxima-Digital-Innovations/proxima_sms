@@ -41,7 +41,7 @@ import {
   LiveVirtualClassSession
 } from '@/actions/tertiary-classroom-actions';
 import { VirtualClassroomModal } from '@/components/dashboard/virtual-class/virtual-classroom-modal';
-import { Radio, Video, PhoneOff, Hand, MessageSquare, Mic, Square, X } from 'lucide-react';
+import { Radio, Video, PhoneOff, Hand, MessageSquare, Mic, Square, X, CalendarCheck } from 'lucide-react';
 
 export default function LecturerStudioPage() {
   const { role, isLoading: isRoleLoading } = useRole();
