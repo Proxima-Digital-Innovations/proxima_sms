@@ -172,9 +172,9 @@ export const navConfig: Record<string, { group: string; links: (keyof typeof all
     { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'announcements', 'messaging'] },
     { group: 'Academics', links: ['attendance', 'lessonApprovals', 'cbtExams', 'enterScores', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'generateResults', 'viewResults'] },
     { group: 'Admissions & CAPS', links: ['admissions'] },
-    { group: 'Tertiary (TIMS)', links: ['tertiaryStudentHub', 'tertiaryLecturerStudio', 'tertiaryPrograms', 'tertiaryCourses', 'tertiaryOfferings', 'tertiaryTimetable', 'tertiaryRegistration', 'tertiaryAddDrop', 'tertiaryPayments', 'tertiaryCbt', 'tertiaryExams', 'tertiarySenate', 'tertiaryDocket', 'tertiaryTranscript', 'tertiaryOfficialTranscript', 'tertiaryForecast', 'tertiaryClearance', 'tertiaryCertificate'] },
+    { group: 'Tertiary (TIMS)', links: ['tertiaryCampuses', 'tertiaryAdmissions', 'tertiaryStudentHub', 'tertiaryLecturerStudio', 'tertiaryPrograms', 'tertiaryCourses', 'tertiaryOfferings', 'tertiaryTimetable', 'tertiaryRegistration', 'tertiaryAddDrop', 'tertiaryPayments', 'tertiaryCbt', 'tertiaryExams', 'tertiarySenate', 'tertiaryDocket', 'tertiaryTranscript', 'tertiaryOfficialTranscript', 'tertiaryForecast', 'tertiaryClearance', 'tertiaryCertificate'] },
     { group: 'e-Library', links: ['elibraryCatalog', 'elibraryLoans'] },
-    { group: 'Management', links: ['reports', 'system', 'manageStaff', 'manageStudents', 'tertiaryCampuses', 'departments', 'idCards', 'hostels', 'bas'] },
+    { group: 'Management', links: ['reports', 'system', 'manageStaff', 'manageStudents', 'departments', 'idCards', 'hostels', 'bas'] },
     { group: 'Finance', links: ['feeSystem', 'invoices', 'payments', 'expenses', 'vouchers', 'payroll', 'reconciliation', 'chartOfAccounts', 'financialReports'] },
     { group: 'Infrastructure', links: ['database', 'logs'] }
   ],
@@ -183,9 +183,9 @@ export const navConfig: Record<string, { group: string; links: (keyof typeof all
     { group: 'Communication', links: ['messaging'] },
     { group: 'Academics', links: ['academicOverview', 'lessonApprovals', 'cbtExams', 'generateResults', 'viewResults', 'gradingSystem', 'classesAndSubjects', 'aiSettings'] },
     { group: 'Admissions & CAPS', links: ['admissions'] },
-    { group: 'Tertiary (TIMS)', links: ['tertiaryStudentHub', 'tertiaryLecturerStudio', 'tertiaryPrograms', 'tertiaryCourses', 'tertiaryOfferings', 'tertiaryTimetable', 'tertiaryRegistration', 'tertiaryAddDrop', 'tertiaryPayments', 'tertiaryCbt', 'tertiaryExams', 'tertiarySenate', 'tertiaryDocket', 'tertiaryTranscript', 'tertiaryOfficialTranscript', 'tertiaryForecast', 'tertiaryClearance', 'tertiaryCertificate'] },
+    { group: 'Tertiary (TIMS)', links: ['tertiaryCampuses', 'tertiaryAdmissions', 'tertiaryStudentHub', 'tertiaryLecturerStudio', 'tertiaryPrograms', 'tertiaryCourses', 'tertiaryOfferings', 'tertiaryTimetable', 'tertiaryRegistration', 'tertiaryAddDrop', 'tertiaryPayments', 'tertiaryCbt', 'tertiaryExams', 'tertiarySenate', 'tertiaryDocket', 'tertiaryTranscript', 'tertiaryOfficialTranscript', 'tertiaryForecast', 'tertiaryClearance', 'tertiaryCertificate'] },
     { group: 'e-Library', links: ['elibraryCatalog', 'elibraryLoans'] },
-    { group: 'Oversight', links: ['reports', 'manageStaff', 'manageStudents', 'tertiaryCampuses', 'departments', 'hostels'] },
+    { group: 'Oversight', links: ['reports', 'manageStaff', 'manageStudents', 'departments', 'hostels'] },
     { group: 'Finance', links: ['financialReports'] },
   ],
   HOD: [
@@ -393,7 +393,14 @@ export function getFilteredNavConfig(role: string, activeModules: string[], inst
     const effectiveRole = role === 'SUPER_ADMIN' ? 'ADMIN' : role;
     if (!navConfig[effectiveRole]) return [];
 
+    const isTertiaryActive = activeModules.includes('TERTIARY_INSTITUTION');
+
     return navConfig[effectiveRole].map(group => {
+        // If Tertiary is active, admissions is already nested within Tertiary (TIMS)
+        if (group.group === 'Admissions & CAPS' && isTertiaryActive) {
+            return { ...group, links: [] };
+        }
+
         // If user is a Secondary School Student, hide the Tertiary (TIMS) group
         if (effectiveRole === 'STUDENT' && institutionTier === 'SECONDARY' && group.group === 'Tertiary (TIMS)') {
             return { ...group, links: [] };
@@ -409,8 +416,18 @@ export function getFilteredNavConfig(role: string, activeModules: string[], inst
             if (!link) return false;
             
             // If the link requires a specific module, check if the school has it
-            if (link.requiredModule && !activeModules.includes(link.requiredModule)) {
-                return false;
+            if (link.requiredModule) {
+                if (linkKey === 'tertiaryAdmissions') {
+                    if (!activeModules.includes('TERTIARY_INSTITUTION')) {
+                        return false;
+                    }
+                } else if (linkKey === 'admissions') {
+                    if (!activeModules.includes('ADMISSIONS') && !activeModules.includes('TERTIARY_INSTITUTION')) {
+                        return false;
+                    }
+                } else if (!activeModules.includes(link.requiredModule)) {
+                    return false;
+                }
             }
             return true;
         });

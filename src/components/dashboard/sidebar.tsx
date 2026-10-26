@@ -19,7 +19,8 @@ export default function Sidebar() {
     const pathname = usePathname();
     const { user, role, rbacPermissions, activeModules } = useRole();
     const { isRtl } = useLanguage();
-    const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
+    const [collapsedGroups, setCollapsedGroups] = useState<string[]>([]);
+    const [expandedSubItems, setExpandedSubItems] = useState<string[]>([]);
     const [schoolName, setSchoolName] = useState<string>('Proxima SMS');
     const [schoolLogo, setSchoolLogo] = useState<string | null>(null);
     const [pendingPath, setPendingPath] = useState<string | null>(null);
@@ -84,17 +85,19 @@ export default function Sidebar() {
 
     const currentNavConfig = dynamicNavConfig;
 
-    useEffect(() => {
-        if (currentNavConfig.length > 0 && expandedGroups.length === 0) {
-            setExpandedGroups(currentNavConfig.map(g => g.group));
-        }
-    }, [currentNavConfig, expandedGroups.length]);
-
     const toggleGroup = (group: string) => {
-        setExpandedGroups(prev => 
+        setCollapsedGroups(prev => 
             prev.includes(group) 
                 ? prev.filter(g => g !== group)
                 : [...prev, group]
+        );
+    };
+
+    const toggleSubItem = (label: string) => {
+        setExpandedSubItems(prev =>
+            prev.includes(label)
+                ? prev.filter(l => l !== label)
+                : [...prev, label]
         );
     };
 
@@ -175,7 +178,7 @@ export default function Sidebar() {
                 {/* Navigation Groups */}
                 <div className="flex-1 overflow-y-auto py-4 px-3 space-y-4 no-scrollbar">
                     {currentNavConfig.map((group) => {
-                        const isExpanded = expandedGroups.includes(group.group);
+                        const isExpanded = !collapsedGroups.includes(group.group);
                         
                         return (
                             <div key={group.group} className="space-y-1">
@@ -210,12 +213,12 @@ export default function Sidebar() {
                                                 // Handle parent links with subLinks
                                                 if (link.subLinks && link.subLinks.length > 0) {
                                                     const hasActiveChild = link.subLinks.some(child => pathname === child.path);
-                                                    const isItemExpanded = expandedGroups.includes(link.label) || hasActiveChild;
+                                                    const isItemExpanded = expandedSubItems.includes(link.label) || hasActiveChild;
                                                     
                                                     return (
                                                         <div key={linkKey} className="space-y-0.5">
                                                             <button
-                                                                onClick={() => toggleGroup(link.label)}
+                                                                onClick={() => toggleSubItem(link.label)}
                                                                 className={cn(
                                                                     "w-full flex items-center gap-3 p-2.5 min-h-[42px] rounded-lg transition-colors group cursor-pointer",
                                                                     hasActiveChild
