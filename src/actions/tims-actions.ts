@@ -50,16 +50,20 @@ export async function getCurrentStudentContextAction(academicSession = '2025/202
       activeStudent = allStudents[0];
     }
 
-    return {
-      success: true,
-      data: {
+    const payload = JSON.parse(
+      JSON.stringify({
         userId,
         userRole,
         isStudentRole: userRole === 'STUDENT',
         activeStudent,
         student: activeStudent,
         allStudents: userRole === 'STUDENT' && activeStudent ? [activeStudent] : allStudents,
-      },
+      })
+    );
+
+    return {
+      success: true,
+      data: payload,
     };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -533,7 +537,7 @@ export async function getSenateBroadsheetData(academicSession: string, semester:
       orderBy: { cgpa: 'desc' },
     });
 
-    return { success: true, data: standings };
+    return { success: true, data: JSON.parse(JSON.stringify(standings)) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

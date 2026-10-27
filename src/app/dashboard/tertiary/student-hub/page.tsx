@@ -55,6 +55,7 @@ export default function StudentHubPage() {
 
   // Video Class Player State
   const [activeVideoModal, setActiveVideoModal] = useState<{ title: string; url: string; course: string; week?: number } | null>(null);
+  const [materialFilter, setMaterialFilter] = useState<'ALL' | 'VIDEO' | 'AUDIO' | 'DOCS'>('ALL');
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioProgress, setAudioProgress] = useState(0);
   const [audioDuration, setAudioDuration] = useState(0);
@@ -393,8 +394,8 @@ export default function StudentHubPage() {
         </div>
       </div>
 
-      {/* LIVE VIRTUAL CLASS IN PROGRESS BANNER (Remote Students Real-time Interaction) */}
-      {activeLiveSessions.length > 0 && (
+      {/* LIVE VIRTUAL CLASS BANNER & STANDBY HUB */}
+      {activeLiveSessions.length > 0 ? (
         <div className="bg-gradient-to-r from-rose-950 via-slate-900 to-indigo-950 p-4 sm:p-5 rounded-3xl border border-rose-500/40 text-white shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-300">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0">
@@ -423,6 +424,50 @@ export default function StudentHubPage() {
             <Video className="w-4 h-4" />
             Join Virtual Classroom
           </button>
+        </div>
+      ) : (
+        <div className="bg-card p-4 sm:p-5 rounded-3xl border border-border shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-11 h-11 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500 shrink-0">
+              <Video className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-muted text-muted-foreground border border-border rounded-md">
+                  VIRTUAL CLASSROOM HUB
+                </span>
+                <span className="text-xs text-muted-foreground font-semibold">WebRTC Real-time Interactive Video</span>
+              </div>
+              <h4 className="text-sm font-bold text-foreground mt-0.5">Live Interactive Video &amp; Audio Classroom</h4>
+              <p className="text-xs text-muted-foreground">
+                Lecturers launch live classes directly from their Teaching Studio. Remote students participate live with video, audio, hand-raising, and chat.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => {
+                const demoSession: LiveVirtualClassSession = {
+                  id: 'demo-live-session',
+                  offeringId: student?.registeredCourses?.[0]?.id || 'demo-offering',
+                  courseCode: student?.registeredCourses?.[0]?.code || 'CSC201',
+                  courseTitle: student?.registeredCourses?.[0]?.title || 'Computer Programming II',
+                  topic: 'Interactive Virtual Lecture: Object-Oriented Principles & System Architecture',
+                  lecturerId: 'lecturer-demo',
+                  lecturerName: 'Dr. Aliyu Sani',
+                  startedAt: new Date(),
+                  activeStudentCount: 14
+                };
+                setSelectedLiveSession(demoSession);
+              }}
+              className="w-full sm:w-auto px-4 py-2 bg-rose-600/10 hover:bg-rose-600/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2 shrink-0 active:scale-95"
+            >
+              <Video className="w-4 h-4" />
+              Launch Test Virtual Class
+            </button>
+          </div>
         </div>
       )}
 
@@ -680,17 +725,76 @@ export default function StudentHubPage() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
               <div>
                 <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-                  <Headphones className="w-5 h-5 text-primary" />
-                  Course Lecture Notes &amp; Audio Broadcasts
+                  <Video className="w-5 h-5 text-rose-500" />
+                  Course Digital Library: Video Classes, Audio Podcasts &amp; Lecture Notes
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  Access digital course packs, lecture slides, and streaming audio podcasts uploaded by your lecturers.
+                  Access interactive recorded video lectures, live classroom replays, lecture slides, and streaming audio podcasts uploaded by your lecturers.
                 </p>
+              </div>
+
+              {/* Material Type Filter Pills */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setMaterialFilter('ALL')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    materialFilter === 'ALL'
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'bg-muted text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  All ({student?.materials?.length || 0})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMaterialFilter('VIDEO')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    materialFilter === 'VIDEO'
+                      ? 'bg-rose-600 text-white shadow-sm'
+                      : 'bg-muted text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Video className="w-3.5 h-3.5" />
+                  Video Classes ({student?.materials?.filter((m: any) => m.materialType === 'VIDEO_RECORDING' || m.materialType === 'VIDEO_LINK').length || 0})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMaterialFilter('AUDIO')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    materialFilter === 'AUDIO'
+                      ? 'bg-purple-600 text-white shadow-sm'
+                      : 'bg-muted text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Headphones className="w-3.5 h-3.5" />
+                  Audio Podcasts ({student?.materials?.filter((m: any) => m.materialType === 'AUDIO_RECORDING').length || 0})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMaterialFilter('DOCS')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    materialFilter === 'DOCS'
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'bg-muted text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  Notes &amp; Slides ({student?.materials?.filter((m: any) => m.materialType !== 'VIDEO_RECORDING' && m.materialType !== 'VIDEO_LINK' && m.materialType !== 'AUDIO_RECORDING').length || 0})
+                </button>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {student?.materials?.map((mat: any) => {
+              {(student?.materials || [])
+                .filter((mat: any) => {
+                  if (materialFilter === 'ALL') return true;
+                  if (materialFilter === 'VIDEO') return mat.materialType === 'VIDEO_RECORDING' || mat.materialType === 'VIDEO_LINK';
+                  if (materialFilter === 'AUDIO') return mat.materialType === 'AUDIO_RECORDING';
+                  if (materialFilter === 'DOCS') return mat.materialType !== 'VIDEO_RECORDING' && mat.materialType !== 'VIDEO_LINK' && mat.materialType !== 'AUDIO_RECORDING';
+                  return true;
+                })
+                .map((mat: any) => {
                 const isAudio = mat.materialType === 'AUDIO_RECORDING';
                 const isVideo = mat.materialType === 'VIDEO_RECORDING' || mat.materialType === 'VIDEO_LINK';
                 return (

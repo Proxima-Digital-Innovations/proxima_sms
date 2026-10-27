@@ -245,7 +245,7 @@ export async function getStudentPortalData(targetStudentId?: string) {
       take: 10
     });
 
-    return {
+    return JSON.parse(JSON.stringify({
       success: true,
       student: {
         id: student.id,
@@ -256,7 +256,7 @@ export async function getStudentPortalData(targetStudentId?: string) {
         program: student.program.name,
         faculty: student.program.faculty?.name || 'Faculty of Computing',
         department: student.program.department?.name || 'Computer Science',
-        cgpa: latestStanding ? latestStanding.cgpa : 4.42,
+        cgpa: latestStanding ? Number(latestStanding.cgpa) : 4.42,
         academicStanding: latestStanding ? latestStanding.standingStatus : 'FIRST_CLASS_HONOURS',
         session: activeReg?.academicSession || '2025/2026',
         semester: activeReg?.semester || 1,
@@ -291,7 +291,7 @@ export async function getStudentPortalData(targetStudentId?: string) {
         name: `${s.user.firstName || ''} ${s.user.lastName || ''}`.trim() || s.matricNumber,
         program: s.program.code
       }))
-    };
+    }));
   } catch (error: any) {
     console.error('Error fetching student portal data:', error);
     return { success: false, error: error.message || 'Failed to retrieve student profile.' };

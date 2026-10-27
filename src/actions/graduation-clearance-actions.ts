@@ -28,7 +28,7 @@ export async function getGraduationClearances(session?: string, status?: string)
       orderBy: { createdAt: 'desc' },
     });
 
-    return { success: true, data: clearances };
+    return { success: true, data: JSON.parse(JSON.stringify(clearances)) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -52,7 +52,7 @@ export async function getStudentGraduationClearance(studentProfileId: string) {
       },
     });
 
-    return { success: true, data: clearance };
+    return { success: true, data: JSON.parse(JSON.stringify(clearance)) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
