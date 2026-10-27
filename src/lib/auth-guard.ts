@@ -40,10 +40,10 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
   departments: { icon: 'Building', label: 'Departments', path: '/dashboard/departments' },
   database: { icon: 'Server', label: 'Database', path: '/dashboard/db' },
   logs: { icon: 'Activity', label: 'Logs & Security', path: '/dashboard/logs' },
-  lessonApprovals: { icon: 'Book', label: 'Lesson Approvals', path: '/dashboard/lesson-notes', requiredModule: 'LMS' },
+  lessonApprovals: { icon: 'Book', label: 'Lesson Approvals', path: '/dashboard/lesson-notes', requiredModule: 'SECONDARY_SCHOOL' },
   hodAnalytics: { icon: 'BarChart2', label: 'Dept. Analytics', path: '/dashboard/hod/analytics' },
-  academicOverview: { icon: 'LineChart', label: 'Academic Oversight', path: '/dashboard/slt/academics' },
-  lessonPlans: { icon: 'BookCopy', label: 'Lesson Plans', path: '/dashboard/lesson-notes', requiredModule: 'LMS' },
+  academicOverview: { icon: 'LineChart', label: 'Academic Oversight', path: '/dashboard/slt/academics', requiredModule: 'SECONDARY_SCHOOL' },
+  lessonPlans: { icon: 'BookCopy', label: 'Lesson Plans', path: '/dashboard/lesson-notes', requiredModule: 'SECONDARY_SCHOOL' },
   examQuestions: { icon: 'FileQuestion', label: 'Question Bank', path: '/dashboard/exam-questions', requiredModule: 'CBT' },
   bulkUpload: { icon: 'UploadCloud', label: 'Bulk Upload', path: '/dashboard/upload/scores', requiredModule: 'SECONDARY_SCHOOL' },
   enterScores: { icon: 'Edit3', label: 'Enter Scores', path: '/dashboard/scores/enter', requiredModule: 'SECONDARY_SCHOOL' },
@@ -52,12 +52,12 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
   midtermScores: { icon: 'ClipboardCheck', label: 'Mid-Term Results', path: '/dashboard/midterm', requiredModule: 'SECONDARY_SCHOOL' },
   behaviouralAssessment: { icon: 'Heart', label: 'Behavioural Assessment', path: '/dashboard/behavioural', requiredModule: 'SECONDARY_SCHOOL' },
   myStudents: { icon: 'UsersRound', label: 'My Students', path: '/dashboard/performance' },
-  attendance: { icon: 'CalendarCheck', label: 'Student Attendance', path: '/dashboard/attendance' },
+  attendance: { icon: 'CalendarCheck', label: 'Student Attendance', path: '/dashboard/attendance', requiredModule: 'SECONDARY_SCHOOL' },
   staffAttendance: { icon: 'Fingerprint', label: 'Staff Clock-In', path: '/dashboard/bas/attendance' },
   reviewQuestions: { icon: 'FileQuestion', label: 'Review Questions', path: '/dashboard/exam-questions', requiredModule: 'CBT' },
   generateResults: { icon: 'CheckSquare', label: 'Generate Results', path: '/dashboard/results/generate', requiredModule: 'SECONDARY_SCHOOL' },
   viewResults: { icon: 'Award', label: 'View Results', path: '/dashboard/results/view', requiredModule: 'SECONDARY_SCHOOL' },
-  timetable: { icon: 'Calendar', label: 'Timetable', path: '/dashboard/timetable' },
+  timetable: { icon: 'Calendar', label: 'Timetable', path: '/dashboard/timetable', requiredModule: 'SECONDARY_SCHOOL' },
   examRegistration: { icon: 'Ticket', label: 'Exam Registration', path: '/dashboard/exam-registration', requiredModule: 'CBT' },
   seatingPlans: { icon: 'Grid', label: 'Seating Plans', path: '/dashboard/seating-plan', requiredModule: 'CBT' },
   feeSystem: { icon: 'Wallet', label: 'System Fee Structure', path: '/dashboard/finance/fee-structures', requiredModule: 'FINANCE' },
@@ -71,15 +71,15 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
   financialReports: { icon: 'BarChart2', label: 'Financial Reports', path: '/dashboard/finance/reports', requiredModule: 'FINANCE' },
 
   // Parent Portal Links
-  parentResults: { icon: 'GraduationCap', label: 'Report Cards', path: '/dashboard/parent/results' },
-  parentAttendance: { icon: 'CalendarCheck', label: 'Attendance Log', path: '/dashboard/parent/attendance' },
-  parentTimetable: { icon: 'Calendar', label: 'Class Timetable', path: '/dashboard/parent/timetable' },
+  parentResults: { icon: 'GraduationCap', label: 'Report Cards', path: '/dashboard/parent/results', requiredModule: 'SECONDARY_SCHOOL' },
+  parentAttendance: { icon: 'CalendarCheck', label: 'Attendance Log', path: '/dashboard/parent/attendance', requiredModule: 'SECONDARY_SCHOOL' },
+  parentTimetable: { icon: 'Calendar', label: 'Class Timetable', path: '/dashboard/parent/timetable', requiredModule: 'SECONDARY_SCHOOL' },
   parentWallet: { icon: 'Wallet', label: 'Tuition Wallet', path: '/dashboard/parent/wallet', requiredModule: 'FINANCE' },
   parentInvoices: { icon: 'Receipt', label: 'Fee Invoices', path: '/dashboard/parent/invoices', requiredModule: 'FINANCE' },
   parentPayments: { icon: 'CreditCard', label: 'Pay School Fees', path: '/dashboard/parent/invoices', requiredModule: 'FINANCE' },
   parentAnnouncements: { icon: 'Megaphone', label: 'Announcements', path: '/dashboard/announcements' },
   
-  studentResults: { icon: 'Award', label: 'My Results', path: '/dashboard/performance' },
+  studentResults: { icon: 'Award', label: 'My Results', path: '/dashboard/performance', requiredModule: 'SECONDARY_SCHOOL' },
   cbtExams: { 
     icon: 'CheckSquare', 
     label: 'CBT Examination Portal', 
@@ -103,7 +103,7 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
       { label: 'Quizzes & Practice', path: '/student/lms/quizzes', requiredModule: 'CBT' },
     ]
   },
-  studentAssignments: { icon: 'FileEdit', label: 'Assignments', path: '/student/lms/assignments', requiredModule: 'LMS' },
+  studentAssignments: { icon: 'FileEdit', label: 'Assignments', path: '/student/lms/assignments', requiredModule: 'SECONDARY_SCHOOL' },
   studentQuizzes: { icon: 'HelpCircle', label: 'Quizzes', path: '/student/lms/quizzes', requiredModule: 'CBT' },
   classesAndSubjects: { icon: 'BookMarked', label: 'Classes & Subjects', path: '/dashboard/system/classes-subjects', requiredModule: 'SECONDARY_SCHOOL' },
   gradingSystem: { icon: 'GraduationCap', label: 'Grading System', path: '/dashboard/system/grading', requiredModule: 'SECONDARY_SCHOOL' },
@@ -291,12 +291,16 @@ export const ROUTE_MODULE_MAP: { prefix: string; module: string; label: string }
   { prefix: '/dashboard/tertiary', module: 'TERTIARY_INSTITUTION', label: 'Tertiary Institution (TIMS)' },
   { prefix: '/dashboard/admissions', module: 'ADMISSIONS', label: 'University & Tertiary Admissions' },
   { prefix: '/dashboard/hostels', module: 'HOSTEL', label: 'Hostel & Bedspaces' },
+  { prefix: '/dashboard/attendance', module: 'SECONDARY_SCHOOL', label: 'Student Attendance' },
+  { prefix: '/dashboard/lesson-notes', module: 'SECONDARY_SCHOOL', label: 'Lesson Notes & Plans' },
   { prefix: '/dashboard/scores', module: 'SECONDARY_SCHOOL', label: 'Secondary School Scores' },
   { prefix: '/dashboard/tahfeez', module: 'SECONDARY_SCHOOL', label: 'Tahfeez Evaluation' },
   { prefix: '/dashboard/midterm', module: 'SECONDARY_SCHOOL', label: 'Secondary Mid-Term' },
   { prefix: '/dashboard/behavioural', module: 'SECONDARY_SCHOOL', label: 'Behavioural Assessment' },
   { prefix: '/dashboard/results', module: 'SECONDARY_SCHOOL', label: 'Secondary Results' },
   { prefix: '/dashboard/upload/scores', module: 'SECONDARY_SCHOOL', label: 'Score Uploads' },
+  { prefix: '/dashboard/timetable', module: 'SECONDARY_SCHOOL', label: 'Class Timetable' },
+  { prefix: '/dashboard/slt/academics', module: 'SECONDARY_SCHOOL', label: 'Academic Oversight' },
   { prefix: '/dashboard/system/classes-subjects', module: 'SECONDARY_SCHOOL', label: 'Classes & Subjects' },
   { prefix: '/dashboard/system/grading', module: 'SECONDARY_SCHOOL', label: 'Grading Configuration' },
   { prefix: '/dashboard/finance', module: 'FINANCE', label: 'Finance & Bursary' },
@@ -308,7 +312,6 @@ export const ROUTE_MODULE_MAP: { prefix: string; module: string; label: string }
   { prefix: '/dashboard/exam-registration', module: 'CBT', label: 'Exam Registration' },
   { prefix: '/dashboard/seating-plan', module: 'CBT', label: 'Seating Plans' },
   { prefix: '/student/lms', module: 'LMS', label: 'Learning Management System' },
-  { prefix: '/dashboard/lesson-notes', module: 'LMS', label: 'Lesson Notes & Plans' },
 ];
 
 export function isPathAuthorized(
@@ -394,6 +397,7 @@ export function getFilteredNavConfig(role: string, activeModules: string[], inst
     if (!navConfig[effectiveRole]) return [];
 
     const isTertiaryActive = activeModules.includes('TERTIARY_INSTITUTION');
+    const isSecondaryActive = activeModules.includes('SECONDARY_SCHOOL');
 
     return navConfig[effectiveRole].map(group => {
         // If Tertiary is active, admissions is already nested within Tertiary (TIMS)
@@ -401,12 +405,21 @@ export function getFilteredNavConfig(role: string, activeModules: string[], inst
             return { ...group, links: [] };
         }
 
+        // If Secondary School is inactive, hide the K-12 Academics group
+        // (If CBT is active and Tertiary is NOT active, keep cbtExams for standalone CBT test centers)
+        if (!isSecondaryActive && group.group === 'Academics') {
+            if (!isTertiaryActive && activeModules.includes('CBT')) {
+                return { ...group, links: group.links.filter(l => l === 'cbtExams') };
+            }
+            return { ...group, links: [] };
+        }
+
         // If user is a Secondary School Student, hide the Tertiary (TIMS) group
         if (effectiveRole === 'STUDENT' && institutionTier === 'SECONDARY' && group.group === 'Tertiary (TIMS)') {
             return { ...group, links: [] };
         }
-        // If user is a Tertiary Student, hide the K-12 Academics group
-        if (effectiveRole === 'STUDENT' && institutionTier === 'TERTIARY' && group.group === 'Academics') {
+        // If user is a Tertiary Student or Secondary is inactive, hide the K-12 Academics group
+        if (effectiveRole === 'STUDENT' && (institutionTier === 'TERTIARY' || !isSecondaryActive) && group.group === 'Academics') {
             return { ...group, links: [] };
         }
 
