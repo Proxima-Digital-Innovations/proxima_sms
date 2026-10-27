@@ -3,6 +3,7 @@
 import { saveExamDraft, loadExamDraft, clearExamDraft } from '@/lib/offline-vault';
 
 import React, { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import {
   UserCheck,
   BookOpen,
@@ -343,6 +344,13 @@ export default function StudentHubPage() {
                 <span className="px-3 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs rounded-full font-semibold">
                   {student?.currentLevel} Level
                 </span>
+                <Link
+                  href="/dashboard/hostels/booking"
+                  className="px-3 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-xs rounded-full font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Building className="w-3.5 h-3.5" />
+                  Hostel Bedspace Booking
+                </Link>
               </div>
               <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white">
                 {student?.fullName}
