@@ -172,9 +172,9 @@ export const navConfig: Record<string, { group: string; links: (keyof typeof all
     { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'announcements', 'messaging'] },
     { group: 'Academics', links: ['attendance', 'lessonApprovals', 'cbtExams', 'enterScores', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'generateResults', 'viewResults'] },
     { group: 'Admissions & CAPS', links: ['admissions'] },
-    { group: 'Tertiary (TIMS)', links: ['tertiaryCampuses', 'tertiaryAdmissions', 'tertiaryStudentHub', 'tertiaryLecturerStudio', 'tertiaryPrograms', 'tertiaryCourses', 'tertiaryOfferings', 'tertiaryTimetable', 'tertiaryRegistration', 'tertiaryAddDrop', 'tertiaryPayments', 'tertiaryCbt', 'tertiaryExams', 'tertiarySenate', 'tertiaryDocket', 'tertiaryTranscript', 'tertiaryOfficialTranscript', 'tertiaryForecast', 'tertiaryClearance', 'tertiaryCertificate'] },
+    { group: 'Tertiary (TIMS)', links: ['tertiaryCampuses', 'tertiaryAdmissions', 'tertiaryStudentHub', 'tertiaryLecturerStudio', 'tertiaryPrograms', 'tertiaryCourses', 'tertiaryOfferings', 'tertiaryTimetable', 'tertiaryRegistration', 'tertiaryAddDrop', 'tertiaryPayments', 'hostels', 'idCards', 'tertiaryCbt', 'tertiaryExams', 'tertiarySenate', 'tertiaryDocket', 'tertiaryTranscript', 'tertiaryOfficialTranscript', 'tertiaryForecast', 'tertiaryClearance', 'tertiaryCertificate'] },
     { group: 'e-Library', links: ['elibraryCatalog', 'elibraryLoans'] },
-    { group: 'Management', links: ['reports', 'system', 'manageStaff', 'manageStudents', 'departments', 'idCards', 'hostels', 'bas'] },
+    { group: 'Management', links: ['reports', 'system', 'manageStaff', 'manageStudents', 'departments', 'bas'] },
     { group: 'Finance', links: ['feeSystem', 'invoices', 'payments', 'expenses', 'vouchers', 'payroll', 'reconciliation', 'chartOfAccounts', 'financialReports'] },
     { group: 'Infrastructure', links: ['database', 'logs'] }
   ],
@@ -183,9 +183,9 @@ export const navConfig: Record<string, { group: string; links: (keyof typeof all
     { group: 'Communication', links: ['messaging'] },
     { group: 'Academics', links: ['academicOverview', 'lessonApprovals', 'cbtExams', 'generateResults', 'viewResults', 'gradingSystem', 'classesAndSubjects', 'aiSettings'] },
     { group: 'Admissions & CAPS', links: ['admissions'] },
-    { group: 'Tertiary (TIMS)', links: ['tertiaryCampuses', 'tertiaryAdmissions', 'tertiaryStudentHub', 'tertiaryLecturerStudio', 'tertiaryPrograms', 'tertiaryCourses', 'tertiaryOfferings', 'tertiaryTimetable', 'tertiaryRegistration', 'tertiaryAddDrop', 'tertiaryPayments', 'tertiaryCbt', 'tertiaryExams', 'tertiarySenate', 'tertiaryDocket', 'tertiaryTranscript', 'tertiaryOfficialTranscript', 'tertiaryForecast', 'tertiaryClearance', 'tertiaryCertificate'] },
+    { group: 'Tertiary (TIMS)', links: ['tertiaryCampuses', 'tertiaryAdmissions', 'tertiaryStudentHub', 'tertiaryLecturerStudio', 'tertiaryPrograms', 'tertiaryCourses', 'tertiaryOfferings', 'tertiaryTimetable', 'tertiaryRegistration', 'tertiaryAddDrop', 'tertiaryPayments', 'hostels', 'idCards', 'tertiaryCbt', 'tertiaryExams', 'tertiarySenate', 'tertiaryDocket', 'tertiaryTranscript', 'tertiaryOfficialTranscript', 'tertiaryForecast', 'tertiaryClearance', 'tertiaryCertificate'] },
     { group: 'e-Library', links: ['elibraryCatalog', 'elibraryLoans'] },
-    { group: 'Oversight', links: ['reports', 'manageStaff', 'manageStudents', 'departments', 'hostels'] },
+    { group: 'Oversight', links: ['reports', 'manageStaff', 'manageStudents', 'departments'] },
     { group: 'Finance', links: ['financialReports'] },
   ],
   HOD: [
@@ -423,8 +423,24 @@ export function getFilteredNavConfig(role: string, activeModules: string[], inst
             return { ...group, links: [] };
         }
 
+        // If Tertiary is NOT active, keep hostels and idCards under Management
+        let currentGroup = group;
+        if (!isTertiaryActive && group.group === 'Management') {
+            const extraLinks: (keyof typeof allNavLinks)[] = [];
+            if (activeModules.includes('HOSTEL') && !group.links.includes('hostels')) {
+                extraLinks.push('hostels');
+            }
+            if (!group.links.includes('idCards')) {
+                extraLinks.push('idCards');
+            }
+            currentGroup = {
+                ...group,
+                links: [...group.links, ...extraLinks]
+            };
+        }
+
         // Filter links in this group
-        const filteredLinks = group.links.filter(linkKey => {
+        const filteredLinks = currentGroup.links.filter(linkKey => {
             const link = allNavLinks[linkKey];
             if (!link) return false;
             
