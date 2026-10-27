@@ -227,6 +227,17 @@ export default function StudentHubPage() {
     }
   };
 
+  const stopAndCloseAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    setIsPlaying(false);
+    setCurrentAudio(null);
+    setAudioProgress(0);
+    setAudioDuration(0);
+  };
+
   const onTimeUpdate = () => {
     if (audioRef.current) {
       setAudioProgress(audioRef.current.currentTime);
@@ -580,6 +591,15 @@ export default function StudentHubPage() {
               <Download className="w-3.5 h-3.5 text-indigo-400" />
               Download Audio
             </a>
+            <button
+              type="button"
+              onClick={stopAndCloseAudio}
+              className="w-8 h-8 rounded-xl bg-slate-800 hover:bg-rose-500/20 hover:border-rose-500/40 text-slate-400 hover:text-rose-400 border border-slate-700 flex items-center justify-center transition-colors cursor-pointer active:scale-95 shrink-0"
+              title="Close Audio Player"
+              aria-label="Close Audio Player"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
       )}
