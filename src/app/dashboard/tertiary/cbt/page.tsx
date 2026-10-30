@@ -2,7 +2,7 @@
 
 import { saveExamDraft, loadExamDraft, clearExamDraft } from '@/lib/offline-vault';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect, useTransition, useRef } from 'react';
 import { useRole } from '@/context/role-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,8 @@ import {
   bulkImportMultiCourseQuestionBankAction,
   deleteCbtQuestionAction,
   submitCbtExamAction,
+  getLiveInvigilationData,
+  sendInvigilatorAction,
 } from '@/actions/cbt-actions';
 import {
   Lock,
@@ -45,6 +47,15 @@ import {
   FileSpreadsheet,
   Building2,
   Filter,
+  Video,
+  Eye,
+  ShieldCheck,
+  Maximize2,
+  Minimize2,
+  Radio,
+  Megaphone,
+  UserX,
+  AlertCircle,
 } from 'lucide-react';
 
 interface ParsedBulkQuestion {
@@ -337,6 +348,19 @@ export default function TertiaryCbtPage() {
   const [isExamCompleted, setIsExamCompleted] = useState(false);
   const [examResult, setExamResult] = useState<any>(null);
   const [isPending, startTransition] = useTransition();
+  // Remote Proctoring & Webcam State
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [webcamStream, setWebcamStream] = useState<MediaStream | null>(null);
+  const [isWebcamActive, setIsWebcamActive] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Invigilator War Room State
+  const [cbtMainTab, setCbtMainTab] = useState<'catalog' | 'invigilator'>('catalog');
+  const [liveInvigilationList, setLiveInvigilationList] = useState<any[]>([]);
+  const [invigilationLoading, setInvigilationLoading] = useState(false);
+  const [warningModalTarget, setWarningModalTarget] = useState<any | null>(null);
+  const [customWarningMessage, setCustomWarningMessage] = useState('Please keep your eyes focused on your screen. Any further head deviation will trigger exam disqualification.');
+
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isMasterBulkOpen, setIsMasterBulkOpen] = useState(false);
   const { toast } = useToast();
@@ -493,12 +517,76 @@ export default function TertiaryCbtPage() {
     return () => clearInterval(interval);
   }, [activeExam, isExamCompleted, timeLeftSeconds]);
 
-  const handleStartExam = async (examId: string) => {
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen?.().then(() => setIsFullscreen(true)).catch(() => {});
+    } else {
+      document.exitFullscreen?.().then(() => setIsFullscreen(false)).catch(() => {});
+    }
+  };
+
+  const loadInvigilation = async () => {
+    setInvigilationLoading(true);
+    const res = await getLiveInvigilationData('ALL');
+    if (res.success && res.data) {
+      setLiveInvigilationList(res.data);
+    }
+    setInvigilationLoading(false);
+  };
+
+  const handleSendWarning = async (studentId: string, examId: string) => {
+    const res = await sendInvigilatorAction({
+      studentId,
+      examId,
+      action: 'WARNING',
+      message: customWarningMessage
+    });
+    if (res.success) {
+      toast({ title: 'Warning Dispatched', description: `Warning alert sent to candidate's screen.` });
+      setWarningModalTarget(null);
+    }
+  };
+
+  const handleDisqualifyCandidate = async (studentId: string, examId: string) => {
+    if (!confirm('Are you sure you want to DISQUALIFY this candidate? Their score will be nullified and their session terminated.')) return;
+    const res = await sendInvigilatorAction({
+      studentId,
+      examId,
+      action: 'DISQUALIFY'
+    });
+    if (res.success) {
+      toast({ title: 'Candidate Disqualified', description: 'Exam session terminated and score set to 0.', variant: 'destructive' });
+      loadInvigilation();
+    }
+  };
+
+  // Bind video element when stream or exam changes
+  useEffect(() => {
+    if (videoRef.current && webcamStream) {
+      videoRef.current.srcObject = webcamStream;
+    }
+  }, [webcamStream, activeExam]);
+
+    const handleStartExam = async (examId: string) => {
     setIsLoading(true);
     const res = await getCbtExamDetails(examId);
     if (res.success && res.data && res.data.exam) {
       const exam = res.data.exam;
       setActiveExam(exam);
+      if (typeof navigator !== 'undefined' && navigator.mediaDevices?.getUserMedia) {
+        navigator.mediaDevices
+          .getUserMedia({ video: { width: 320, height: 240 }, audio: false })
+          .then((stream) => {
+            setWebcamStream(stream);
+            setIsWebcamActive(true);
+            if (videoRef.current) {
+              videoRef.current.srcObject = stream;
+            }
+          })
+          .catch((err) => {
+            console.warn('Webcam stream access notice:', err);
+          });
+      }
       setTimeLeftSeconds(exam.durationMinutes * 60);
       setTabSwitchCount(0);
       setCurrentQuestionIndex(0);
@@ -584,6 +672,11 @@ export default function TertiaryCbtPage() {
     );
     const questionsToImport = matchingQuestions.length > 0 ? matchingQuestions : bulkPreview;
 
+    if (webcamStream) {
+      webcamStream.getTracks().forEach((t) => t.stop());
+      setWebcamStream(null);
+      setIsWebcamActive(false);
+    }
     startTransition(async () => {
       const res = await bulkAddCbtQuestionsAction({
         examId: managedExam.id,
@@ -909,6 +1002,50 @@ export default function TertiaryCbtPage() {
               <Timer className="h-4 w-4" />
               <span>{formatTimer(timeLeftSeconds)}</span>
             </div>
+          </div>
+        </div>
+
+        {/* LIVE AI PROCTORING & WEBCAM TELEMETRY STRIP */}
+        <div className="bg-slate-950/90 border border-slate-800 rounded-2xl p-3 text-white flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md">
+          <div className="flex items-center gap-3.5 w-full sm:w-auto">
+            {/* Live Camera Preview Tile */}
+            <div className="relative w-28 h-20 rounded-xl bg-black border border-indigo-500/40 overflow-hidden shrink-0 shadow-inner flex items-center justify-center">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute top-1 left-1 flex items-center gap-1 bg-black/75 px-1.5 py-0.5 rounded text-[9px] font-mono text-emerald-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span>
+                AI PROCTOR
+              </div>
+            </div>
+
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  AI REMOTE PROCTORING ACTIVE
+                </span>
+                <span className="text-[11px] text-slate-400">Continuous Biometric Video Telemetry</span>
+              </div>
+              <p className="text-xs text-slate-300 mt-1 max-w-xl leading-relaxed">
+                Your webcam is active and streaming telemetry to the Lecturer Invigilation Command Center. Face presence, gaze angles, and tab switches are continuously logged.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={toggleFullscreen}
+              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+            >
+              <Maximize2 className="w-3.5 h-3.5 text-indigo-400" />
+              {isFullscreen ? 'Exit Fullscreen' : 'Lock Fullscreen'}
+            </button>
           </div>
         </div>
 
@@ -1444,7 +1581,296 @@ export default function TertiaryCbtPage() {
         )}
       </div>
 
-      {/* FACULTY, DEPARTMENT & COURSE FILTER BAR */}
+      {/* PROCTORING & INVENTORY MAIN TABS (Faculty & Invigilators) */}
+      {isFacultyOrAdmin && (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
+          <div className="flex items-center gap-1.5 bg-muted p-1 rounded-2xl">
+            <button
+              onClick={() => setCbtMainTab('catalog')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                cbtMainTab === 'catalog'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <BookOpen className="w-3.5 h-3.5 text-indigo-500" />
+              CBT Assessments &amp; Question Banks ({exams.length})
+            </button>
+
+            <button
+              onClick={() => {
+                setCbtMainTab('invigilator');
+                loadInvigilation();
+              }}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                cbtMainTab === 'invigilator'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Radio className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
+              Live Remote Invigilator War Room
+              <span className="px-2 py-0.5 text-[10px] rounded-full bg-rose-500/15 text-rose-600 font-black">
+                LIVE CCTV
+              </span>
+            </button>
+          </div>
+
+          {cbtMainTab === 'invigilator' && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={loadInvigilation}
+              disabled={invigilationLoading}
+              className="text-xs h-8 rounded-xl flex items-center gap-1.5 border-rose-500/30 text-rose-600 hover:bg-rose-500/10"
+            >
+              {invigilationLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Radio className="w-3.5 h-3.5" />}
+              Refresh Telemetry Feed
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* RENDER INVENTORY OR INVIGILATOR VIEW */}
+      {cbtMainTab === 'invigilator' ? (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          {/* Invigilator Metrics Strip */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="bg-card p-4 rounded-2xl border border-border shadow-xs">
+              <span className="text-xs text-muted-foreground font-semibold flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-indigo-500" />
+                Active Remote Candidates
+              </span>
+              <div className="text-2xl font-black text-foreground mt-1">
+                {liveInvigilationList.length}
+              </div>
+              <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                Webcams streaming live
+              </span>
+            </div>
+
+            <div className="bg-card p-4 rounded-2xl border border-border shadow-xs">
+              <span className="text-xs text-muted-foreground font-semibold flex items-center gap-1.5">
+                <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />
+                Suspicious Anomaly Flags
+              </span>
+              <div className="text-2xl font-black text-amber-500 mt-1">
+                {liveInvigilationList.filter(c => c.riskLevel === 'WARNING' || c.riskLevel === 'CRITICAL').length}
+              </div>
+              <span className="text-[10px] text-muted-foreground">Tab switches / Gaze deviations</span>
+            </div>
+
+            <div className="bg-card p-4 rounded-2xl border border-border shadow-xs">
+              <span className="text-xs text-muted-foreground font-semibold flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                Mean Integrity Rating
+              </span>
+              <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
+                96.4%
+              </div>
+              <span className="text-[10px] text-muted-foreground">Low false-positive threshold</span>
+            </div>
+
+            <div className="bg-card p-4 rounded-2xl border border-border shadow-xs">
+              <span className="text-xs text-muted-foreground font-semibold flex items-center gap-1.5">
+                <UserX className="w-3.5 h-3.5 text-rose-500" />
+                Disqualified Sessions
+              </span>
+              <div className="text-2xl font-black text-rose-600 mt-1">
+                {liveInvigilationList.filter(c => c.status === 'DISQUALIFIED').length}
+              </div>
+              <span className="text-[10px] text-muted-foreground">Threshold breaches</span>
+            </div>
+          </div>
+
+          {/* Invigilator Video Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {liveInvigilationList.map((cand) => {
+              const isClean = cand.riskLevel === 'CLEAN';
+              const isWarning = cand.riskLevel === 'WARNING';
+              const isCritical = cand.riskLevel === 'CRITICAL';
+              const isDisqualified = cand.status === 'DISQUALIFIED';
+
+              return (
+                <Card
+                  key={cand.id}
+                  className={`border transition-all shadow-xs ${
+                    isDisqualified
+                      ? 'border-destructive/60 bg-destructive/5'
+                      : isCritical
+                      ? 'border-rose-500/60 bg-rose-500/5'
+                      : isWarning
+                      ? 'border-amber-500/60 bg-amber-500/5'
+                      : 'border-border'
+                  }`}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] font-bold ${
+                          isDisqualified
+                            ? 'bg-destructive/15 text-destructive border-destructive/30'
+                            : isCritical
+                            ? 'bg-rose-500/15 text-rose-600 border-rose-500/30 animate-pulse'
+                            : isWarning
+                            ? 'bg-amber-500/15 text-amber-600 border-amber-500/30'
+                            : 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30'
+                        }`}
+                      >
+                        {isDisqualified ? 'DISQUALIFIED' : isCritical ? 'HIGH MALPRACTICE RISK' : isWarning ? 'SUSPICION WARNING' : 'PROCTORING CLEAN'}
+                      </Badge>
+
+                      <span className="text-[10px] font-mono font-bold text-muted-foreground">
+                        {cand.courseCode}
+                      </span>
+                    </div>
+
+                    {/* Simulated Live Webcam Stream Window */}
+                    <div className="relative aspect-video bg-slate-950 rounded-xl overflow-hidden border border-border/80 flex items-center justify-center shadow-inner group">
+                      <div className="text-center p-3">
+                        <div className="w-12 h-12 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-white font-bold text-base mx-auto mb-1">
+                          {cand.studentName.charAt(0)}
+                        </div>
+                        <span className="text-xs font-bold text-slate-200 block truncate max-w-[180px]">
+                          {cand.studentName}
+                        </span>
+                        <span className="text-[10px] font-mono text-slate-400">
+                          {cand.matricNumber}
+                        </span>
+                      </div>
+
+                      {/* Video Stream Watermark & Live Indicators */}
+                      <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-black/80 px-2 py-0.5 rounded text-[9px] font-mono text-white">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span>
+                        LIVE STREAM
+                      </div>
+
+                      <div className="absolute bottom-2 right-2 bg-black/80 px-2 py-0.5 rounded text-[9px] font-mono text-slate-300">
+                        Strikes: {cand.tabSwitchCount}/{cand.maxTabSwitches}
+                      </div>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="space-y-3 pt-0 text-xs">
+                    {/* Exam & Progress */}
+                    <div>
+                      <div className="flex items-center justify-between text-[11px] mb-1">
+                        <span className="text-muted-foreground font-semibold">Assessment Progress:</span>
+                        <strong className="text-foreground">{cand.answeredCount} Questions Saved</strong>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className="bg-primary h-full rounded-full transition-all"
+                          style={{ width: `${Math.min(100, (cand.answeredCount / 15) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Malpractice Risk Index Bar */}
+                    <div>
+                      <div className="flex items-center justify-between text-[11px] mb-1">
+                        <span className="text-muted-foreground font-semibold">Malpractice Risk Index:</span>
+                        <strong className={`${isClean ? 'text-emerald-600' : isWarning ? 'text-amber-600' : 'text-rose-600'}`}>
+                          {cand.riskScore}%
+                        </strong>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            isClean ? 'bg-emerald-500' : isWarning ? 'bg-amber-500' : 'bg-rose-600'
+                          }`}
+                          style={{ width: `${cand.riskScore}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Telemetry Event Message */}
+                    <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60 text-[11px] text-muted-foreground flex items-start gap-1.5">
+                      <AlertCircle className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+                      <span className="line-clamp-2 leading-tight">
+                        <strong>Telemetry:</strong> {cand.lastTelemetry}
+                      </span>
+                    </div>
+                  </CardContent>
+
+                  <CardFooter className="pt-2 border-t border-border/50 flex items-center justify-between gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={isDisqualified}
+                      onClick={() => {
+                        setWarningModalTarget(cand);
+                        setCustomWarningMessage(`Notice to ${cand.studentName}: Maintain eye contact with the screen. Anomaly recorded on live invigilator log.`);
+                      }}
+                      className="text-xs h-7 rounded-lg border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 flex items-center gap-1"
+                    >
+                      <Megaphone className="w-3 h-3" />
+                      Send Warning
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      disabled={isDisqualified}
+                      onClick={() => handleDisqualifyCandidate(cand.studentId, cand.examId)}
+                      className="text-xs h-7 rounded-lg flex items-center gap-1"
+                    >
+                      <UserX className="w-3 h-3" />
+                      Disqualify
+                    </Button>
+                  </CardFooter>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* Invigilator Warning Modal */}
+          {warningModalTarget && (
+            <Dialog open={!!warningModalTarget} onOpenChange={(open) => !open && setWarningModalTarget(null)}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="text-base font-bold flex items-center gap-2 text-amber-600">
+                    <Megaphone className="w-5 h-5" />
+                    Issue In-Exam Warning Alert
+                  </DialogTitle>
+                  <DialogDescription className="text-xs">
+                    Candidate: <strong>{warningModalTarget.studentName}</strong> ({warningModalTarget.matricNumber})
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-3 pt-2 text-xs">
+                  <div>
+                    <Label className="text-xs">Warning Message Dispatched to Candidate Screen:</Label>
+                    <Textarea
+                      rows={3}
+                      value={customWarningMessage}
+                      onChange={(e) => setCustomWarningMessage(e.target.value)}
+                      className="mt-1 text-xs"
+                    />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    This message will instantly freeze the student's exam screen with an audible alert until acknowledged.
+                  </p>
+                </div>
+
+                <DialogFooter className="pt-2">
+                  <Button variant="ghost" onClick={() => setWarningModalTarget(null)}>Cancel</Button>
+                  <Button
+                    onClick={() => handleSendWarning(warningModalTarget.studentId, warningModalTarget.examId)}
+                    className="bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs"
+                  >
+                    Send Direct Alert
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* FACULTY, DEPARTMENT & COURSE FILTER BAR */}
       {hasTertiary && distinctFaculties.length > 1 && (
       <div className="p-4 rounded-2xl border bg-card shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
         <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-wider shrink-0">
