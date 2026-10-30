@@ -2690,3 +2690,129 @@ model WalletTransaction {
   metadata    String?       // JSON metadata
   createdAt   DateTime      @default(now())
 }
+
+// ==============================================================================
+// ACADEMIC JOURNAL PUBLISHING & RESEARCH REPOSITORY MODULE
+// ==============================================================================
+
+model AcademicJournal {
+  id              String           @id @default(uuid())
+  title           String
+  code            String           @unique // e.g. "PJSC"
+  issn            String?          // Print ISSN (e.g. "2345-6789")
+  eIssn           String?          // Electronic ISSN
+  description     String?          @db.Text
+  scopeAndAim     String?          @db.Text
+  faculty         String?          // e.g. "Faculty of Science & Computing"
+  department      String?          // e.g. "Computer Science"
+  editorInChief   String?          // e.g. "Prof. Ibrahim Danbatta"
+  coverUrl        String?
+  status          String           @default("ACTIVE") // ACTIVE, ARCHIVED
+  issues          JournalIssue[]
+  articles        JournalArticle[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([code])
+}
+
+model JournalIssue {
+  id              String           @id @default(uuid())
+  journalId       String
+  journal         AcademicJournal  @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  volume          Int
+  issueNumber     Int
+  title           String?          // e.g. "Vol. 4 No. 2 (2026): Contemporary Paradigms in Computing"
+  publicationDate DateTime?
+  coverUrl        String?
+  status          String           @default("PUBLISHED") // DRAFT, IN_PRESS, PUBLISHED
+  articles        JournalArticle[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@unique([journalId, volume, issueNumber])
+  @@index([journalId])
+}
+
+model JournalArticle {
+  id              String              @id @default(uuid())
+  journalId       String
+  journal         AcademicJournal     @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  issueId         String?
+  issue           JournalIssue?       @relation(fields: [issueId], references: [id], onDelete: SetNull)
+  title           String              @db.Text
+  abstract        String              @db.LongText
+  keywords        String?             // e.g. "Machine Learning, Distributed Systems, Cloud Computing"
+  authors         String              @db.Text // JSON or formatted string of authors with affiliations & ORCIDs
+  primaryAuthorId String?             // Optional link to User profile
+  doi             String?             // e.g. "10.1234/pjsc.2026.4.2.01"
+  manuscriptUrl   String?             // Original submission file
+  publishedPdfUrl String?             // Final publication galley PDF
+  pages           String?             // e.g. "45-58"
+  citationsCount  Int                 @default(0)
+  downloadsCount  Int                 @default(0)
+  viewsCount      Int                 @default(0)
+  status          String              @default("PUBLISHED") // SUBMITTED, UNDER_PEER_REVIEW, REVISION_REQUESTED, ACCEPTED, REJECTED, PUBLISHED
+  peerReviews     JournalPeerReview[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([journalId])
+  @@index([issueId])
+  @@index([status])
+}
+
+model JournalPeerReview {
+  id                   String         @id @default(uuid())
+  articleId            String
+  article              JournalArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  reviewerId           String?
+  reviewerName         String?
+  reviewerEmail        String?
+  blindType            String         @default("DOUBLE_BLIND") // DOUBLE_BLIND, SINGLE_BLIND, OPEN
+  originalityScore     Int?           // 1 to 5
+  methodologyScore     Int?           // 1 to 5
+  clarityScore         Int?           // 1 to 5
+  significanceScore    Int?           // 1 to 5
+  recommendation       String?        // ACCEPT, MINOR_REVISION, MAJOR_REVISION, REJECT
+  confidentialComments String?        @db.Text
+  authorComments       String?        @db.Text
+  status               String         @default("PENDING") // PENDING, COMPLETED
+  completedAt          DateTime?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  @@index([articleId])
+}
+
+// ==============================================================================
+// UNIVERSITY INFORMATION BULLETINS & GAZETTES MODULE
+// ==============================================================================
+
+model UniversityBulletin {
+  id              String    @id @default(uuid())
+  title           String
+  bulletinType    String    @default("OFFICIAL_BULLETIN") // OFFICIAL_BULLETIN, SENATE_COMMUNIQUE, SPECIAL_DIGEST, EMERGENCY_NOTICE, RESEARCH_BRIEF
+  volume          Int       @default(1)
+  issueNumber     Int       @default(1)
+  publicationDate DateTime  @default(now())
+  publishedBy     String    @default("Directorate of Information & Protocol (DIPR)")
+  editorInChief   String?   @default("University Registrar")
+  summary         String?   @db.Text
+  content         String?   @db.LongText
+  pdfUrl          String?
+  coverUrl        String?
+  targetAudience  String    @default("ALL") // ALL, STAFF_ONLY, STUDENTS_ONLY, FACULTY_ONLY
+  isUrgent        Boolean   @default(false)
+  isFeatured      Boolean   @default(false)
+  viewCount       Int       @default(0)
+  status          String    @default("PUBLISHED") // DRAFT, UNDER_REVIEW, APPROVED, PUBLISHED, ARCHIVED
+  approvedBy      String?
+  approvedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([bulletinType])
+  @@index([status])
+  @@index([publicationDate])
+}
