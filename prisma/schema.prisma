@@ -1901,6 +1901,9 @@ model ELibraryBook {
   title           String
   author          String
   category        String                 // e.g. "Computer Science", "Engineering", "Medicine", "General"
+  department      String?                // e.g. "Computer Science", "Electrical Engineering", "Law"
+  subject         String?                // e.g. "Operating Systems", "Algorithms", "Thermodynamics"
+  resourceType    String?                @default("TEXTBOOK") // TEXTBOOK, PAST_QUESTION, JOURNAL_ARTICLE, THESIS_DISSERTATION, LECTURE_MANUAL
   edition         String?
   publisher       String?
   fileUrl         String?                // Digital access link
