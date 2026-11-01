@@ -470,14 +470,18 @@ export default function StudentHubPage() {
               onClick={() => {
                 const demoSession: LiveVirtualClassSession = {
                   id: 'demo-live-session',
-                  offeringId: student?.registeredCourses?.[0]?.id || 'demo-offering',
+                  courseOfferingId: student?.registeredCourses?.[0]?.id || 'demo-offering',
                   courseCode: student?.registeredCourses?.[0]?.code || 'CSC201',
                   courseTitle: student?.registeredCourses?.[0]?.title || 'Computer Programming II',
                   topic: 'Interactive Virtual Lecture: Object-Oriented Principles & System Architecture',
                   lecturerId: 'lecturer-demo',
                   lecturerName: 'Dr. Aliyu Sani',
-                  startedAt: new Date(),
-                  activeStudentCount: 14
+                  provider: 'JITSI',
+                  roomName: 'demo-room-csc201',
+                  meetingUrl: 'https://meet.jit.si/demo-room-csc201',
+                  isActive: true,
+                  startedAt: new Date().toISOString(),
+                  questions: [],
                 };
                 setSelectedLiveSession(demoSession);
               }}

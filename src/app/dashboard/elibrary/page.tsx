@@ -27,7 +27,6 @@ import {
   Layers,
   FileText,
   Filter,
-  Sparkles,
   RotateCcw,
   BookMarked,
   Library,
@@ -214,7 +213,7 @@ export default function ELibraryPage() {
             disabled={isPending}
             className="rounded-xl border-dashed"
           >
-            <Sparkles className="h-4 w-4 mr-1.5 text-amber-500" />
+            <Layers className="h-4 w-4 mr-1.5 text-primary" />
             Seed Sample Holdings
           </Button>
 
@@ -560,7 +559,7 @@ export default function ELibraryPage() {
               Reset Filters
             </Button>
             <Button size="sm" onClick={handleSeedCatalog} className="rounded-xl">
-              <Sparkles className="h-4 w-4 mr-1.5" /> Seed Academic Materials
+              <Layers className="h-4 w-4 mr-1.5" /> Seed Academic Materials
             </Button>
           </div>
         </Card>

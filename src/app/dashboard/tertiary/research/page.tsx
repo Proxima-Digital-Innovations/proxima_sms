@@ -21,7 +21,6 @@ import {
   GraduationCap,
   Users,
   Layers,
-  Sparkles,
   TrendingUp,
   Share2,
   Bookmark

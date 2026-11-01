@@ -7,6 +7,7 @@ import { useRole } from '@/context/role-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -2028,6 +2029,8 @@ export default function TertiaryCbtPage() {
             </Card>
           ))}
         </div>
+      )}
+        </>
       )}
 
       {/* LECTURER QUESTION BANK, BULK UPLOAD & SUBMISSIONS MANAGEMENT MODAL */}

@@ -18,7 +18,6 @@ import {
   Bookmark,
   Share2,
   Clock,
-  Sparkles,
   ArrowRight,
   BookOpen
 } from 'lucide-react';

@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   GraduationCap, 
-  Sparkles, 
   BookOpen, 
   Atom, 
   Rocket, 
@@ -47,7 +46,7 @@ const FUN_FACTS = [
     text: "Taking a purposeful 5-minute break after 25 minutes of deep study sharpens creative problem solving.",
   },
   {
-    icon: Stars,
+    icon: Compass,
     title: "Endless Horizons",
     text: "“The beautiful thing about learning is that no one can take it away from you.” — B.B. King",
   },
@@ -58,7 +57,7 @@ const FUN_FACTS = [
   },
 ];
 
-const CENTER_ICONS = [GraduationCap, Sparkles, BookOpen, Atom, Rocket, Brain];
+const CENTER_ICONS = [GraduationCap, Compass, BookOpen, Atom, Rocket, Brain];
 
 interface FancifulLoaderProps {
   mode?: 'fullscreen' | 'inline';
@@ -168,7 +167,7 @@ export function FancifulLoader({ mode = 'fullscreen', navigatingTo }: FancifulLo
               transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
               className="inline-block"
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <RefreshCw className="w-3.5 h-3.5" />
             </motion.span>
             <span>{navigatingTo ? `Navigating to ${navigatingTo}...` : 'Brewing Knowledge...'}</span>
           </div>
