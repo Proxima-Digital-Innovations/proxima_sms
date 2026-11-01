@@ -321,6 +321,7 @@ export class CommEngine {
         const endpoint = `${cleanUrl}/message/sendText/${wa.instanceName || 'school-alerts'}`;
         const res = await fetch(endpoint, {
           method: 'POST',
+          signal: AbortSignal.timeout(8000),
           headers: {
             'Content-Type': 'application/json',
             ...(wa.apiKey ? { 'apikey': wa.apiKey } : {})
@@ -345,6 +346,7 @@ export class CommEngine {
         const endpoint = `${cleanUrl}/api/sendText`;
         const res = await fetch(endpoint, {
           method: 'POST',
+          signal: AbortSignal.timeout(8000),
           headers: {
             'Content-Type': 'application/json',
             ...(wa.apiKey ? { 'X-Api-Key': wa.apiKey } : {})
@@ -368,6 +370,7 @@ export class CommEngine {
       // Generic Webhook Fallback
       const res = await fetch(cleanUrl, {
         method: 'POST',
+        signal: AbortSignal.timeout(8000),
         headers: {
           'Content-Type': 'application/json',
           ...(wa.apiKey ? { 'Authorization': `Bearer ${wa.apiKey}` } : {})
@@ -456,6 +459,7 @@ export class CommEngine {
         const endpoint = `${cleanUrl}/message/sendText/${settings.instanceName || 'school-alerts'}`;
         const res = await fetch(endpoint, {
           method: 'POST',
+          signal: AbortSignal.timeout(8000),
           headers: {
             'Content-Type': 'application/json',
             ...(settings.apiKey ? { 'apikey': settings.apiKey } : {})
@@ -479,6 +483,7 @@ export class CommEngine {
         const endpoint = `${cleanUrl}/api/sendText`;
         const res = await fetch(endpoint, {
           method: 'POST',
+          signal: AbortSignal.timeout(8000),
           headers: {
             'Content-Type': 'application/json',
             ...(settings.apiKey ? { 'X-Api-Key': settings.apiKey } : {})
@@ -501,6 +506,7 @@ export class CommEngine {
       // Generic webhook
       const res = await fetch(cleanUrl, {
         method: 'POST',
+        signal: AbortSignal.timeout(8000),
         headers: {
           'Content-Type': 'application/json',
           ...(settings.apiKey ? { 'Authorization': `Bearer ${settings.apiKey}` } : {})

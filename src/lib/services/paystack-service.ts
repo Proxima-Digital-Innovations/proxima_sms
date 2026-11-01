@@ -67,6 +67,7 @@ export class PaystackService {
     if (this.isLiveOrConfigured()) {
       try {
         const response = await fetch('https://api.paystack.co/transaction/initialize', {
+          signal: AbortSignal.timeout(10000),
           method: 'POST',
           headers: {
             Authorization: `Bearer ${this.getSecretKey()}`,
@@ -143,6 +144,7 @@ export class PaystackService {
     // Real Paystack Verification
     if (this.isLiveOrConfigured()) {
       const response = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
+        signal: AbortSignal.timeout(10000),
         method: 'GET',
         headers: {
           Authorization: `Bearer ${this.getSecretKey()}`,

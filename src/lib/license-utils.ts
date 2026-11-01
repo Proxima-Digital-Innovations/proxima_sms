@@ -40,25 +40,31 @@ async function notifyAdminsIfExpiring(daysUntilExpiry: number, formattedExpiryDa
       select: { id: true }
     });
 
-    for (const admin of admins) {
-      const existing = await prisma.notification.findFirst({
-        where: {
-          userId: admin.id,
-          title: 'Subscription Expiring Soon',
-          createdAt: { gte: today }
-        }
-      });
+    if (!admins.length) return;
+    const adminIds = admins.map(a => a.id);
 
-      if (!existing) {
-        await prisma.notification.create({
-          data: {
-            userId: admin.id,
-            title: 'Subscription Expiring Soon',
-            body: `Your enterprise subscription expires in ${daysUntilExpiry} ${daysUntilExpiry === 1 ? 'day' : 'days'} on ${formattedExpiryDate}. Please renew soon to avoid read-only mode.`,
-            type: 'WARNING'
-          }
-        });
-      }
+    // Batch query existing notifications today (avoids N+1 DB roundtrips)
+    const existing = await prisma.notification.findMany({
+      where: {
+        userId: { in: adminIds },
+        title: 'Subscription Expiring Soon',
+        createdAt: { gte: today }
+      },
+      select: { userId: true }
+    });
+
+    const alreadyNotified = new Set(existing.map(n => n.userId));
+    const toNotify = adminIds.filter(id => !alreadyNotified.has(id));
+
+    if (toNotify.length > 0) {
+      await prisma.notification.createMany({
+        data: toNotify.map(userId => ({
+          userId,
+          title: 'Subscription Expiring Soon',
+          body: `Your enterprise subscription expires in ${daysUntilExpiry} ${daysUntilExpiry === 1 ? 'day' : 'days'} on ${formattedExpiryDate}. Please renew soon to avoid read-only mode.`,
+          type: 'WARNING'
+        }))
+      });
     }
   } catch (err) {
     // Non-blocking notification dispatch

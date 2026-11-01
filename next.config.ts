@@ -45,7 +45,7 @@ const nextConfig: NextConfig = {
     'genkit',
   ],
   images: {
-    unoptimized: true,
+    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       {
         protocol: 'https',
