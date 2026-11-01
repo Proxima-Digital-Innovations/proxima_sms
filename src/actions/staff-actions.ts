@@ -1,5 +1,8 @@
 'use server';
 
+import { requireRole } from '@/lib/guards';
+import { logSecurityEvent } from '@/lib/audit-logger';
+
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { requireSchoolId } from '@/lib/server-context';
@@ -28,6 +31,7 @@ const staffSchema = z.object({
 
 export async function createStaff(formData: FormData) {
   try {
+    const caller = await requireRole(['ADMIN', 'SLT']);
     const rawData = Object.fromEntries(formData.entries());
     const parsed = staffSchema.safeParse(rawData);
 
@@ -83,6 +87,7 @@ export async function getStaffList() {
 
 export async function bulkCreateStaff(staffList: any[]) {
   try {
+    const caller = await requireRole(['ADMIN', 'SLT']);
     const result = await StaffService.bulkCreateStaff(staffList);
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/users");
@@ -99,7 +104,15 @@ export async function bulkCreateStaff(staffList: any[]) {
 
 export async function deleteStaff(userId: string) {
   try {
+    const caller = await requireRole(['ADMIN', 'SLT']);
     await StaffService.deleteStaff(userId);
+    await logSecurityEvent({
+      action: 'DELETE_STAFF',
+      entity: 'Staff',
+      entityId: userId,
+      details: { deletedBy: caller.id },
+      userId: caller.id,
+    });
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/users");
     revalidatePath("/dashboard/analytics");

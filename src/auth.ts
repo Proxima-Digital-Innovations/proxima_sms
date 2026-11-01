@@ -81,8 +81,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 data: { passwordHash: newHash },
               }).catch(() => {});
             }
-          } else if (user.passwordHash === password) {
+          } else if (process.env.NODE_ENV !== 'production' && user.passwordHash === password) {
             isValid = true;
+            const newHash = await argon2.hash(password);
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { passwordHash: newHash },
+            }).catch(() => {});
           }
         } catch (e) {
           console.warn("Password verification error:", e);

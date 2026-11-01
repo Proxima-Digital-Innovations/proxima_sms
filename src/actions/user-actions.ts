@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import * as argon2 from 'argon2';
 import { auth } from '@/auth';
+import { requireAuth, requireRole } from '@/lib/guards';
+import { logSecurityEvent } from '@/lib/audit-logger';
 
 export async function getStaffUsers() {
     try {
@@ -43,11 +45,20 @@ export async function getStaffUsers() {
 
 export async function updateUserRole(userId: string, newRole: string) {
     try {
+        const caller = await requireRole(['ADMIN']);
         await prisma.user.update({
             where: { id: userId },
             data: { role: newRole }
         });
         
+        await logSecurityEvent({
+            action: 'UPDATE_USER_ROLE',
+            entity: 'User',
+            entityId: userId,
+            details: { newRole, updatedBy: caller.id },
+            userId: caller.id,
+        });
+
         revalidatePath('/dashboard/system/roles');
         return { success: true };
     } catch (error: any) {
@@ -207,7 +218,7 @@ export async function deleteFacultyQuick(id: string) {
 
 export async function adminResetUserPassword(userId: string) {
     try {
-        // Find user first
+        const caller = await requireRole(['ADMIN', 'SLT']);
         const user = await prisma.user.findUnique({ where: { id: userId } });
         if (!user) throw new Error("User not found");
 
@@ -218,8 +229,16 @@ export async function adminResetUserPassword(userId: string) {
             where: { id: userId },
             data: { 
                 passwordHash,
-                requiresPasswordChange: false 
+                requiresPasswordChange: true 
             }
+        });
+
+        await logSecurityEvent({
+            action: 'ADMIN_RESET_PASSWORD',
+            entity: 'User',
+            entityId: userId,
+            details: { targetEmail: user.email, resetBy: caller.id },
+            userId: caller.id,
         });
 
         revalidatePath('/dashboard/staff');
@@ -237,14 +256,15 @@ export async function changeOwnPassword(userId?: string, newPassword?: string) {
             return { success: false, error: 'Password must be at least 6 characters long' };
         }
 
-        let targetId = userId;
-        if (!targetId) {
-            const session = await auth();
-            targetId = session?.user?.id as string;
-        }
+        const caller = await requireAuth();
 
-        if (!targetId) {
-            return { success: false, error: 'Unauthorized: User session not found' };
+        // Enforce least privilege: non-admins can ONLY change their own password
+        let targetId = caller.id;
+        if (userId && userId !== caller.id) {
+            if (caller.role !== 'ADMIN' && !caller.isSuperAdmin) {
+                return { success: false, error: 'Unauthorized: Cannot change password for other accounts' };
+            }
+            targetId = userId;
         }
 
         const passwordHash = await argon2.hash(newPassword);
@@ -255,6 +275,14 @@ export async function changeOwnPassword(userId?: string, newPassword?: string) {
                 passwordHash,
                 requiresPasswordChange: false 
             }
+        });
+
+        await logSecurityEvent({
+            action: 'PASSWORD_CHANGE',
+            entity: 'User',
+            entityId: targetId,
+            details: { changedBy: caller.id },
+            userId: caller.id,
         });
 
         revalidatePath('/dashboard');

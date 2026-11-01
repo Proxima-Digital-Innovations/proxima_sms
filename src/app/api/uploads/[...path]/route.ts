@@ -29,8 +29,14 @@ export async function GET(
       return new NextResponse('Invalid file path', { status: 400 });
     }
 
+    const uploadsBase = path.resolve(process.cwd(), 'public', 'uploads');
     const relativeFilePath = path.join(...pathSegments);
-    const absoluteFilePath = path.join(process.cwd(), 'public', 'uploads', relativeFilePath);
+    const absoluteFilePath = path.resolve(uploadsBase, relativeFilePath);
+
+    // Strict boundary enforcement: verify resolved path is inside public/uploads
+    if (!absoluteFilePath.startsWith(uploadsBase)) {
+      return new NextResponse('Access denied: Invalid file path traversal', { status: 403 });
+    }
 
     if (!fs.existsSync(absoluteFilePath)) {
       return new NextResponse('File not found', { status: 404 });

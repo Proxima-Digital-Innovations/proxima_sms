@@ -26,7 +26,7 @@ const MAX_FILE_SIZE = 35 * 1024 * 1024; // 35 MB
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
-    if (!session?.user && process.env.NODE_ENV === 'production') {
+    if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized: Please log in to upload files.' }, { status: 401 });
     }
 
