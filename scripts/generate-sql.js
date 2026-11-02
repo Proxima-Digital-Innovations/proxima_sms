@@ -44,18 +44,18 @@ async function gen() {
 
   sql += `INSERT INTO \`User\` (\`id\`, \`firstName\`, \`lastName\`, \`email\`, \`passwordHash\`, \`isSuperAdmin\`, \`role\`, \`status\`, \`createdAt\`, \`updatedAt\`) VALUES ('usr-abdulhamid-01', 'Abdulhamid', 'Amin', 'abdulhamidamin@gmail.com', '${hashed}', 1, 'ADMIN', 'active', NOW(), NOW()) ON DUPLICATE KEY UPDATE \`isSuperAdmin\`=1;\n\n`;
 
-  // Departments
-  sql += "INSERT INTO `Department` (`id`, `name`, `createdAt`, `updatedAt`) VALUES ('dept-science', 'Science', NOW(), NOW()) ON DUPLICATE KEY UPDATE `name`='Science';\n";
-  sql += "INSERT INTO `Department` (`id`, `name`, `createdAt`, `updatedAt`) VALUES ('dept-arts', 'Arts', NOW(), NOW()) ON DUPLICATE KEY UPDATE `name`='Arts';\n\n";
+  // Departments (id, name, createdAt)
+  sql += "INSERT INTO `Department` (`id`, `name`, `createdAt`) VALUES ('dept-science', 'Science', NOW()) ON DUPLICATE KEY UPDATE `name`='Science';\n";
+  sql += "INSERT INTO `Department` (`id`, `name`, `createdAt`) VALUES ('dept-arts', 'Arts', NOW()) ON DUPLICATE KEY UPDATE `name`='Arts';\n\n";
 
-  // Academic Session
-  sql += "INSERT INTO `AcademicSession` (`id`, `name`, `startDate`, `endDate`, `isActive`, `createdAt`, `updatedAt`) VALUES ('sess-2024-2025', '2024/2025', '2024-09-01 00:00:00', '2025-07-31 00:00:00', 1, NOW(), NOW()) ON DUPLICATE KEY UPDATE `isActive`=1;\n\n";
+  // Academic Session (id, name, startDate, endDate, isActive, createdAt)
+  sql += "INSERT INTO `AcademicSession` (`id`, `name`, `startDate`, `endDate`, `isActive`, `createdAt`) VALUES ('sess-2024-2025', '2024/2025', '2024-09-01 00:00:00', '2025-07-31 00:00:00', 1, NOW()) ON DUPLICATE KEY UPDATE `isActive`=1;\n\n";
 
-  // Term
-  sql += "INSERT INTO `Term` (`id`, `name`, `sessionId`, `startDate`, `endDate`, `isActive`, `createdAt`, `updatedAt`) VALUES ('term-1', 'Term 1', 'sess-2024-2025', '2024-09-01 00:00:00', '2024-12-20 00:00:00', 1, NOW(), NOW()) ON DUPLICATE KEY UPDATE `isActive`=1;\n\n";
+  // Term (id, name, sessionId, startDate, endDate, isActive)
+  sql += "INSERT INTO `Term` (`id`, `name`, `sessionId`, `startDate`, `endDate`, `isActive`) VALUES ('term-1', 'Term 1', 'sess-2024-2025', '2024-09-01 00:00:00', '2024-12-20 00:00:00', 1) ON DUPLICATE KEY UPDATE `isActive`=1;\n\n";
 
-  // Class
-  sql += "INSERT INTO `Class` (`id`, `name`, `termId`, `createdAt`, `updatedAt`) VALUES ('cls-grade-10', 'Grade 10', 'term-1', NOW(), NOW()) ON DUPLICATE KEY UPDATE `name`='Grade 10';\n\n";
+  // Class (id, name, termId, createdAt)
+  sql += "INSERT INTO `Class` (`id`, `name`, `termId`, `createdAt`) VALUES ('cls-grade-10', 'Grade 10', 'term-1', NOW()) ON DUPLICATE KEY UPDATE `name`='Grade 10';\n\n";
 
   // System License
   sql += 'DELETE FROM `SystemLicense`;\n';
@@ -63,8 +63,8 @@ async function gen() {
 
   sql += 'SET FOREIGN_KEY_CHECKS=1;\n';
 
-  fs.writeFileSync('seed.sql', sql);
-  console.log('seed.sql generated successfully.');
+  fs.writeFileSync('seed.sql', sql, 'utf8');
+  console.log('seed.sql generated successfully with exact schema columns.');
 }
 
 gen().catch(console.error);
