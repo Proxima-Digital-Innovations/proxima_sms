@@ -5,7 +5,7 @@ import { hash } from 'argon2';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Seeding Single-Tenant Data...');
+  console.log('Seeding Single-Tenant Data...');
 
   const password = 'password123';
   const hashed = await hash(password);
@@ -185,7 +185,7 @@ async function main() {
     }
   }
 
-  console.log("🌱 ALL SEEDING COMPLETE!");
+  console.log("ALL SEEDING COMPLETE!");
 }
 
 main()
