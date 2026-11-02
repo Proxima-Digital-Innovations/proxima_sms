@@ -36,6 +36,19 @@ async function main() {
     },
   });
 
+  await prisma.user.upsert({
+    where: { email: 'abdulhamidamin@gmail.com' },
+    update: {},
+    create: {
+      firstName: 'Abdulhamid',
+      lastName: 'Amin',
+      email: 'abdulhamidamin@gmail.com',
+      passwordHash: hashed,
+      isSuperAdmin: true,
+      role: Role.ADMIN,
+    },
+  });
+
   // --- 3. SCHOOL DEPARTMENTS ---
   const deptScience = await prisma.department.upsert({
     where: { name: 'Science' },
