@@ -28,16 +28,16 @@ export const prisma = globalForPrisma.prisma ?? basePrisma.$extends({
            // Cache license validation for 60 seconds to prevent DB/Crypto overhead on every mutation
            if (!globalForPrisma.licenseStatus || globalForPrisma.licenseStatus.expiresAt < now) {
                try {
-                   const license = await basePrisma.systemLicense.findFirst({ orderBy: { createdAt: 'desc' } });
+                   const rawKey = process.env.SYSTEM_LICENSE_KEY || (await basePrisma.systemLicense.findFirst({ orderBy: { createdAt: 'desc' } }))?.licenseKey;
                    
-                   if (!license || !license.licenseKey) {
+                   if (!rawKey) {
                        throw new Error('System subscription not activated. Please provide an activation key.');
                    }
-                   if (!license.licenseKey.includes('.')) {
+                   if (!rawKey.includes('.')) {
                        throw new Error('Invalid subscription key format.');
                    }
                    
-                   const [base64Payload, signature] = license.licenseKey.split('.');
+                   const [base64Payload, signature] = rawKey.split('.');
                    const payloadString = Buffer.from(base64Payload, 'base64').toString('utf8');
                    const payload = JSON.parse(payloadString);
                    
