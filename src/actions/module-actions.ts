@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import {
   AVAILABLE_MODULES,
+  INSTITUTION_PRESETS,
   getActiveInstitutionalModules,
   invalidateActiveModulesCache,
 } from '@/lib/modules/module-registry';
@@ -13,6 +14,7 @@ export async function getInstitutionalModulesAction() {
   return {
     success: true,
     available: AVAILABLE_MODULES,
+    presets: INSTITUTION_PRESETS,
     activeModules: active,
   };
 }
@@ -37,8 +39,10 @@ export async function toggleModuleAction(moduleId: string, enable: boolean) {
     }
 
     invalidateActiveModulesCache();
-    revalidatePath('/dashboard', 'layout');
-    revalidatePath('/dashboard/system/modules');
+    try {
+      revalidatePath('/dashboard', 'layout');
+      revalidatePath('/dashboard/system/modules');
+    } catch {}
 
     return { success: true, activeModules: updated };
   } catch (error: any) {
@@ -58,11 +62,26 @@ export async function updateEnabledModulesAction(moduleIds: string[]) {
     }
 
     invalidateActiveModulesCache();
-    revalidatePath('/dashboard', 'layout');
-    revalidatePath('/dashboard/system/modules');
+    try {
+      revalidatePath('/dashboard', 'layout');
+      revalidatePath('/dashboard/system/modules');
+    } catch {}
 
     return { success: true, activeModules: moduleIds };
   } catch (error: any) {
     return { success: false, error: error.message || 'Failed to update modules' };
+  }
+}
+
+export async function applyModulePresetAction(presetKey: 'PRIMARY_SECONDARY' | 'TERTIARY' | 'ALL_INCLUSIVE') {
+  try {
+    const preset = INSTITUTION_PRESETS[presetKey];
+    if (!preset) {
+      throw new Error(`Unknown preset: ${presetKey}`);
+    }
+
+    return await updateEnabledModulesAction(preset.modules);
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Failed to apply preset' };
   }
 }

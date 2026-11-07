@@ -39,7 +39,7 @@ export async function getAdminDashboardStats() {
                 ? prisma.studentProfile.count()
                 : Promise.resolve(0),
             prisma.user.count({ where: STAFF_FILTER }),
-            hasSecondary
+            hasSecondary || !hasTertiary
                 ? prisma.class.count()
                 : Promise.resolve(0),
             hasTertiary

@@ -11,19 +11,19 @@ export interface SystemModule {
 
 export const AVAILABLE_MODULES: SystemModule[] = [
   {
+    id: 'SECONDARY_SCHOOL',
+    name: 'Primary & Secondary School (K-12)',
+    description: 'Nursery, Primary, Junior & Senior Secondary: Classes & Arms, Continuous Assessment (CA 1/2), Termly Broadsheet, Report Cards, Student Attendance, Lesson Plans, and Behavioral Grading.',
+    category: 'INSTITUTION',
+    icon: 'School',
+    defaultEnabled: true,
+  },
+  {
     id: 'TERTIARY_INSTITUTION',
     name: 'Tertiary Institution (TIMS)',
     description: 'Degree programs, courses, credit registration, anonymous exam tokens, Senate broadsheets, and GPA/CGPA grading.',
     category: 'INSTITUTION',
     icon: 'GraduationCap',
-    defaultEnabled: true,
-  },
-  {
-    id: 'SECONDARY_SCHOOL',
-    name: 'Secondary & Basic School',
-    description: 'K-12 classes, terms, broadsheets, report cards, Tahfeez evaluation, and continuous assessments.',
-    category: 'INSTITUTION',
-    icon: 'School',
     defaultEnabled: true,
   },
   {
@@ -92,6 +92,27 @@ export const AVAILABLE_MODULES: SystemModule[] = [
   },
 ];
 
+export const INSTITUTION_PRESETS = {
+  PRIMARY_SECONDARY: {
+    id: 'PRIMARY_SECONDARY',
+    name: 'Primary & Secondary School (K-12)',
+    description: 'Optimized for Nursery, Primary, and Junior/Senior Secondary schools. Activates Continuous Assessment (CA), Classes & Arms, Terminal Report Cards, Student Attendance, Staff Directory, and Bursary.',
+    modules: ['SECONDARY_SCHOOL', 'HR', 'FINANCE', 'LMS', 'CBT', 'E_LIBRARY', 'HOSTEL'],
+  },
+  TERTIARY: {
+    id: 'TERTIARY',
+    name: 'Tertiary Institution (TIMS)',
+    description: 'Optimized for Universities, Polytechnics, and Colleges. Activates Degree Programs, Course Registration, CAPS Admissions, Senate Broadsheets, and Research Desks.',
+    modules: ['TERTIARY_INSTITUTION', 'ADMISSIONS', 'HR', 'FINANCE', 'LMS', 'CBT', 'E_LIBRARY', 'HOSTEL'],
+  },
+  ALL_INCLUSIVE: {
+    id: 'ALL_INCLUSIVE',
+    name: 'Comprehensive Multi-Tier Campus',
+    description: 'Unified multi-tier institution operating both basic education (K-12) and tertiary university degree faculties.',
+    modules: AVAILABLE_MODULES.map((m) => m.id),
+  },
+};
+
 export const DEFAULT_ACTIVE_MODULES = AVAILABLE_MODULES.map((m) => m.id);
 
 const globalForModules = globalThis as unknown as {
@@ -118,8 +139,14 @@ export async function getActiveInstitutionalModules(): Promise<string[]> {
     });
 
     if (profile?.enabledModules) {
-      const parsed = JSON.parse(profile.enabledModules);
+      let parsed = JSON.parse(profile.enabledModules);
       if (Array.isArray(parsed) && parsed.length > 0) {
+        // Safe fallback: If user deactivated TIMS and didn't have SECONDARY_SCHOOL enabled,
+        // ensure at least SECONDARY_SCHOOL is present so the basic school features always operate.
+        if (!parsed.includes('TERTIARY_INSTITUTION') && !parsed.includes('SECONDARY_SCHOOL')) {
+          parsed.push('SECONDARY_SCHOOL');
+        }
+
         globalForModules.__activeModulesCache = {
           modules: parsed,
           expiresAt: now + 15000,

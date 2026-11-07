@@ -35,7 +35,7 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
       { label: 'Maintenance', path: '/dashboard/system/maintenance' },
     ]
   },
-  manageStaff: { icon: 'Users', label: 'Manage Staff', path: '/dashboard/users', requiredModule: 'HR' },
+  manageStaff: { icon: 'Users', label: 'Manage Staff', path: '/dashboard/users' },
   manageStudents: { icon: 'UsersRound', label: 'Manage Students', path: '/dashboard/students' },
   departments: { icon: 'Building', label: 'Departments', path: '/dashboard/departments' },
   database: { icon: 'Server', label: 'Database', path: '/dashboard/db' },
@@ -46,7 +46,7 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
   lessonPlans: { icon: 'BookCopy', label: 'Lesson Plans', path: '/dashboard/lesson-notes', requiredModule: 'SECONDARY_SCHOOL' },
   examQuestions: { icon: 'FileQuestion', label: 'Question Bank', path: '/dashboard/exam-questions', requiredModule: 'CBT' },
   bulkUpload: { icon: 'UploadCloud', label: 'Bulk Upload', path: '/dashboard/upload/scores', requiredModule: 'SECONDARY_SCHOOL' },
-  enterScores: { icon: 'Edit3', label: 'Enter Scores', path: '/dashboard/scores/enter', requiredModule: 'SECONDARY_SCHOOL' },
+  enterScores: { icon: 'Edit3', label: 'Enter CA Scores & Exam', path: '/dashboard/scores/enter', requiredModule: 'SECONDARY_SCHOOL' },
   reviewScores: { icon: 'CheckSquare', label: 'Review Scores', path: '/dashboard/scores', requiredModule: 'SECONDARY_SCHOOL' },
   tahfeezScores: { icon: 'BookText', label: 'Tahfeez Scores', path: '/dashboard/tahfeez', requiredModule: 'SECONDARY_SCHOOL' },
   midtermScores: { icon: 'ClipboardCheck', label: 'Mid-Term Results', path: '/dashboard/midterm', requiredModule: 'SECONDARY_SCHOOL' },
@@ -55,8 +55,8 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
   attendance: { icon: 'CalendarCheck', label: 'Student Attendance', path: '/dashboard/attendance', requiredModule: 'SECONDARY_SCHOOL' },
   staffAttendance: { icon: 'Fingerprint', label: 'Staff Clock-In', path: '/dashboard/bas/attendance' },
   reviewQuestions: { icon: 'FileQuestion', label: 'Review Questions', path: '/dashboard/exam-questions', requiredModule: 'CBT' },
-  generateResults: { icon: 'CheckSquare', label: 'Generate Results', path: '/dashboard/results/generate', requiredModule: 'SECONDARY_SCHOOL' },
-  viewResults: { icon: 'Award', label: 'View Results', path: '/dashboard/results/view', requiredModule: 'SECONDARY_SCHOOL' },
+  generateResults: { icon: 'CheckSquare', label: 'Report Cards & Broadsheet', path: '/dashboard/results/generate', requiredModule: 'SECONDARY_SCHOOL' },
+  viewResults: { icon: 'Award', label: 'Terminal Results Archive', path: '/dashboard/results/view', requiredModule: 'SECONDARY_SCHOOL' },
   timetable: { icon: 'Calendar', label: 'Timetable', path: '/dashboard/timetable', requiredModule: 'SECONDARY_SCHOOL' },
   examRegistration: { icon: 'Ticket', label: 'Exam Registration', path: '/dashboard/exam-registration', requiredModule: 'CBT' },
   seatingPlans: { icon: 'Grid', label: 'Seating Plans', path: '/dashboard/seating-plan', requiredModule: 'CBT' },
@@ -105,8 +105,8 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
   },
   studentAssignments: { icon: 'FileEdit', label: 'Assignments', path: '/student/lms/assignments', requiredModule: 'SECONDARY_SCHOOL' },
   studentQuizzes: { icon: 'HelpCircle', label: 'Quizzes', path: '/student/lms/quizzes', requiredModule: 'CBT' },
-  classesAndSubjects: { icon: 'BookMarked', label: 'Classes & Subjects', path: '/dashboard/system/classes-subjects', requiredModule: 'SECONDARY_SCHOOL' },
-  gradingSystem: { icon: 'GraduationCap', label: 'Grading System', path: '/dashboard/system/grading', requiredModule: 'SECONDARY_SCHOOL' },
+  classesAndSubjects: { icon: 'BookMarked', label: 'Classes, Arms & Subjects', path: '/dashboard/system/classes-subjects', requiredModule: 'SECONDARY_SCHOOL' },
+  gradingSystem: { icon: 'GraduationCap', label: 'Grading Scale & System', path: '/dashboard/system/grading', requiredModule: 'SECONDARY_SCHOOL' },
   aiSettings: { icon: 'Bot', label: 'AI Settings', path: '/dashboard/system/ai-settings' },
   idCards: { icon: 'CreditCard', label: 'ID Card Studio (PVC)', path: '/dashboard/system/id-cards' },
 
@@ -172,7 +172,7 @@ export const allNavLinks: Record<string, { icon: string; label: string; path: st
 export const navConfig: Record<string, { group: string; links: (keyof typeof allNavLinks)[] }[]> = {
   ADMIN: [
     { group: 'Main', links: ['dashboard', 'profile', 'notifications', 'announcements', 'messaging'] },
-    { group: 'Academics', links: ['attendance', 'lessonApprovals', 'cbtExams', 'enterScores', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'generateResults', 'viewResults'] },
+    { group: 'Academics', links: ['classesAndSubjects', 'gradingSystem', 'attendance', 'lessonApprovals', 'cbtExams', 'enterScores', 'reviewScores', 'tahfeezScores', 'midtermScores', 'behaviouralAssessment', 'generateResults', 'viewResults', 'timetable'] },
     { group: 'Admissions & CAPS', links: ['admissions'] },
     { group: 'Tertiary (TIMS)', links: ['tertiaryCampuses', 'tertiaryAdmissions', 'tertiaryBulletins', 'tertiaryJournals', 'tertiaryStudentHub', 'tertiaryLecturerStudio', 'tertiaryPrograms', 'tertiaryCourses', 'tertiaryOfferings', 'tertiaryTimetable', 'tertiaryRegistration', 'tertiaryAddDrop', 'tertiaryPayments', 'hostels', 'idCards', 'tertiaryCbt', 'tertiaryExams', 'tertiarySenate', 'tertiaryDocket', 'tertiaryTranscript', 'tertiaryOfficialTranscript', 'tertiaryForecast', 'tertiaryClearance', 'tertiaryCertificate'] },
     { group: 'e-Library', links: ['elibraryCatalog', 'elibraryLoans'] },
@@ -404,16 +404,32 @@ export function getFilteredNavConfig(role: string, activeModules: string[], inst
     const isSecondaryActive = activeModules.includes('SECONDARY_SCHOOL');
 
     return navConfig[effectiveRole].map(group => {
+        // If Tertiary is NOT active, hide Tertiary (TIMS) group
+        if (!isTertiaryActive && group.group === 'Tertiary (TIMS)') {
+            return { ...group, links: [] };
+        }
+
         // If Tertiary is active, admissions is already nested within Tertiary (TIMS)
         if (group.group === 'Admissions & CAPS' && isTertiaryActive) {
             return { ...group, links: [] };
+        }
+
+        // If Tertiary is NOT active and ADMISSIONS module is not explicitly active, hide Admissions & CAPS
+        if (!isTertiaryActive && group.group === 'Admissions & CAPS' && !activeModules.includes('ADMISSIONS')) {
+            return { ...group, links: [] };
+        }
+
+        // Customize Academics group title when running in Primary & Secondary school mode
+        let currentGroupName = group.group;
+        if (!isTertiaryActive && isSecondaryActive && group.group === 'Academics') {
+            currentGroupName = 'Primary & Secondary Academics';
         }
 
         // If Secondary School is inactive, hide the K-12 Academics group
         // (If CBT is active and Tertiary is NOT active, keep cbtExams for standalone CBT test centers)
         if (!isSecondaryActive && group.group === 'Academics') {
             if (!isTertiaryActive && activeModules.includes('CBT')) {
-                return { ...group, links: group.links.filter(l => l === 'cbtExams') };
+                return { ...group, group: currentGroupName, links: group.links.filter(l => l === 'cbtExams') };
             }
             return { ...group, links: [] };
         }
@@ -427,8 +443,8 @@ export function getFilteredNavConfig(role: string, activeModules: string[], inst
             return { ...group, links: [] };
         }
 
-        // If Tertiary is NOT active, keep hostels and idCards under Management
-        let currentGroup = group;
+        // If Tertiary is NOT active, adjust Management
+        let currentGroup = { ...group, group: currentGroupName };
         if (!isTertiaryActive && group.group === 'Management') {
             const extraLinks: (keyof typeof allNavLinks)[] = [];
             if (activeModules.includes('HOSTEL') && !group.links.includes('hostels')) {
@@ -437,9 +453,14 @@ export function getFilteredNavConfig(role: string, activeModules: string[], inst
             if (!group.links.includes('idCards')) {
                 extraLinks.push('idCards');
             }
+
+            // Remove tertiary departments in Primary/Secondary mode
+            const filteredMgmtLinks = group.links.filter(l => l !== 'departments');
+
             currentGroup = {
                 ...group,
-                links: [...group.links, ...extraLinks]
+                group: currentGroupName,
+                links: [...filteredMgmtLinks, ...extraLinks]
             };
         }
 
@@ -447,6 +468,16 @@ export function getFilteredNavConfig(role: string, activeModules: string[], inst
         const filteredLinks = currentGroup.links.filter(linkKey => {
             const link = allNavLinks[linkKey];
             if (!link) return false;
+
+            // In primary/secondary mode, skip tertiary-only items
+            if (!isTertiaryActive && linkKey === 'departments') {
+                return false;
+            }
+
+            // Always allow manageStaff for administrators
+            if (linkKey === 'manageStaff') {
+                return true;
+            }
             
             // If the link requires a specific module, check if the school has it
             if (link.requiredModule) {
@@ -467,6 +498,7 @@ export function getFilteredNavConfig(role: string, activeModules: string[], inst
 
         return {
             ...group,
+            group: currentGroupName,
             links: filteredLinks
         };
     }).filter(group => group.links.length > 0); // Remove empty groups

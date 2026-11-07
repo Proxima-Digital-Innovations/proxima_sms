@@ -118,7 +118,12 @@ export function NewAdminDashboard() {
 
     const userName = session?.user?.name?.trim();
     const greetingTarget = userName || roleLabels[role] || 'Administrator';
-    const subtitle = roleSubtitles[role] || "Executive snapshot of your institution's operational performance.";
+    const defaultSubtitle = !hasTertiary && hasSecondary
+        ? 'Primary & Secondary School governance, academic term progress, continuous assessments, and financial administration.'
+        : roleSubtitles[role] || "Executive snapshot of your institution's operational performance.";
+    const subtitle = (role === 'SUPER_ADMIN' || role === 'ADMIN') && !hasTertiary && hasSecondary
+        ? 'Primary & Secondary School governance, academic term progress, continuous assessments, and financial administration.'
+        : defaultSubtitle;
 
     const formattedToday = new Date().toLocaleDateString('en-US', {
         weekday: 'short',
@@ -269,52 +274,83 @@ export function NewAdminDashboard() {
               ]),
     ];
 
-    const quickActions = [
-        {
-            href: hasTertiary && !hasSecondary ? '/dashboard/admissions' : '/dashboard/students/admissions',
-            title: hasTertiary && !hasSecondary ? 'Post-UTME Admissions' : 'Student Admissions',
-            subtitle: hasTertiary && !hasSecondary ? 'Screen JAMB candidates & issue letters' : 'Enroll new students & assign classes',
-            icon: PlusCircle,
-            iconStyle: 'bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400',
-        },
-        {
-            href: '/dashboard/users',
-            title: hasHr ? 'HR & Personnel' : 'Staff Directory',
-            subtitle: 'Manage faculty profiles, roles & payroll',
-            icon: Users,
-            iconStyle: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400',
-        },
-        hasFinance
-            ? {
-                  href: '/dashboard/finance/invoices',
-                  title: 'Bursary & Fee Collection',
-                  subtitle: 'Invoices, Remita RRR, Paystack & receipts',
-                  icon: Wallet,
+    const quickActions = !hasTertiary && hasSecondary
+        ? [
+              {
+                  href: '/dashboard/students',
+                  title: 'Student Admissions',
+                  subtitle: 'Enroll pupils & assign class arms',
+                  icon: PlusCircle,
+                  iconStyle: 'bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400',
+              },
+              {
+                  href: '/dashboard/system/classes-subjects',
+                  title: 'Classes, Arms & Subjects',
+                  subtitle: 'Manage classes, subjects & form teachers',
+                  icon: School,
                   iconStyle: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400',
-              }
-            : hasTertiary
-              ? {
-                    href: '/dashboard/tertiary/programs',
-                    title: 'Degree Programs',
-                    subtitle: 'Manage departments, courses & units',
-                    icon: School,
-                    iconStyle: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400',
-                }
-              : {
-                    href: '/dashboard/system/classes-subjects',
-                    title: 'Academic Structure',
-                    subtitle: 'Configure classes, subjects & teachers',
-                    icon: School,
-                    iconStyle: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400',
-                },
-        {
-            href: '/dashboard/system/modules',
-            title: 'System Modules',
-            subtitle: 'Configure active institutional engines',
-            icon: Settings,
-            iconStyle: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
-        },
-    ];
+              },
+              {
+                  href: '/dashboard/scores/enter',
+                  title: 'CA Scores & Broadsheet',
+                  subtitle: 'Enter continuous assessments & exam marks',
+                  icon: FileSpreadsheet,
+                  iconStyle: 'bg-purple-50 text-purple-600 dark:bg-purple-950/60 dark:text-purple-400',
+              },
+              {
+                  href: '/dashboard/finance/invoices',
+                  title: 'Bursary & Tuition Fees',
+                  subtitle: 'Invoices, fee collection & receipts',
+                  icon: Wallet,
+                  iconStyle: 'bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400',
+              },
+          ]
+        : [
+              {
+                  href: hasTertiary && !hasSecondary ? '/dashboard/admissions' : '/dashboard/students/admissions',
+                  title: hasTertiary && !hasSecondary ? 'Post-UTME Admissions' : 'Student Admissions',
+                  subtitle: hasTertiary && !hasSecondary ? 'Screen JAMB candidates & issue letters' : 'Enroll new students & assign classes',
+                  icon: PlusCircle,
+                  iconStyle: 'bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400',
+              },
+              {
+                  href: '/dashboard/users',
+                  title: hasHr ? 'HR & Personnel' : 'Staff Directory',
+                  subtitle: 'Manage faculty profiles, roles & payroll',
+                  icon: Users,
+                  iconStyle: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400',
+              },
+              hasFinance
+                  ? {
+                        href: '/dashboard/finance/invoices',
+                        title: 'Bursary & Fee Collection',
+                        subtitle: 'Invoices, Remita RRR, Paystack & receipts',
+                        icon: Wallet,
+                        iconStyle: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400',
+                    }
+                  : hasTertiary
+                    ? {
+                          href: '/dashboard/tertiary/programs',
+                          title: 'Degree Programs',
+                          subtitle: 'Manage departments, courses & units',
+                          icon: School,
+                          iconStyle: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400',
+                      }
+                    : {
+                          href: '/dashboard/system/classes-subjects',
+                          title: 'Academic Structure',
+                          subtitle: 'Configure classes, subjects & teachers',
+                          icon: School,
+                          iconStyle: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400',
+                      },
+              {
+                  href: '/dashboard/system/modules',
+                  title: 'System Modules',
+                  subtitle: 'Configure active institutional engines',
+                  icon: Settings,
+                  iconStyle: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+              },
+          ];
 
     const hasAttendanceRecords = stats.attendanceData.some(d => d.present > 0 || d.absent > 0);
 
